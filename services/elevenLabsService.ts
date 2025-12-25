@@ -291,13 +291,21 @@ function stripMarkdown(text: string, keepAudioTags: boolean = false): string {
     // If we're keeping tags, we temporarily protect them
     if (keepAudioTags) {
         // Replace known emotional tags with placeholders to avoid being caught by citation stripper
-        // These are the tags supported by ElevenLabs V3
+        // These are the tags documented by ElevenLabs V3:
+        // Voice-related: laughs, whispers, sighs, exhales, sarcastic, curious, excited, crying, snorts, mischievously
+        // Sound effects: gunshot, applause, clapping, explosion, swallows, gulps
+        // Special: sings, woo
         const tags = [
-            'laughs', 'whispers', 'sad', 'angry', 'excited', 'cheerful', 'shouts', 'sighs', 'gasps',
-            'thoughtfully', 'curiously', 'enthusiastically', 'amused', 'warmly', 'seriously',
-            'helpfully', 'conclusively', 'encouragingly', 'sarcastic', 'crying', 'snorts',
-            'mischievously', 'wheezing', 'exhales', 'giggles', 'groaning', 'cautiously',
-            'elated', 'indecisive', 'quizzically', 'conversationally', 'clearly'
+            // Voice-related (documented)
+            'laughs', 'laughs harder', 'starts laughing', 'wheezing',
+            'whispers', 'sighs', 'exhales',
+            'sarcastic', 'curious', 'excited', 'crying', 'snorts', 'mischievously',
+            // Sound effects (documented)
+            'gunshot', 'applause', 'clapping', 'explosion', 'swallows', 'gulps',
+            // Special (documented)
+            'sings', 'woo',
+            // Additional common ones that may work
+            'gasps', 'giggles', 'groaning', 'shouts'
         ];
         const tagRegex = new RegExp(`\\[(${tags.join('|')})\\]`, 'gi');
         cleaned = cleaned.replace(tagRegex, '@@AUDIO_TAG_$1@@');
@@ -348,99 +356,93 @@ function stripMarkdown(text: string, keepAudioTags: boolean = false): string {
 
 /**
  * Add expressive audio tags for ElevenLabs V3 model
- * V3 supports tags like [laughs], [whispers], [excited], [sarcastic], etc.
- * This analyzes the text sentiment and adds appropriate expression tags
- * to make the AI voice sound more natural and expressive
+ *
+ * V3 supports tags like [laughs], [whispers], [sarcastic], [curious], [excited], etc.
+ * These tags control vocal delivery and emotional expression.
+ *
+ * Per ElevenLabs docs: "The voice you choose and its training samples will affect tag effectiveness"
+ * Tags work best when matched to the voice's character and training data.
+ *
+ * @see https://elevenlabs.io/docs/overview/capabilities/text-to-speech/best-practices#audio-tags
  */
 function addExpressionTags(text: string): string {
     // Split into sentences for analysis
     const sentences = text.split(/(?<=[.!?])\s+/);
     let tagCount = 0;
-    const maxTags = 5; // Limit tags to avoid over-expression
+    const maxTags = 6; // Limit tags to avoid over-expression
 
-    return sentences.map(sentence => {
+    const result = sentences.map(sentence => {
         const lowerSentence = sentence.toLowerCase();
 
         // Skip very short sentences or if we've added enough tags
-        if (sentence.length < 15 || tagCount >= maxTags) return sentence;
+        if (sentence.length < 20 || tagCount >= maxTags) return sentence;
 
-        // Detect questions - add curious/thoughtful tone
+        // Detect questions - add curious tone (documented tag)
         if (sentence.trim().endsWith('?')) {
             if (lowerSentence.includes('how') || lowerSentence.includes('why') ||
-                lowerSentence.includes('what if')) {
+                lowerSentence.includes('what') || lowerSentence.includes('could')) {
                 tagCount++;
-                return `[thoughtfully] ${sentence}`;
-            }
-            if (lowerSentence.includes('really') || lowerSentence.includes('seriously')) {
-                tagCount++;
-                return `[curiously] ${sentence}`;
+                return `[curious] ${sentence}`;
             }
         }
 
-        // Detect excitement - exclamation marks with positive words
+        // Detect excitement - exclamation marks with positive words (documented tag)
         if (sentence.includes('!')) {
             if (lowerSentence.includes('great') || lowerSentence.includes('amazing') ||
                 lowerSentence.includes('awesome') || lowerSentence.includes('fantastic') ||
                 lowerSentence.includes('wonderful') || lowerSentence.includes('excellent') ||
-                lowerSentence.includes('love')) {
+                lowerSentence.includes('love') || lowerSentence.includes('perfect')) {
                 tagCount++;
                 return `[excited] ${sentence}`;
             }
-            if (lowerSentence.includes('wow') || lowerSentence.includes('incredible') ||
-                lowerSentence.includes('unbelievable')) {
-                tagCount++;
-                return `[enthusiastically] ${sentence}`;
-            }
         }
 
-        // Detect humor/amusement
+        // Detect humor/amusement - use laughs tag (documented tag)
         if (lowerSentence.includes('haha') || lowerSentence.includes('funny') ||
-            lowerSentence.includes('hilarious') || lowerSentence.includes('joke')) {
+            lowerSentence.includes('hilarious') || lowerSentence.includes('joke') ||
+            lowerSentence.includes('lol')) {
             tagCount++;
-            return `[amused] ${sentence}`;
+            return `[laughs] ${sentence}`;
         }
 
-        // Detect empathy/warmth
-        if (lowerSentence.includes('understand') || lowerSentence.includes('sorry to hear') ||
-            lowerSentence.includes('that must be') || lowerSentence.includes('i can imagine') ||
-            lowerSentence.includes('feel free')) {
+        // Detect sarcasm (documented tag)
+        if (lowerSentence.includes('obviously') || lowerSentence.includes('of course') ||
+            lowerSentence.includes('sure thing') || lowerSentence.includes('yeah right')) {
             tagCount++;
-            return `[warmly] ${sentence}`;
+            return `[sarcastic] ${sentence}`;
         }
 
-        // Detect important warnings/caution
-        if (lowerSentence.includes('warning') || lowerSentence.includes('careful') ||
-            lowerSentence.includes('caution') || lowerSentence.includes('important') ||
-            lowerSentence.includes('critical') || lowerSentence.includes('never')) {
+        // Detect sadness/empathy - use sighs (documented tag)
+        if (lowerSentence.includes('sorry to hear') || lowerSentence.includes('unfortunately') ||
+            lowerSentence.includes('sadly') || lowerSentence.includes('i understand')) {
             tagCount++;
-            return `[seriously] ${sentence}`;
+            return `[sighs] ${sentence}`;
         }
 
-        // Detect helpful explanations
-        if (lowerSentence.startsWith('let me') || lowerSentence.includes("here's how") ||
-            lowerSentence.includes('basically') || lowerSentence.includes('simply put') ||
-            lowerSentence.includes('in other words')) {
+        // Detect whisper-worthy content (documented tag)
+        if (lowerSentence.includes('secret') || lowerSentence.includes('between us') ||
+            lowerSentence.includes('quietly') || lowerSentence.includes('confidential')) {
             tagCount++;
-            return `[helpfully] ${sentence}`;
+            return `[whispers] ${sentence}`;
         }
 
-        // Detect conclusions/summaries
-        if (lowerSentence.startsWith('in summary') || lowerSentence.startsWith('to summarize') ||
-            lowerSentence.startsWith('in conclusion') || lowerSentence.startsWith('overall') ||
-            lowerSentence.startsWith('to wrap up')) {
+        // Detect mischief (documented tag)
+        if (lowerSentence.includes('trick') || lowerSentence.includes('sneaky') ||
+            lowerSentence.includes('clever') || lowerSentence.includes('hack')) {
             tagCount++;
-            return `[conclusively] ${sentence}`;
-        }
-
-        // Detect suggestions/encouragement
-        if (lowerSentence.includes('i recommend') || lowerSentence.includes('i suggest') ||
-            lowerSentence.includes('you could try') || lowerSentence.includes('good idea')) {
-            tagCount++;
-            return `[encouragingly] ${sentence}`;
+            return `[mischievously] ${sentence}`;
         }
 
         return sentence;
     }).join(' ');
+
+    // Debug: Log what we're sending to the API
+    if (tagCount > 0) {
+        console.log('[V3 Expression] Added', tagCount, 'audio tags to text');
+        console.log('[V3 Expression] Sample:', result.substring(0, 200) + '...');
+    }
+
+    return result;
 }
 
 /**
@@ -456,7 +458,9 @@ export async function textToSpeech(
     const {
         voiceKey = getSelectedVoice(),
         modelKey = getSelectedTTSModel(),
-        stability = 0.5,
+        // V3 uses lower stability for more expression ("Creative" mode)
+        // Per docs: "For maximum expressiveness with audio tags, use Creative or Natural settings"
+        stability: customStability,
         similarityBoost = 0.75,
         style = 0,
         useSpeakerBoost = true,
@@ -470,10 +474,16 @@ export async function textToSpeech(
     // Clean text for TTS
     const isV3 = modelId === 'eleven_v3';
 
+    // For V3, use lower stability (0.3 = Creative mode) for more expressive output
+    // For V2, use default 0.5 (Natural mode)
+    const stability = customStability ?? (isV3 ? 0.3 : 0.5);
+
     // For V3, add expressive audio tags to make speech more natural
     let processedText = stripMarkdown(text, isV3);
     if (isV3) {
         processedText = addExpressionTags(processedText);
+        console.log('[TTS V3] Using stability:', stability, '(Creative mode for expression)');
+        console.log('[TTS V3] Text preview:', processedText.substring(0, 300));
     }
 
     if (!processedText) {
