@@ -4,7 +4,7 @@
 
 import { AnimatedMarkdown } from 'flowtoken';
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { isAudioPlaying, isElevenLabsConfigured, playAudio, stopAudio, textToSpeech, unlockAudioForMobile } from '../../services/elevenLabsService';
+import { initAudioForMobile, isAudioPlaying, isElevenLabsConfigured, playAudio, stopAudio, textToSpeech } from '../../services/elevenLabsService';
 import { ModelIcon } from '../../services/modelIcons';
 import { Message } from '../../types';
 import { CopyLinear, MoreDotsLinear, RefreshSquareLinear, StopCircleLinear, VolumeHighLinear } from '../atoms/Icons';
@@ -196,15 +196,14 @@ export const AIMessageBubble: React.FC<AIMessageBubbleProps> = memo(({
             stopAudio();
         }
 
-        // CRITICAL: Unlock audio IMMEDIATELY during user gesture (before any async work)
-        // This is required for iOS Safari to allow audio playback
-        const unlockedAudio = unlockAudioForMobile();
+        // CRITICAL: Initialize audio context IMMEDIATELY during user gesture
+        // This unlocks audio playback on iOS Safari
+        await initAudioForMobile();
 
         setIsLoadingTTS(true);
         try {
             const audioBlob = await textToSpeech(message.content);
-            // Pass the pre-unlocked audio element for mobile compatibility
-            const audio = await playAudio(audioBlob, unlockedAudio);
+            const audio = await playAudio(audioBlob);
             setIsSpeaking(true);
 
             audio.onended = () => setIsSpeaking(false);

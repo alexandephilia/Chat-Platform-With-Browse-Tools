@@ -21,11 +21,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             return res.status(400).json({ error: 'Missing required fields: voiceId, text' });
         }
 
-        const response = await fetch(`${ELEVENLABS_TTS_URL}/${voiceId}`, {
+        // Use mp3_44100_128 for best mobile compatibility
+        // This format is widely supported across all browsers and devices
+        const outputFormat = 'mp3_44100_128';
+
+        const response = await fetch(`${ELEVENLABS_TTS_URL}/${voiceId}?output_format=${outputFormat}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'xi-api-key': ELEVENLABS_API_KEY,
+                'Accept': 'audio/mpeg',
             },
             body: JSON.stringify({
                 text,
@@ -55,8 +60,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // Get audio as buffer and send with proper headers
         const audioBuffer = await response.arrayBuffer();
 
+        // Set comprehensive headers for mobile compatibility
         res.setHeader('Content-Type', 'audio/mpeg');
         res.setHeader('Content-Length', audioBuffer.byteLength);
+        res.setHeader('Accept-Ranges', 'bytes');
+        res.setHeader('Cache-Control', 'no-cache');
 
         return res.status(200).send(Buffer.from(audioBuffer));
     } catch (error) {

@@ -198,43 +198,43 @@ export interface TTSOptions {
 let currentAudio: HTMLAudioElement | null = null;
 let currentAudioUrl: string | null = null;
 
-// Pre-created audio element for mobile - must be created and "unlocked" during user gesture
-let unlockedAudio: HTMLAudioElement | null = null;
+// Audio context for mobile - needed to unlock audio on iOS
+let audioContext: AudioContext | null = null;
 
 /**
- * Unlock audio for mobile playback - MUST be called directly from user gesture
- * This creates an audio element and plays silence to unlock it for future use
+ * Initialize and unlock audio context for mobile
+ * MUST be called directly from user gesture (click/touch handler)
+ * Returns true if audio is ready to play
  */
-export function unlockAudioForMobile(): HTMLAudioElement {
-    // Reuse existing unlocked audio if available
-    if (unlockedAudio) {
-        return unlockedAudio;
+export async function initAudioForMobile(): Promise<boolean> {
+    try {
+        // Create AudioContext if needed (for unlocking on iOS)
+        if (!audioContext) {
+            const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+            if (AudioContextClass) {
+                audioContext = new AudioContextClass();
+            }
+        }
+
+        // Resume audio context if suspended (required for iOS)
+        if (audioContext && audioContext.state === 'suspended') {
+            await audioContext.resume();
+        }
+
+        // Create and play a silent buffer to fully unlock audio
+        if (audioContext) {
+            const buffer = audioContext.createBuffer(1, 1, 22050);
+            const source = audioContext.createBufferSource();
+            source.buffer = buffer;
+            source.connect(audioContext.destination);
+            source.start(0);
+        }
+
+        return true;
+    } catch (error) {
+        console.warn('[Audio] Failed to init audio context:', error);
+        return false;
     }
-
-    const audio = new Audio();
-
-    // Mobile-specific attributes
-    audio.preload = 'auto';
-    audio.setAttribute('playsinline', 'true');
-    audio.setAttribute('webkit-playsinline', 'true');
-
-    // Play silence to unlock - this MUST happen in user gesture context
-    // Using a tiny silent audio data URI
-    audio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
-
-    // Play and immediately pause to "unlock" the audio element
-    const playPromise = audio.play();
-    if (playPromise) {
-        playPromise.then(() => {
-            audio.pause();
-            audio.currentTime = 0;
-        }).catch(() => {
-            // Ignore errors - this is just for unlocking
-        });
-    }
-
-    unlockedAudio = audio;
-    return audio;
 }
 
 /**
@@ -368,26 +368,20 @@ export async function textToSpeech(
 
 /**
  * Play audio blob and return the audio element for control
- * Note: On mobile, you MUST call unlockAudioForMobile() first from the user gesture,
- * then pass the returned audio element here.
+ * Note: On mobile, call initAudioForMobile() first from the user gesture
  * @param audioBlob - The audio blob to play
- * @param preUnlockedAudio - Optional pre-unlocked audio element from unlockAudioForMobile()
  */
-export async function playAudio(audioBlob: Blob, preUnlockedAudio?: HTMLAudioElement): Promise<HTMLAudioElement> {
+export async function playAudio(audioBlob: Blob): Promise<HTMLAudioElement> {
     // Stop any currently playing audio
     stopAudio();
 
-    const url = URL.createObjectURL(audioBlob);
+    // Create blob URL with explicit MIME type for better iOS compatibility
+    const typedBlob = new Blob([audioBlob], { type: 'audio/mpeg' });
+    const url = URL.createObjectURL(typedBlob);
     currentAudioUrl = url;
 
-    // Use pre-unlocked audio element if provided (for mobile), otherwise create new
-    const audio = preUnlockedAudio || new Audio();
+    const audio = new Audio();
     currentAudio = audio;
-
-    // Clear the unlocked audio reference since we're using it now
-    if (preUnlockedAudio && unlockedAudio === preUnlockedAudio) {
-        unlockedAudio = null;
-    }
 
     // Set up event handlers
     audio.onended = () => {
@@ -399,13 +393,43 @@ export async function playAudio(audioBlob: Blob, preUnlockedAudio?: HTMLAudioEle
         cleanup();
     };
 
-    // For mobile compatibility
+    // Mobile-specific attributes - set BEFORE src
     audio.preload = 'auto';
     audio.setAttribute('playsinline', 'true');
     audio.setAttribute('webkit-playsinline', 'true');
 
+    // Set crossOrigin for better compatibility
+    audio.crossOrigin = 'anonymous';
+
     // Set source
     audio.src = url;
+
+    // Wait for audio to be ready before playing
+    await new Promise<void>((resolve, reject) => {
+        const onCanPlay = () => {
+            audio.removeEventListener('canplaythrough', onCanPlay);
+            audio.removeEventListener('error', onError);
+            resolve();
+        };
+        const onError = (e: Event) => {
+            audio.removeEventListener('canplaythrough', onCanPlay);
+            audio.removeEventListener('error', onError);
+            reject(new Error('Audio failed to load'));
+        };
+
+        audio.addEventListener('canplaythrough', onCanPlay);
+        audio.addEventListener('error', onError);
+
+        // Trigger load
+        audio.load();
+
+        // Timeout fallback - if canplaythrough doesn't fire, try anyway
+        setTimeout(() => {
+            audio.removeEventListener('canplaythrough', onCanPlay);
+            audio.removeEventListener('error', onError);
+            resolve();
+        }, 3000);
+    });
 
     // Play with proper error handling
     try {

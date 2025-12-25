@@ -7,35 +7,29 @@ interface CustomInstructionsModalProps {
     onClose: () => void;
 }
 
-// Check mobile once at module level to avoid re-renders
-const getIsMobile = () => typeof window !== 'undefined' && window.innerWidth < 640;
-
 export const CustomInstructionsModal: React.FC<CustomInstructionsModalProps> = ({ isOpen, onClose }) => {
     const [instructions, setInstructions] = useState('');
     const [isSaving, setIsSaving] = useState(false);
     const dragY = useMotionValue(0);
     const sheetRef = useRef<HTMLDivElement>(null);
 
-    // Capture isMobile at mount time and when modal opens to prevent re-render issues during animation
-    const isMobileRef = useRef(getIsMobile());
+    // Reactive isMobile state to ensure consistent render cycles
+    const [isMobile, setIsMobile] = useState(false);
 
-    // Update ref only when modal opens (not during animation)
+    useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth < 640);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
     useEffect(() => {
         if (isOpen) {
-            isMobileRef.current = getIsMobile();
             dragY.set(0);
-        }
-    }, [isOpen, dragY]);
-
-    // Use the ref value for animations - this won't cause re-renders
-    const isMobile = isMobileRef.current;
-
-    useEffect(() => {
-        if (isOpen) {
             const saved = localStorage.getItem('zeta_custom_instructions');
             if (saved) setInstructions(saved);
         }
-    }, [isOpen]);
+    }, [isOpen, dragY]);
 
     const handleSave = () => {
         setIsSaving(true);
@@ -50,7 +44,7 @@ export const CustomInstructionsModal: React.FC<CustomInstructionsModalProps> = (
         e.stopPropagation();
     }, []);
 
-    const handleDragEnd = useCallback((_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    const handleDragEnd = useCallback((_: any, info: PanInfo) => {
         const shouldClose = info.velocity.y > 500 || (info.velocity.y >= 0 && info.offset.y > 150);
         if (shouldClose) {
             onClose();
@@ -63,34 +57,26 @@ export const CustomInstructionsModal: React.FC<CustomInstructionsModalProps> = (
     const backdropOpacity = useTransform(dragY, [0, 300], [1, 0]);
     const sheetBlurFilter = useTransform(dragY, [0, 300], ['blur(0px)', 'blur(8px)']);
 
-    // Memoize animation variants to prevent recalculation
-    const mobileVariants = useMemo(() => ({
+    // Animation variants
+    const mobileVariants = {
         initial: { y: '100%' },
         animate: { y: 0 },
         exit: { y: '100%' }
-    }), []);
+    };
 
-    const desktopVariants = useMemo(() => ({
+    const desktopVariants = {
         initial: { opacity: 0, scale: 0.95, y: 20 },
         animate: { opacity: 1, scale: 1, y: 0 },
         exit: { opacity: 0, scale: 0.95, y: 20 }
-    }), []);
-
-    const mobileTransition = useMemo(() => ({
-        duration: 0.35,
-        ease: [0.32, 0.72, 0, 1]
-    }), []);
-
-    const desktopTransition = useMemo(() => ({
-        duration: 0.2,
-        ease: [0.4, 0, 0.2, 1]
-    }), []);
+    };
 
     return (
-        <AnimatePresence mode="wait">
+        <AnimatePresence>
             {isOpen && (
                 <div className="fixed inset-0 z-[10002] flex items-end sm:items-center justify-center">
+                    {/* Backdrop */}
                     <motion.div
+                        key="modal-backdrop"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
@@ -100,13 +86,18 @@ export const CustomInstructionsModal: React.FC<CustomInstructionsModalProps> = (
                         className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
                     />
 
+                    {/* Modal Content */}
                     <motion.div
+                        key="modal-content"
                         ref={sheetRef}
                         variants={isMobile ? mobileVariants : desktopVariants}
                         initial="initial"
                         animate="animate"
                         exit="exit"
-                        transition={isMobile ? mobileTransition : desktopTransition}
+                        transition={{
+                            duration: isMobile ? 0.35 : 0.2,
+                            ease: isMobile ? [0.32, 0.72, 0, 1] : [0.4, 0, 0.2, 1]
+                        }}
                         drag={isMobile ? 'y' : false}
                         dragConstraints={{ top: 0, bottom: 0 }}
                         dragElastic={{ top: 0, bottom: 0.3 }}
@@ -119,26 +110,30 @@ export const CustomInstructionsModal: React.FC<CustomInstructionsModalProps> = (
                         onTouchEnd={handleModalClick}
                         className="relative w-full sm:max-w-lg bg-[rgb(250,250,250)] rounded-t-[24px] sm:rounded-[24px] shadow-[0_-8px_32px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.9)] overflow-hidden border border-slate-200/60 max-h-[90vh] sm:max-h-[85vh] flex flex-col touch-none sm:touch-auto"
                     >
+                        {/* Drag Handle for Mobile */}
                         <div className="sm:hidden flex justify-center pt-3 pb-1 cursor-grab active:cursor-grabbing">
                             <div className="w-10 h-1 bg-slate-300 rounded-full" />
                         </div>
 
+                        {/* Header */}
                         <div className="px-5 sm:px-8 py-4 sm:py-6 flex items-center justify-between shrink-0">
                             <div className="flex items-center gap-2.5 sm:gap-3">
                                 <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-gradient-to-b from-white to-slate-50 flex items-center justify-center text-blue-500 shadow-[0_8px_16px_-4px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,1)] border border-transparent">
                                     <div className="w-5 h-5 sm:w-7 sm:h-7 rounded-md sm:rounded-lg bg-slate-50 flex items-center justify-center shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]">
-                                        <Sparkles size={14} className="sm:hidden text-blue-500" />
-                                        <Sparkles size={16} className="hidden sm:block text-blue-500" />
+                                        <Sparkles size={16} className="text-blue-500" />
                                     </div>
                                 </div>
                                 <h2 className="text-base sm:text-xl font-bold text-slate-800">Custom Instructions</h2>
                             </div>
-                            <button onClick={onClose} className="p-1.5 sm:p-2 hover:bg-slate-100 active:bg-slate-200 rounded-full text-slate-400 hover:text-slate-600 transition-colors">
-                                <X size={18} className="sm:hidden" />
-                                <X size={20} className="hidden sm:block" />
+                            <button 
+                                onClick={onClose} 
+                                className="p-1.5 sm:p-2 hover:bg-slate-100 active:bg-slate-200 rounded-full text-slate-400 hover:text-slate-600 transition-colors"
+                            >
+                                <X size={20} />
                             </button>
                         </div>
 
+                        {/* Body */}
                         <div
                             className="px-5 sm:px-8 pb-5 sm:pb-6 space-y-4 sm:space-y-6 overflow-y-auto flex-1 touch-auto"
                             onPointerDownCapture={(e) => e.stopPropagation()}
@@ -155,8 +150,7 @@ export const CustomInstructionsModal: React.FC<CustomInstructionsModalProps> = (
                                     className="w-full h-36 sm:h-48 p-4 sm:p-5 text-sm bg-slate-50 border border-slate-200/60 rounded-xl sm:rounded-2xl focus:outline-none transition-all resize-none text-slate-700 placeholder:text-slate-400 shadow-[inset_0_6px_10px_rgba(0,0,0,0.1)]"
                                 />
                                 <div className="absolute right-3 sm:right-4 bottom-3 sm:bottom-4 pointer-events-none opacity-20 group-focus-within:opacity-40 transition-opacity">
-                                    <Sparkles size={32} className="sm:hidden text-blue-500/40" />
-                                    <Sparkles size={40} className="hidden sm:block text-blue-500/40" />
+                                    <Sparkles size={40} className="text-blue-500/40" />
                                 </div>
                             </div>
 
@@ -168,8 +162,12 @@ export const CustomInstructionsModal: React.FC<CustomInstructionsModalProps> = (
                             </div>
                         </div>
 
+                        {/* Footer */}
                         <div className="px-5 sm:px-6 py-4 sm:py-6 bg-slate-50/50 border-t border-slate-100 flex justify-end gap-3 sm:gap-4 shrink-0">
-                            <button onClick={onClose} className="px-4 sm:px-6 py-2 sm:py-2.5 text-sm font-semibold text-slate-500 hover:text-slate-800 active:text-slate-900 transition-colors">
+                            <button 
+                                onClick={onClose} 
+                                className="px-4 sm:px-6 py-2 sm:py-2.5 text-sm font-semibold text-slate-500 hover:text-slate-800 active:text-slate-900 transition-colors"
+                            >
                                 Cancel
                             </button>
                             <motion.button

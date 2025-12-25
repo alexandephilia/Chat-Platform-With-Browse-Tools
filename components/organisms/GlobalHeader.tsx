@@ -45,14 +45,13 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({
             transition={{ duration: 0.5, delay: 0.1 }}
             className="w-full h-14 bg-[var(--color-background)] backdrop-blur-sm flex items-center px-4 fixed top-0 left-0 right-0 z-40 gap-6 border-b border-[var(--color-border-light)]"
         >
-            {/* Left Workspace section: Adjusted widths to account for Header Padding (16px) and Content Margin (8px) */}
+            {/* Left Workspace section */}
             <motion.div
                 animate={{ width: isSidebarMinimized ? 154 : 252 }}
                 transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
                 className="flex items-center gap-3 flex-shrink-0 overflow-hidden whitespace-nowrap rounded-xl px-2 py-1.5 border border-transparent hover:border-[var(--color-border-light)] transition-colors"
-                style={{ width: isSidebarMinimized ? 154 : 252 }} // Fallback/Initial
             >
-                {/* Show User Avatar - clickable for portal when authenticated, login when not */}
+                {/* Show User Avatar */}
                 <div
                     onClick={!isAuthenticated ? openLoginModal : onOpenProfile}
                     className={`flex items-center gap-1 text-[var(--color-text-secondary)] transition-colors cursor-pointer hover:text-[var(--color-text)]`}
@@ -75,7 +74,7 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({
                     {isAuthenticated && <ChevronDown size={14} className={`flex-shrink-0 transition-transform duration-200 ${isProfileOpen ? 'rotate-180' : ''}`} />}
                 </div>
 
-                {/* Notification Bell - next to Personal */}
+                {/* Notification Bell */}
                 <button className="relative text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors">
                     <BellBingLinear width={18} height={18} />
                     <span className="absolute top-0 right-0 w-2 h-2 bg-rose-500 border border-white rounded-full translate-x-[2px] -translate-y-[2px]"></span>
@@ -91,10 +90,10 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({
                 </button>
             </motion.div>
 
-            {/* Spacer to push settings to the right */}
+            {/* Spacer */}
             <div className="flex-1" />
 
-            {/* Right side - Settings & Help Pill */}
+            {/* Right side */}
             <div className="flex items-center gap-4">
                 <ClayPill size="sm">Need Help?</ClayPill>
                 <button className="text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors">
