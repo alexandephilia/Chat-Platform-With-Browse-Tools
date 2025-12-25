@@ -4,6 +4,7 @@
 
 import { AnimatePresence, motion, Variants } from 'framer-motion';
 import React, { useMemo, useState } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
 import { getRandomSuggestions, SuggestionCard } from '../../data/suggestions';
 import { Attachment } from '../../types';
 import { getTimeBasedGreeting } from '../../utils/time';
