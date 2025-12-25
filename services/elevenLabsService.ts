@@ -183,6 +183,25 @@ export interface TTSOptions {
     similarityBoost?: number;  // 0-1, higher = closer to original voice
     style?: number;            // 0-1, style exaggeration (v2 models only)
     useSpeakerBoost?: boolean; // Boost similarity to speaker (NOT available for V3)
+    withTimestamps?: boolean;  // Get word-level timestamps for text highlighting
+}
+
+/**
+ * Word timing information from ElevenLabs API
+ */
+export interface WordTiming {
+    word: string;
+    start: number;  // Start time in seconds
+    end: number;    // End time in seconds
+}
+
+/**
+ * TTS result with timestamps for karaoke-style highlighting
+ */
+export interface TTSWithTimestamps {
+    audioBlob: Blob;
+    wordTimings: WordTiming[];
+    processedText: string;  // The text that was actually sent to TTS (after markdown stripping)
 }
 
 /**
@@ -197,6 +216,8 @@ export interface TTSOptions {
 // Current audio instance for stop functionality
 let currentAudio: HTMLAudioElement | null = null;
 let currentAudioUrl: string | null = null;
+let currentHighlightCallback: ((wordIndex: number) => void) | null = null;
+let highlightIntervalId: number | null = null;
 
 // Audio context for mobile - needed to unlock audio on iOS
 let audioContext: AudioContext | null = null;
@@ -249,8 +270,11 @@ export function isElevenLabsConfigured(): boolean {
 /**
  * Strip markdown formatting from text for cleaner TTS
  */
-function stripMarkdown(text: string): string {
-    return text
+/**
+ * Strip markdown formatting and citations from text for cleaner TTS
+ */
+function stripMarkdown(text: string, keepAudioTags: boolean = false): string {
+    let cleaned = text
         // Remove code blocks
         .replace(/```[\s\S]*?```/g, '')
         // Remove inline code
@@ -261,21 +285,162 @@ function stripMarkdown(text: string): string {
         .replace(/\*\*([^*]+)\*\*/g, '$1')
         .replace(/\*([^*]+)\*/g, '$1')
         .replace(/__([^_]+)__/g, '$1')
-        .replace(/_([^_]+)_/g, '$1')
-        // Remove links, keep text
-        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-        // Remove images
+        .replace(/_([^_]+)_/g, '$1');
+
+    // Handle audio tags (e.g., [laughs], [whispers])
+    // If we're keeping tags, we temporarily protect them
+    if (keepAudioTags) {
+        // Replace known emotional tags with placeholders to avoid being caught by citation stripper
+        // These are the tags supported by ElevenLabs V3
+        const tags = [
+            'laughs', 'whispers', 'sad', 'angry', 'excited', 'cheerful', 'shouts', 'sighs', 'gasps',
+            'thoughtfully', 'curiously', 'enthusiastically', 'amused', 'warmly', 'seriously',
+            'helpfully', 'conclusively', 'encouragingly', 'sarcastic', 'crying', 'snorts',
+            'mischievously', 'wheezing', 'exhales', 'giggles', 'groaning', 'cautiously',
+            'elated', 'indecisive', 'quizzically', 'conversationally', 'clearly'
+        ];
+        const tagRegex = new RegExp(`\\[(${tags.join('|')})\\]`, 'gi');
+        cleaned = cleaned.replace(tagRegex, '@@AUDIO_TAG_$1@@');
+    }
+
+    cleaned = cleaned
+        // Remove specific citation patterns commonly added by search models
+        // 1. Remove bracketed numbers: [1], [1, 2], [1-3]
+        .replace(/\s*\[\d+(?:[\s,-]+\d+)*\]/g, '')
+        // 2. Remove parenthetical sources: (source 1), (Source: NASA)
+        .replace(/\s*\((?:source|Source):?\s*[^)]+\)/g, '')
+        // 3. Remove citations following periods: ". [Source Title](url)" -> "."
+        // This targets the specific format enforced in prompts.ts
+        .replace(/\.\s*\[[^\]]+\]\(https?:\/\/[^\)]+\)/g, '.')
+
+        // Remove remaining images
         .replace(/!\[([^\]]*)\]\([^)]+\)/g, '')
+        // Remove remaining links but keep the descriptive text if it's NOT a citation
+        // If the link text is purely numeric or just "Source", we remove it
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, (_, linkText) => {
+            const isCitationText = /^(?:\d+|Source\s*\d*|Citation\s*\d*)$/i.test(linkText.trim());
+            return isCitationText ? '' : linkText;
+        })
+
         // Remove blockquotes
         .replace(/^>\s+/gm, '')
         // Remove horizontal rules
         .replace(/^[-*_]{3,}$/gm, '')
         // Remove list markers
         .replace(/^[\s]*[-*+]\s+/gm, '')
-        .replace(/^[\s]*\d+\.\s+/gm, '')
+        .replace(/^[\s]*\d+\.\s+/gm, '');
+
+    // Restore audio tags or remove them if they weren't protected
+    if (keepAudioTags) {
+        cleaned = cleaned.replace(/@@AUDIO_TAG_(\w+)@@/g, '[$1]');
+    } else {
+        // Strip any remaining bracketed words that might be emotional tags
+        cleaned = cleaned.replace(/\s*\[[a-zA-Z]+\]/g, '');
+    }
+
+    return cleaned
+        // Clean up punctuation (remove redundant periods if we stripped too much)
+        .replace(/\.{2,}/g, '.')
         // Clean up extra whitespace
         .replace(/\n{3,}/g, '\n\n')
         .trim();
+}
+
+/**
+ * Add expressive audio tags for ElevenLabs V3 model
+ * V3 supports tags like [laughs], [whispers], [excited], [sarcastic], etc.
+ * This analyzes the text sentiment and adds appropriate expression tags
+ * to make the AI voice sound more natural and expressive
+ */
+function addExpressionTags(text: string): string {
+    // Split into sentences for analysis
+    const sentences = text.split(/(?<=[.!?])\s+/);
+    let tagCount = 0;
+    const maxTags = 5; // Limit tags to avoid over-expression
+
+    return sentences.map(sentence => {
+        const lowerSentence = sentence.toLowerCase();
+
+        // Skip very short sentences or if we've added enough tags
+        if (sentence.length < 15 || tagCount >= maxTags) return sentence;
+
+        // Detect questions - add curious/thoughtful tone
+        if (sentence.trim().endsWith('?')) {
+            if (lowerSentence.includes('how') || lowerSentence.includes('why') ||
+                lowerSentence.includes('what if')) {
+                tagCount++;
+                return `[thoughtfully] ${sentence}`;
+            }
+            if (lowerSentence.includes('really') || lowerSentence.includes('seriously')) {
+                tagCount++;
+                return `[curiously] ${sentence}`;
+            }
+        }
+
+        // Detect excitement - exclamation marks with positive words
+        if (sentence.includes('!')) {
+            if (lowerSentence.includes('great') || lowerSentence.includes('amazing') ||
+                lowerSentence.includes('awesome') || lowerSentence.includes('fantastic') ||
+                lowerSentence.includes('wonderful') || lowerSentence.includes('excellent') ||
+                lowerSentence.includes('love')) {
+                tagCount++;
+                return `[excited] ${sentence}`;
+            }
+            if (lowerSentence.includes('wow') || lowerSentence.includes('incredible') ||
+                lowerSentence.includes('unbelievable')) {
+                tagCount++;
+                return `[enthusiastically] ${sentence}`;
+            }
+        }
+
+        // Detect humor/amusement
+        if (lowerSentence.includes('haha') || lowerSentence.includes('funny') ||
+            lowerSentence.includes('hilarious') || lowerSentence.includes('joke')) {
+            tagCount++;
+            return `[amused] ${sentence}`;
+        }
+
+        // Detect empathy/warmth
+        if (lowerSentence.includes('understand') || lowerSentence.includes('sorry to hear') ||
+            lowerSentence.includes('that must be') || lowerSentence.includes('i can imagine') ||
+            lowerSentence.includes('feel free')) {
+            tagCount++;
+            return `[warmly] ${sentence}`;
+        }
+
+        // Detect important warnings/caution
+        if (lowerSentence.includes('warning') || lowerSentence.includes('careful') ||
+            lowerSentence.includes('caution') || lowerSentence.includes('important') ||
+            lowerSentence.includes('critical') || lowerSentence.includes('never')) {
+            tagCount++;
+            return `[seriously] ${sentence}`;
+        }
+
+        // Detect helpful explanations
+        if (lowerSentence.startsWith('let me') || lowerSentence.includes("here's how") ||
+            lowerSentence.includes('basically') || lowerSentence.includes('simply put') ||
+            lowerSentence.includes('in other words')) {
+            tagCount++;
+            return `[helpfully] ${sentence}`;
+        }
+
+        // Detect conclusions/summaries
+        if (lowerSentence.startsWith('in summary') || lowerSentence.startsWith('to summarize') ||
+            lowerSentence.startsWith('in conclusion') || lowerSentence.startsWith('overall') ||
+            lowerSentence.startsWith('to wrap up')) {
+            tagCount++;
+            return `[conclusively] ${sentence}`;
+        }
+
+        // Detect suggestions/encouragement
+        if (lowerSentence.includes('i recommend') || lowerSentence.includes('i suggest') ||
+            lowerSentence.includes('you could try') || lowerSentence.includes('good idea')) {
+            tagCount++;
+            return `[encouragingly] ${sentence}`;
+        }
+
+        return sentence;
+    }).join(' ');
 }
 
 /**
@@ -303,19 +468,24 @@ export async function textToSpeech(
     const modelId = TTS_MODELS[modelKey].id;
 
     // Clean text for TTS
-    const cleanText = stripMarkdown(text);
+    const isV3 = modelId === 'eleven_v3';
 
-    if (!cleanText) {
+    // For V3, add expressive audio tags to make speech more natural
+    let processedText = stripMarkdown(text, isV3);
+    if (isV3) {
+        processedText = addExpressionTags(processedText);
+    }
+
+    if (!processedText) {
         throw new Error('No speakable text content');
     }
 
     // ElevenLabs has a 5000 character limit per request
-    const truncatedText = cleanText.length > 5000
-        ? cleanText.slice(0, 4997) + '...'
-        : cleanText;
+    const truncatedText = processedText.length > 5000
+        ? processedText.slice(0, 4997) + '...'
+        : processedText;
 
     // Build voice settings - V3 does NOT support speaker boost
-    const isV3 = modelId === 'eleven_v3';
     const voiceSettings: Record<string, number | boolean> = {
         stability,
         similarity_boost: similarityBoost,
@@ -367,6 +537,249 @@ export async function textToSpeech(
 }
 
 /**
+ * Convert text to speech with word-level timestamps for karaoke-style highlighting
+ * @param text - Text to convert (markdown will be stripped)
+ * @param options - TTS options
+ * @returns Audio blob with word timings
+ */
+export async function textToSpeechWithTimestamps(
+    text: string,
+    options: TTSOptions = {}
+): Promise<TTSWithTimestamps> {
+    const {
+        voiceKey = getSelectedVoice(),
+        modelKey = getSelectedTTSModel(),
+        stability = 0.5,
+        similarityBoost = 0.75,
+        style = 0,
+        useSpeakerBoost = true,
+    } = options;
+
+    // Get voice ID and model ID from keys
+    const voices = modelKey === 'zeta-v2' ? ELEVENLABS_VOICES_V2 : ELEVENLABS_VOICES_V1;
+    const voiceId = voices[voiceKey].id;
+    const modelId = TTS_MODELS[modelKey].id;
+
+    // Clean text for TTS - DON'T add expression tags for timestamps version
+    // as they would mess up the text alignment
+    const isV3 = modelId === 'eleven_v3';
+    const processedText = stripMarkdown(text, false); // Don't keep audio tags for highlighting
+
+    if (!processedText) {
+        throw new Error('No speakable text content');
+    }
+
+    // ElevenLabs has a 5000 character limit per request
+    const truncatedText = processedText.length > 5000
+        ? processedText.slice(0, 4997) + '...'
+        : processedText;
+
+    // Build voice settings
+    const voiceSettings: Record<string, number | boolean> = {
+        stability,
+        similarity_boost: similarityBoost,
+        style,
+    };
+
+    if (!isV3) {
+        voiceSettings.use_speaker_boost = useSpeakerBoost;
+    }
+
+    // Call server-side proxy with timestamps flag
+    const response = await fetch(TTS_PROXY_URL, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            voiceId,
+            text: truncatedText,
+            modelId,
+            voiceSettings,
+            withTimestamps: true,
+        }),
+    });
+
+    if (!response.ok) {
+        let errorMessage = `TTS failed: ${response.status}`;
+        try {
+            const errorData = await response.json();
+            errorMessage = errorData.error || errorMessage;
+        } catch {
+            // Response wasn't JSON
+        }
+        throw new Error(errorMessage);
+    }
+
+    const data = await response.json();
+
+    // Convert base64 audio to blob
+    const audioBytes = atob(data.audio_base64);
+    const audioArray = new Uint8Array(audioBytes.length);
+    for (let i = 0; i < audioBytes.length; i++) {
+        audioArray[i] = audioBytes.charCodeAt(i);
+    }
+    const audioBlob = new Blob([audioArray], { type: 'audio/mpeg' });
+
+    // Parse character timings into word timings
+    const wordTimings = parseCharacterTimingsToWords(
+        data.alignment?.characters || [],
+        data.alignment?.character_start_times_seconds || [],
+        data.alignment?.character_end_times_seconds || []
+    );
+
+    return {
+        audioBlob,
+        wordTimings,
+        processedText: truncatedText,
+    };
+}
+
+/**
+ * Convert character-level timings to word-level timings
+ */
+function parseCharacterTimingsToWords(
+    characters: string[],
+    startTimes: number[],
+    endTimes: number[]
+): WordTiming[] {
+    const words: WordTiming[] = [];
+    let currentWord = '';
+    let wordStart = 0;
+    let wordEnd = 0;
+
+    for (let i = 0; i < characters.length; i++) {
+        const char = characters[i];
+        const start = startTimes[i];
+        const end = endTimes[i];
+
+        // Check if this is a word boundary (space or punctuation)
+        if (char === ' ' || char === '\n' || char === '\t') {
+            if (currentWord.trim()) {
+                words.push({
+                    word: currentWord.trim(),
+                    start: wordStart,
+                    end: wordEnd,
+                });
+            }
+            currentWord = '';
+            wordStart = end; // Next word starts after the space
+        } else {
+            if (currentWord === '') {
+                wordStart = start;
+            }
+            currentWord += char;
+            wordEnd = end;
+        }
+    }
+
+    // Don't forget the last word
+    if (currentWord.trim()) {
+        words.push({
+            word: currentWord.trim(),
+            start: wordStart,
+            end: wordEnd,
+        });
+    }
+
+    return words;
+}
+
+/**
+ * Play audio with synchronized text highlighting
+ * @param audioBlob - The audio blob to play
+ * @param wordTimings - Word timing information
+ * @param onHighlight - Callback called with current word index during playback
+ */
+export async function playAudioWithHighlighting(
+    audioBlob: Blob,
+    wordTimings: WordTiming[],
+    onHighlight: (wordIndex: number) => void
+): Promise<HTMLAudioElement> {
+    // Stop any currently playing audio
+    stopAudio();
+
+    const typedBlob = new Blob([audioBlob], { type: 'audio/mpeg' });
+    const url = URL.createObjectURL(typedBlob);
+    currentAudioUrl = url;
+
+    const audio = new Audio();
+    currentAudio = audio;
+    currentHighlightCallback = onHighlight;
+
+    // Set up event handlers
+    audio.onended = () => {
+        stopHighlighting();
+        cleanup();
+    };
+
+    audio.onerror = (e) => {
+        console.error('[Audio] Playback error:', e);
+        stopHighlighting();
+        cleanup();
+    };
+
+    // Mobile-specific attributes
+    audio.preload = 'auto';
+    audio.setAttribute('playsinline', 'true');
+    audio.setAttribute('webkit-playsinline', 'true');
+    audio.crossOrigin = 'anonymous';
+
+    audio.src = url;
+    audio.load();
+
+    // Start highlighting loop
+    let lastWordIndex = -1;
+    highlightIntervalId = window.setInterval(() => {
+        if (!audio || audio.paused) return;
+
+        const currentTime = audio.currentTime;
+
+        // Find the current word based on time
+        for (let i = 0; i < wordTimings.length; i++) {
+            const timing = wordTimings[i];
+            if (currentTime >= timing.start && currentTime < timing.end) {
+                if (i !== lastWordIndex) {
+                    lastWordIndex = i;
+                    onHighlight(i);
+                }
+                break;
+            }
+            // Handle gap between words - highlight next word slightly early
+            if (i < wordTimings.length - 1) {
+                const nextTiming = wordTimings[i + 1];
+                if (currentTime >= timing.end && currentTime < nextTiming.start) {
+                    // In the gap, keep current word highlighted
+                    break;
+                }
+            }
+        }
+    }, 50); // Check every 50ms for smooth highlighting
+
+    try {
+        await audio.play();
+    } catch (error) {
+        console.error('[Audio] Play failed:', error);
+        stopHighlighting();
+        cleanup();
+        throw error;
+    }
+
+    return audio;
+}
+
+/**
+ * Stop the highlighting interval
+ */
+function stopHighlighting(): void {
+    if (highlightIntervalId !== null) {
+        clearInterval(highlightIntervalId);
+        highlightIntervalId = null;
+    }
+    currentHighlightCallback = null;
+}
+
+/**
  * Play audio blob and return the audio element for control
  * Note: On mobile, call initAudioForMobile() first from the user gesture
  * @param audioBlob - The audio blob to play
@@ -376,9 +789,9 @@ export async function playAudio(audioBlob: Blob, existingAudio?: HTMLAudioElemen
     // Creating URL first to ensure it's ready
     const typedBlob = new Blob([audioBlob], { type: 'audio/mpeg' });
     const url = URL.createObjectURL(typedBlob);
-    
+
     const audio = existingAudio || new Audio();
-    
+
     // Stop any currently playing audio if we're creating a new one
     if (!existingAudio) {
         stopAudio();
@@ -386,7 +799,7 @@ export async function playAudio(audioBlob: Blob, existingAudio?: HTMLAudioElemen
         // If reusing, stop previous playback
         audio.pause();
     }
-    
+
     currentAudio = audio;
     currentAudioUrl = url;
 
@@ -426,6 +839,7 @@ export async function playAudio(audioBlob: Blob, existingAudio?: HTMLAudioElemen
  * Stop currently playing audio
  */
 export function stopAudio(): void {
+    stopHighlighting();
     if (currentAudio) {
         currentAudio.pause();
         currentAudio.currentTime = 0;

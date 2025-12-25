@@ -4,7 +4,7 @@
 
 import { AnimatedMarkdown } from 'flowtoken';
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { initAudioForMobile, isAudioPlaying, isElevenLabsConfigured, playAudio, stopAudio, textToSpeech } from '../../services/elevenLabsService';
+import { initAudioForMobile, isAudioPlaying, isElevenLabsConfigured, playAudio, playAudioWithHighlighting, stopAudio, textToSpeech, textToSpeechWithTimestamps, WordTiming } from '../../services/elevenLabsService';
 import { ModelIcon } from '../../services/modelIcons';
 import { Message } from '../../types';
 import { CopyLinear, MoreDotsLinear, RefreshSquareLinear, StopCircleLinear, VolumeHighLinear } from '../atoms/Icons';
@@ -175,12 +175,14 @@ export const AIMessageBubble: React.FC<AIMessageBubbleProps> = memo(({
     // TTS state
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [isLoadingTTS, setIsLoadingTTS] = useState(false);
+    const [highlightedWordIndex, setHighlightedWordIndex] = useState<number>(-1);
+    const [wordTimings, setWordTimings] = useState<WordTiming[]>([]);
     const ttsEnabledRef = useRef(isElevenLabsConfigured());
 
     // Track touch events to prevent double-firing on mobile
     const touchHandledRef = useRef(false);
 
-    // Handle TTS playback
+    // Handle TTS playback with highlighting
     const handleSpeak = useCallback(async () => {
         if (isLoadingTTS) return;
 
@@ -188,6 +190,8 @@ export const AIMessageBubble: React.FC<AIMessageBubbleProps> = memo(({
         if (isSpeaking) {
             stopAudio();
             setIsSpeaking(false);
+            setHighlightedWordIndex(-1);
+            setWordTimings([]);
             return;
         }
 
@@ -196,33 +200,51 @@ export const AIMessageBubble: React.FC<AIMessageBubbleProps> = memo(({
             stopAudio();
         }
 
-        // CRITICAL: Initialize audio context and create the audio element IMMEDIATELY
-        // This MUST happen inside the direct user gesture (onClick/onTouchEnd)
-        // to unlock audio playback on mobile (especially iOS Safari).
-        const ctx = await initAudioForMobile();
-        
-        // Create an empty, silent audio element to "lock in" the user gesture
-        // We will reuse this element once the TTS data arrives
-        const gestureAudio = new Audio();
-        gestureAudio.play().catch(() => {
-            // It might fail if we can't play silenced audio yet, that's fine
-        });
+        // Initialize audio context for mobile
+        await initAudioForMobile();
 
         setIsLoadingTTS(true);
         try {
-            const audioBlob = await textToSpeech(message.content);
-            // Reuse the contextually unlocked audio element
-            const audio = await playAudio(audioBlob, gestureAudio);
+            // Try to get timestamps for highlighting
+            const result = await textToSpeechWithTimestamps(message.content);
+
+            setWordTimings(result.wordTimings);
+
+            // Play with highlighting callback
+            const audio = await playAudioWithHighlighting(
+                result.audioBlob,
+                result.wordTimings,
+                (wordIndex) => {
+                    setHighlightedWordIndex(wordIndex);
+                }
+            );
+
             setIsSpeaking(true);
 
-            audio.onended = () => setIsSpeaking(false);
-            audio.onerror = () => setIsSpeaking(false);
+            audio.onended = () => {
+                setIsSpeaking(false);
+                setHighlightedWordIndex(-1);
+                setWordTimings([]);
+            };
+            audio.onerror = () => {
+                setIsSpeaking(false);
+                setHighlightedWordIndex(-1);
+                setWordTimings([]);
+            };
         } catch (error) {
-            console.error('[TTS] Error:', error);
-            setIsSpeaking(false);
-            // Cleanup the gesture audio if it failed
-            gestureAudio.pause();
-            gestureAudio.src = "";
+            console.error('[TTS] Error with timestamps, falling back:', error);
+
+            // Fallback to regular TTS without highlighting
+            try {
+                const audioBlob = await textToSpeech(message.content);
+                const audio = await playAudio(audioBlob);
+                setIsSpeaking(true);
+
+                audio.onended = () => setIsSpeaking(false);
+                audio.onerror = () => setIsSpeaking(false);
+            } catch (fallbackError) {
+                console.error('[TTS] Fallback failed:', fallbackError);
+            }
         } finally {
             setIsLoadingTTS(false);
         }
@@ -280,12 +302,31 @@ export const AIMessageBubble: React.FC<AIMessageBubbleProps> = memo(({
             )}
 
             {/* Message Content - Only animate if streaming */}
-            <div className="chat-message-ai text-slate-700" data-message-id={message.id}>
-                <StableAnimatedContent
-                    content={message.content}
-                    messageId={message.id}
-                    isStreaming={isStreaming}
-                />
+            <div className="chat-message-ai text-slate-700 relative" data-message-id={message.id}>
+                {/* Show highlighted text overlay when speaking with timestamps */}
+                {isSpeaking && wordTimings.length > 0 ? (
+                    <div className="tts-highlighted-text">
+                        {wordTimings.map((timing, index) => (
+                            <span
+                                key={index}
+                                className={`transition-all duration-100 ${index === highlightedWordIndex
+                                    ? 'bg-blue-200 text-blue-900 rounded px-0.5 -mx-0.5'
+                                    : index < highlightedWordIndex
+                                        ? 'text-slate-400'
+                                        : ''
+                                    }`}
+                            >
+                                {timing.word}{' '}
+                            </span>
+                        ))}
+                    </div>
+                ) : (
+                    <StableAnimatedContent
+                        content={message.content}
+                        messageId={message.id}
+                        isStreaming={isStreaming}
+                    />
+                )}
             </div>
 
             {/* Action buttons - show when not streaming AND (has content OR is error) */}
