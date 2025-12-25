@@ -339,12 +339,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                         }}
                         transition={{
                             type: "spring",
-                            stiffness: 100,
-                            damping: 20,
-                            mass: 1,
+                            stiffness: 140,
+                            damping: 30,
+                            mass: 3,
                             delay: !hasInitialized.current && isWelcomeMode ? 0.9 : 0,
                             opacity: { duration: 0.6, delay: !hasInitialized.current && isWelcomeMode ? 0.9 : 0 },
-                            filter: { duration: 0.6, delay: !hasInitialized.current && isWelcomeMode ? 0.9 : 0 }
+                            filter: { duration: 1, delay: !hasInitialized.current && isWelcomeMode ? 0.9 : 0 }
                         }}
                     >
                         {/* Architectural Layer - Multi-rim depth effect (only in welcome mode) */}

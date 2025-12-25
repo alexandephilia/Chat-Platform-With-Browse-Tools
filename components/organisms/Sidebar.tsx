@@ -545,8 +545,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, isMinimized = false, onClose,
                             <div className="flex items-center gap-3">
                                 {isAuthenticated ? (
                                     <div className="flex items-center gap-1 text-slate-500">
-                                        <UserAvatar initials={user?.name?.charAt(0).toUpperCase() || 'U'} size="sm" />
-                                        <span className="text-sm font-medium">{user?.name || 'Personal'}</span>
+                                        <UserAvatar initials={user?.firstName?.charAt(0).toUpperCase() || 'U'} size="sm" />
+                                        <span className="text-sm font-medium">{user?.firstName || 'Personal'}</span>
                                         <ChevronDown size={14} className="flex-shrink-0" />
                                     </div>
                                 ) : (

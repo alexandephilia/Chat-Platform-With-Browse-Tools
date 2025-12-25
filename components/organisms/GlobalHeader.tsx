@@ -50,7 +50,7 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({ isSidebarMinimized, onToggl
                     className={`flex items-center gap-1 text-slate-500 transition-colors ${!isAuthenticated ? 'cursor-pointer hover:text-slate-700' : ''}`}
                 >
                     <UserAvatar
-                        initials={isAuthenticated ? (user?.name?.charAt(0).toUpperCase() || 'U') : '?'}
+                        initials={isAuthenticated ? (user?.firstName?.charAt(0).toUpperCase() || 'U') : '?'}
                         size="sm"
                     />
                     <motion.span
@@ -62,7 +62,7 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({ isSidebarMinimized, onToggl
                         transition={{ duration: 0.2, ease: [0.3, 0, 0.2, 1] }}
                         className="text-sm font-medium overflow-hidden"
                     >
-                        {isAuthenticated ? (user?.name || 'Personal') : 'Sign in'}
+                        {isAuthenticated ? (user?.firstName || 'Personal') : 'Sign in'}
                     </motion.span>
                     {isAuthenticated && <ChevronDown size={14} className="flex-shrink-0" />}
                 </div>

@@ -149,8 +149,8 @@ export const ClayPromoCard: React.FC<ClayPromoCardProps> = ({
                             initial={{ opacity: 0, filter: 'blur(10px)', scale: 0.9 }}
                             animate={{ opacity: 1, filter: 'blur(0px)', scale: 1 }}
                             exit={{ opacity: 0, filter: 'blur(10px)', scale: 0.9 }}
-                            transition={{ 
-                                duration: 0.4, 
+                            transition={{
+                                duration: 0.7,
                                 ease: [0.16, 1, 0.3, 1] // Matches sidebar easing
                             }}
                             className="w-full"
@@ -163,9 +163,9 @@ export const ClayPromoCard: React.FC<ClayPromoCardProps> = ({
                             initial={{ opacity: 0, filter: 'blur(10px)', scale: 1.05 }}
                             animate={{ opacity: 1, filter: 'blur(0px)', scale: 1 }}
                             exit={{ opacity: 0, filter: 'blur(10px)', scale: 1.05 }}
-                            transition={{ 
-                                duration: 0.4, 
-                                ease: [0.16, 1, 0.3, 1] 
+                            transition={{
+                                duration: 0.22,
+                                ease: [0.26, 0.1, 0.3, 1]
                             }}
                             className="w-full"
                         >

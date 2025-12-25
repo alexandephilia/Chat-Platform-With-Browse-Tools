@@ -82,7 +82,7 @@ const MessageItem = memo(({
             className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
             style={{ contain: 'layout style' }}
         >
-            <div className={`flex max-w-[98%] md:max-w-[95%] gap-3 md:gap-4 ${msg.role === 'user' ? 'flex-row-reverse px-3' : 'flex-row px-2 md:px-3'}`}>
+            <div className={`flex max-w-[98%] md:max-w-[95%] gap-2 md:gap-4 ${msg.role === 'user' ? 'flex-row-reverse px-3' : 'flex-row px-2 md:px-3'}`}>
                 {/* Avatar */}
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 mt-1 relative ${msg.role === 'user' ? 'bg-slate-200 overflow-hidden shadow-sm' : 'bg-transparent border-transparent shadow-[0_10px_25px_-5px_rgba(0,0,0,0.3),0_8px_10px_-6px_rgba(0,0,0,0.2)]'}`}>
                     {msg.role === 'user' ? (
@@ -241,10 +241,15 @@ export const MessageList: React.FC<MessageListProps> = ({
                     setMenuPosition(null);
                 }
             }}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            initial={{ opacity: 0, y: 60, filter: 'blur(20px)' }}
+            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
+            transition={{
+                duration: 0.8,
+                delay: 0.3,
+                ease: [0.22, 1, 0.36, 1],
+                filter: { duration: 0.6, delay: 0.3 }
+            }}
             className="absolute inset-0 overflow-y-auto overflow-x-hidden pt-16 pb-44 md:pt-20 md:pb-40 custom-scrollbar overscroll-contain"
             style={{
                 WebkitOverflowScrolling: 'touch',
@@ -263,16 +268,7 @@ export const MessageList: React.FC<MessageListProps> = ({
                         }
 
                         return (
-                            <motion.div
-                                key={msg.id}
-                                initial={{ opacity: 0, y: 40, filter: 'blur(16px)' }}
-                                animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-                                transition={{
-                                    duration: 0.7,
-                                    delay: index === 0 ? 0.5 : index * 0.15 + 0.3,
-                                    ease: [0.22, 1, 0.36, 1],
-                                }}
-                            >
+                            <div key={msg.id}>
                                 <MessageItem
                                     msg={msg}
                                     isLast={isLast}
@@ -292,7 +288,7 @@ export const MessageList: React.FC<MessageListProps> = ({
                                     onCancelEdit={onCancelEdit}
                                     onSubmitEdit={onSubmitEdit}
                                 />
-                            </motion.div>
+                            </div>
                         );
                     })}
                 </AnimatePresence>
@@ -303,7 +299,16 @@ export const MessageList: React.FC<MessageListProps> = ({
                     !messages[messages.length - 1]?.thinking &&
                     !messages[messages.length - 1]?.isThinking &&
                     !messages[messages.length - 1]?.toolCalls?.length && (
-                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex justify-start">
+                        <motion.div
+                            initial={{ opacity: 0, y: 40, filter: 'blur(16px)' }}
+                            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                            transition={{
+                                duration: 0.6,
+                                ease: [0.22, 1, 0.36, 1],
+                                filter: { duration: 0.5 }
+                            }}
+                            className="flex justify-start"
+                        >
                             <div className="flex max-w-[98%] md:max-w-[95%] gap-3 md:gap-4 pl-3 pr-1 md:px-3 flex-row">
                                 <div className="w-10 h-10 rounded-full bg-transparent border-transparent flex items-center justify-center flex-shrink-0 mt-1 relative shadow-[0_10px_25px_-5px_rgba(0,0,0,0.3),0_8px_10px_-6px_rgba(0,0,0,0.2)]">
                                     <img

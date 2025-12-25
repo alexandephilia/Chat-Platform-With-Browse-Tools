@@ -315,7 +315,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                                     animate="visible"
                                     exit="exit"
                                     className="flex-shrink-0 snap-center"
-                                    style={{ 
+                                    style={{
                                         width: '200px',
                                         willChange: 'opacity, transform, filter'
                                     }}
