@@ -1,9 +1,8 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { Check, ChevronDown, ExternalLink, Globe, Lightbulb, Loader2, Search } from 'lucide-react';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ToolCall } from '../../types';
 import { CompassLinear, GlobalLinear } from './Icons';
-import { LazyImage } from './LazyImage';
 
 interface SearchTimelineProps {
     toolCalls: ToolCall[];
@@ -83,14 +82,12 @@ const SourcesList: React.FC<{ results: any[] }> = ({ results }) => {
 
     return (
         <div
-            className="rounded-xl overflow-hidden divide-y divide-slate-100/50"
+            className="rounded-xl overflow-hidden divide-y divide-slate-100/50 w-full sm:w-fit"
             style={{
-                background: 'linear-gradient(to bottom, rgba(255,255,255,0.9), rgba(248,250,252,0.7))',
+                background: 'linear-gradient(rgb(240 240 240 / 36%), rgb(255 255 255))',
                 boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.06), inset 0 1px 2px rgba(0,0,0,0.04), 0 1px 0 rgba(255,255,255,0.9)',
                 border: '1px solid rgba(226, 232, 240, 0.6)',
-                width: 'fit-content',
-                minWidth: '260px',
-                maxWidth: '400px'
+                maxWidth: '100%'
             }}
         >
             <AnimatePresence mode="popLayout">
@@ -123,7 +120,7 @@ const TimelineStep: React.FC<{
     const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
     return (
-        <div className="relative pl-8" style={{ width: 'fit-content', minWidth: '200px', maxWidth: '100%' }}>
+        <div className="relative pl-8 w-full max-w-full">
             {/* Timeline line - hide for last step */}
             {!isLast && (
                 <div className="absolute left-[9px] top-6 bottom-0 w-[2px] bg-slate-200/60" />
@@ -183,78 +180,272 @@ const TimelineStep: React.FC<{
     );
 };
 
-// Image Gallery for timeline - Claymorphism style
+// Image Gallery for timeline - Apple Coverflow Style
 const TimelineImageGallery: React.FC<{ images: string[] }> = ({ images }) => {
-    const scrollRef = useRef<HTMLDivElement>(null);
+    const [activeIndex, setActiveIndex] = useState(0);
+    const [isMobile, setIsMobile] = useState(false);
     const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set());
     const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
+    const [isDragging, setIsDragging] = useState(false);
+    const dragStartX = useRef(0);
+    const dragStartIndex = useRef(0);
 
-    // Memoize display images to prevent unnecessary re-renders
+    // Memoize display images
     const displayImages = useMemo(() =>
-        images.filter(img => img && !failedImages.has(img)).slice(0, 8),
+        images.filter(img => img && !failedImages.has(img)).slice(0, 10),
         [images, failedImages]
     );
+
+    // Navigate with infinite loop
+    const goTo = useCallback((index: number) => {
+        setActiveIndex(index);
+    }, []);
+
+    const goNext = useCallback(() => goTo(activeIndex + 1), [activeIndex, goTo]);
+    const goPrev = useCallback(() => goTo(activeIndex - 1), [activeIndex, goTo]);
+
+    // Keyboard and resize listeners
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'ArrowLeft') goPrev();
+            if (e.key === 'ArrowRight') goNext();
+        };
+
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 640);
+        };
+
+        checkMobile();
+        window.addEventListener('keydown', handleKeyDown);
+        window.addEventListener('resize', checkMobile);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+            window.removeEventListener('resize', checkMobile);
+        };
+    }, [goNext, goPrev]);
+
+    // Drag handlers
+    const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
+        setIsDragging(true);
+        dragStartX.current = 'touches' in e ? e.touches[0].clientX : e.clientX;
+        dragStartIndex.current = activeIndex;
+    };
+
+    const handleDragMove = (e: React.MouseEvent | React.TouchEvent) => {
+        if (!isDragging) return;
+        const currentX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+        const diff = dragStartX.current - currentX;
+        const indexDiff = Math.round(diff / 100);
+        goTo(dragStartIndex.current + indexDiff);
+    };
+
+    const handleDragEnd = () => setIsDragging(false);
+
+    // Calculate transform for each card - returns motion-compatible values
+    const getCardAnimation = (index: number) => {
+        const count = displayImages.length;
+        // Calculate relative offset for infinite loop
+        // We want the shortest distance on the circle
+        let offset = (index - activeIndex) % count;
+        if (offset > count / 2) offset -= count;
+        if (offset < -count / 2) offset += count;
+
+        const absOffset = Math.abs(offset);
+        const isActive = absOffset < 0.1; // Using threshold for floating point
+
+        // Position calculations
+        // Center-focused logic:
+        // Active card is at x=0
+        // Previous cards (offset < 0) are to the left, Next cards (offset > 0) are to the right
+        // We use a combination of translation and rotation
+        // Circular 3D logic:
+        // Position cards along a balanced arc
+        const angle = offset * (isMobile ? 25 : 28); // Tighter gap between cards
+        const radian = (angle * Math.PI) / 180;
+
+        const radius = isMobile ? 280 : 350;
+
+        // Calculate x and z based on circular path
+        const x = Math.sin(radian) * radius;
+        const z = (Math.cos(radian) - 1) * radius - (isActive ? 0 : 60);
+
+        const rotateY = -angle * 1.2;
+        const scale = isActive ? (isMobile ? 1.05 : 1.1) : 0.85;
+        const opacity = isActive ? 1 : 0.9; // High opacity, rely on mask for fade-out
+        const blur = isActive ? 0 : Math.min(8, absOffset * 4);
+
+        return { x, z, rotateY, scale, opacity, blur };
+    };
+
+    // Get z-index for layering
+    const getZIndex = (index: number) => {
+        const count = displayImages.length;
+        let offset = (index - activeIndex) % count;
+        if (offset > count / 2) offset -= count;
+        if (offset < -count / 2) offset += count;
+        return 10 - Math.abs(Math.round(offset));
+    };
+
 
     if (displayImages.length === 0) return null;
 
     return (
-        <div className="mt-4 relative" style={{ width: 'fit-content', maxWidth: '500px' }}>
+        <div className="mt-0 mb-4 w-full flex flex-col items-center overflow-visible">
             <div
-                ref={scrollRef}
-                className="flex gap-3 overflow-x-auto pb-2 px-1"
+                className="relative select-none"
                 style={{
-                    scrollbarWidth: 'none',
-                    WebkitOverflowScrolling: 'touch',
-                    padding: '12px 8px 8px 8px',
-                    borderRadius: '16px',
-                    boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.06)',
-                    maskImage: 'linear-gradient(to right, #00000054, black 12%, black calc(88%), #00000054 100%)',
-                    WebkitMaskImage: 'linear-gradient(to right, #00000054, black 12%, black calc(88%), #00000054 100%)'
+                    width: '100%',
+                    maxWidth: isMobile ? '360px' : '700px',
+                    height: isMobile ? '180px' : '220px',
+                    maskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)',
+                    WebkitMaskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)',
+                    padding: '40px 0'
                 }}
             >
-                {displayImages.map((img, idx) => (
-                    <motion.a
-                        key={img}
-                        href={img}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        initial={{ opacity: 0, scale: 0.9, y: 10, filter: 'blur(8px)' }}
-                        animate={{
-                            opacity: loadedImages.has(img) ? 1 : 0.5,
-                            scale: 1,
-                            y: 0,
-                            filter: loadedImages.has(img) ? 'blur(0px)' : 'blur(4px)'
-                        }}
-                        whileHover={{ scale: 1.05, y: -4 }}
-                        transition={{
-                            delay: idx * 0.05,
-                            duration: 0.4,
-                            ease: [0.23, 1, 0.32, 1]
-                        }}
-                        className="relative shrink-0 rounded-2xl overflow-hidden group cursor-zoom-in"
-                        style={{
-                            width: '160px',
-                            height: '100px',
-                            background: 'rgba(241, 245, 249, 0.4)',
-                            border: '1px solid rgba(226, 232, 240, 0.5)',
-                            boxShadow: '0 8px 16px -4px rgba(0,0,0,0.1), 0 4px 8px -2px rgba(0,0,0,0.06), inset 0 2px 4px rgba(255,255,255,0.8)',
-                        }}
-                    >
-                        {/* Loading skeleton handled by LazyImage */}
-                        <LazyImage
-                            src={img}
-                            alt=""
-                            className={`w-full h-full object-cover transition-all duration-300 group-hover:scale-110 ${loadedImages.has(img) ? 'opacity-100' : 'opacity-0'}`}
-                            width={160}
-                            height={100}
-                            onLoad={() => setLoadedImages(prev => new Set(prev).add(img))}
-                            onError={() => setFailedImages(prev => new Set(prev).add(img))}
-                        />
-                        {/* Hover gloss */}
-                        <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/10 to-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-                    </motion.a>
-                ))}
+                {/* 3D Container */}
+                <div
+                    className="absolute inset-0 flex items-center justify-center cursor-grab active:cursor-grabbing"
+                    style={{ perspective: '1200px' }}
+                    onMouseDown={handleDragStart}
+                    onMouseMove={handleDragMove}
+                    onMouseUp={handleDragEnd}
+                    onMouseLeave={handleDragEnd}
+                    onTouchStart={handleDragStart}
+                    onTouchMove={handleDragMove}
+                    onTouchEnd={handleDragEnd}
+                >
+                    {/* Cards */}
+                    {displayImages.map((img, idx) => {
+                        const count = displayImages.length;
+                        let offset = (idx - activeIndex) % count;
+                        if (offset > count / 2) offset -= count;
+                        if (offset < -count / 2) offset += count;
+
+                        // Only render cards within visible range on the arc
+                        if (Math.abs(offset) > 4) return null;
+
+                        const anim = getCardAnimation(idx);
+
+                        return (
+                            <motion.a
+                                key={img}
+                                href={img}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => {
+                                    if (idx !== activeIndex) {
+                                        e.preventDefault();
+                                        goTo(idx);
+                                    }
+                                }}
+                                initial={{ opacity: 0, scale: 0.5 }}
+                                animate={{
+                                    x: anim.x,
+                                    z: anim.z,
+                                    rotateY: anim.rotateY,
+                                    scale: anim.scale,
+                                    opacity: anim.opacity,
+                                    filter: `blur(${anim.blur}px)`,
+                                }}
+                                transition={{
+                                    type: 'spring',
+                                    stiffness: 260,
+                                    damping: 26
+                                }}
+                                whileHover={idx === activeIndex ? { scale: 1.08 } : {}}
+                                className="absolute rounded-xl overflow-hidden"
+                                style={{
+                                    width: isMobile ? '180px' : '220px',
+                                    height: isMobile ? '120px' : '140px',
+                                    transformStyle: 'preserve-3d',
+                                    zIndex: getZIndex(idx),
+                                    boxShadow: idx === activeIndex
+                                        ? '0 10px 20px -6px rgba(0,0,0,0.45), 0 4px 10px -4px rgba(0,0,0,0.25)'
+                                        : '0 12px 18px -6px rgba(0,0,0,0.35), 0 4px 6px -4px rgba(0,0,0,0.2)',
+                                    cursor: idx === activeIndex ? 'zoom-in' : 'pointer'
+                                }}
+                            >
+                                {/* Checkerboard for transparent images */}
+                                <div
+                                    className="absolute inset-0"
+                                    style={{
+                                        backgroundColor: '#f8fafc',
+                                        backgroundImage: 'linear-gradient(45deg, #e2e8f0 25%, transparent 25%), linear-gradient(-45deg, #e2e8f0 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #e2e8f0 75%), linear-gradient(-45deg, transparent 75%, #e2e8f0 75%)',
+                                        backgroundSize: '10px 10px',
+                                        backgroundPosition: '0 0, 0 5px, 5px -5px, -5px 0px'
+                                    }}
+                                />
+                                {/* Image */}
+                                <img
+                                    src={img}
+                                    alt=""
+                                    className="absolute inset-0 w-full h-full object-cover"
+                                    loading="lazy"
+                                    onLoad={() => setLoadedImages(prev => new Set(prev).add(img))}
+                                    onError={() => setFailedImages(prev => new Set(prev).add(img))}
+                                />
+                                {/* Gloss effect for active card */}
+                                {idx === activeIndex && (
+                                    <div className="absolute inset-0 bg-gradient-to-br from-white/25 via-transparent to-transparent pointer-events-none" />
+                                )}
+                                {/* Border */}
+                                <div className="absolute inset-0 rounded-xl border border-black/10 pointer-events-none" />
+                            </motion.a>
+                        );
+                    })}
+                </div>
+
+                {/* Navigation arrows - hidden on mobile, shown on desktop */}
+                {displayImages.length > 1 && (
+                    <>
+                        <button
+                            onClick={(e) => { e.stopPropagation(); goPrev(); }}
+                            className="absolute left-6 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm shadow-md hidden sm:flex items-center justify-center text-slate-600 hover:bg-white hover:text-slate-900 transition-all z-20"
+                            aria-label="Previous image"
+                        >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                            </svg>
+                        </button>
+                        <button
+                            onClick={(e) => { e.stopPropagation(); goNext(); }}
+                            className="absolute right-6 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm shadow-md hidden sm:flex items-center justify-center text-slate-600 hover:bg-white hover:text-slate-900 transition-all z-20"
+                            aria-label="Next image"
+                        >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                            </svg>
+                        </button>
+                    </>
+                )}
             </div>
+
+            {/* Dots indicator - Positioned OUTSIDE in the flex stack */}
+            {displayImages.length > 1 && (
+                <div className="flex gap-1.5 z-20 mt-4">
+                    {displayImages.map((_, idx) => {
+                        const normalizedActiveIndex = ((activeIndex % displayImages.length) + displayImages.length) % displayImages.length;
+                        const isCurrent = idx === normalizedActiveIndex;
+                        return (
+                            <button
+                                key={idx}
+                                onClick={() => {
+                                    const count = displayImages.length;
+                                    let diff = (idx - normalizedActiveIndex) % count;
+                                    if (diff > count / 2) diff -= count;
+                                    if (diff < -count / 2) diff += count;
+                                    goTo(activeIndex + diff);
+                                }}
+                                className={`h-1.5 rounded-full transition-all ${isCurrent
+                                    ? 'bg-slate-700 w-4'
+                                    : 'bg-slate-300 hover:bg-slate-400 w-1.5'
+                                    }`}
+                                aria-label={`Go to image ${idx + 1}`}
+                            />
+                        );
+                    })}
+                </div>
+            )}
         </div>
     );
 };
@@ -326,6 +517,12 @@ export const SearchTimeline: React.FC<SearchTimelineProps> = ({ toolCalls, isStr
         [toolCalls, isStreaming]
     );
 
+    // Tools finished (for showing images) - separate from full completion
+    const toolsFinished = useMemo(() =>
+        toolCalls.every(tc => tc.status === 'completed'),
+        [toolCalls]
+    );
+
     // Track elapsed time while searching
     useEffect(() => {
         let interval: NodeJS.Timeout;
@@ -353,40 +550,36 @@ export const SearchTimeline: React.FC<SearchTimelineProps> = ({ toolCalls, isStr
         };
     }, [isSearching]);
 
-    // Auto-collapse when model starts outputting response content (only once)
+    // Auto-collapse only when everything is fully finished (tools completed AND not streaming)
     useEffect(() => {
-        if (hasResponseContent && !hasAutoCollapsed) {
+        if (isCompleted && hasResponseContent && !hasAutoCollapsed) {
             setIsExpanded(false);
             setHasAutoCollapsed(true);
         }
-    }, [hasResponseContent, hasAutoCollapsed]);
+    }, [isCompleted, hasResponseContent, hasAutoCollapsed]);
 
     // Memoize styles to prevent inline object creation
     const containerStyle = useMemo(() => ({
-        width: 'fit-content' as const,
+        width: '100%' as const,
         maxWidth: '100%' as const,
     }), []);
 
     const headerStyle = useMemo(() => ({
-        background: 'linear-gradient(to bottom, rgba(255,255,255,0.9), rgba(248,250,252,0.7))',
+        background: 'linear-gradient(rgb(240 240 240 / 36%), rgb(255 255 255))',
         boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.06), inset 0 1px 2px rgba(0,0,0,0.04), 0 1px 0 rgba(255,255,255,0.9)',
         border: '1px solid rgba(226, 232, 240, 0.6)'
     }), []);
 
     const contentStyle = useMemo(() => ({
-        width: 'fit-content' as const,
+        width: '100%' as const,
         maxWidth: '100%' as const,
-        minWidth: '280px' as const,
     }), []);
 
     if (!toolCalls?.length) return null;
 
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 10, filter: 'blur(8px)' }}
-            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-            className="mb-4 inline-block max-w-full"
+        <div
+            className="mb-4 block w-full max-w-full"
             style={containerStyle}
         >
             {/* Header */}
@@ -434,12 +627,11 @@ export const SearchTimeline: React.FC<SearchTimelineProps> = ({ toolCalls, isStr
                                     defaultExpanded={true}
                                 >
                                     <div
-                                        className="inline-flex items-start gap-2 px-3 py-2 rounded-lg text-[12px] text-slate-600 italic"
+                                        className="inline-flex items-start gap-2 px-3 py-2 rounded-lg text-[12px] text-slate-600 italic max-w-full"
                                         style={{
-                                            background: 'linear-gradient(to bottom, rgba(255,255,255,0.9), rgba(248,250,252,0.7))',
+                                            background: 'linear-gradient(rgb(240 240 240 / 36%), rgb(255 255 255))',
                                             boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.06), inset 0 1px 2px rgba(0,0,0,0.04), 0 1px 0 rgba(255,255,255,0.9)',
-                                            border: '1px solid rgba(226, 232, 240, 0.6)',
-                                            maxWidth: '350px'
+                                            border: '1px solid rgba(226, 232, 240, 0.6)'
                                         }}
                                     >
                                         "{planningText}"
@@ -467,14 +659,12 @@ export const SearchTimeline: React.FC<SearchTimelineProps> = ({ toolCalls, isStr
                                                 defaultExpanded={true}
                                             >
                                                 <div
-                                                    className="rounded-xl overflow-hidden divide-y divide-slate-100/50"
+                                                    className="rounded-xl overflow-hidden divide-y divide-slate-100/50 w-full sm:w-fit"
                                                     style={{
                                                         background: 'linear-gradient(to bottom, rgba(255,255,255,0.9), rgba(248,250,252,0.7))',
                                                         boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.06), inset 0 1px 2px rgba(0,0,0,0.04), 0 1px 0 rgba(255,255,255,0.9)',
                                                         border: '1px solid rgba(226, 232, 240, 0.6)',
-                                                        width: 'fit-content',
-                                                        minWidth: '260px',
-                                                        maxWidth: '400px'
+                                                        maxWidth: '100%'
                                                     }}
                                                 >
                                                     {urls.map((url: string, idx: number) => (
@@ -568,11 +758,11 @@ export const SearchTimeline: React.FC<SearchTimelineProps> = ({ toolCalls, isStr
                 )}
             </AnimatePresence>
 
-            {/* Image gallery - show outside collapsible section so it's always visible when completed */}
-            {isCompleted && uniqueImages.length > 0 && (
+            {/* Image gallery - show as soon as tools finish, not waiting for response */}
+            {toolsFinished && uniqueImages.length > 0 && (
                 <TimelineImageGallery images={uniqueImages} />
             )}
-        </motion.div>
+        </div>
     );
 };
 

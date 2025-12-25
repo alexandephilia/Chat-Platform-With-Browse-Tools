@@ -150,7 +150,7 @@ export const ClayPromoCard: React.FC<ClayPromoCardProps> = ({
                             animate={{ opacity: 1, filter: 'blur(0px)', scale: 1 }}
                             exit={{ opacity: 0, filter: 'blur(10px)', scale: 0.9 }}
                             transition={{
-                                duration: 0.7,
+                                duration: 0.42,
                                 ease: [0.16, 1, 0.3, 1] // Matches sidebar easing
                             }}
                             className="w-full"

@@ -82,7 +82,7 @@ const MessageItem = memo(({
             className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
             style={{ contain: 'layout style' }}
         >
-            <div className={`flex max-w-[98%] md:max-w-[95%] gap-2 md:gap-4 ${msg.role === 'user' ? 'flex-row-reverse px-3' : 'flex-row px-2 md:px-3'}`}>
+            <div className={`flex max-w-[98%] md:max-w-[95%] gap-2 md:gap-4 ${msg.role === 'user' ? 'flex-row-reverse px-3' : 'flex-row px-1 md:px-3'}`}>
                 {/* Avatar */}
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 mt-1 relative ${msg.role === 'user' ? 'bg-slate-200 overflow-hidden shadow-sm' : 'bg-transparent border-transparent shadow-[0_10px_25px_-5px_rgba(0,0,0,0.3),0_8px_10px_-6px_rgba(0,0,0,0.2)]'}`}>
                     {msg.role === 'user' ? (
@@ -182,17 +182,22 @@ export const MessageList: React.FC<MessageListProps> = ({
         return false;
     }, [messages]);
 
-    // Auto-scroll logic
-    const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
+    // Auto-scroll logic - use RAF for smoother scrolling
+    const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
         if (messagesContainerRef.current) {
             const container = messagesContainerRef.current;
-            if (behavior === 'smooth') {
-                container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
-            } else {
-                container.scrollTop = container.scrollHeight;
-            }
+            requestAnimationFrame(() => {
+                if (behavior === 'smooth') {
+                    container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+                } else {
+                    container.scrollTop = container.scrollHeight;
+                }
+            });
         }
-    };
+    }, []);
+
+    // Debounced scroll during streaming to prevent jank
+    const lastScrollRef = useRef<number>(0);
 
     useEffect(() => {
         if (messages.length > 0) {
@@ -203,11 +208,16 @@ export const MessageList: React.FC<MessageListProps> = ({
                 const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
                 const isNearBottom = scrollHeight - scrollTop - clientHeight < 150;
                 if (isNearBottom) {
-                    scrollToBottom(lastMessage.content.length < 5 ? 'smooth' : 'auto');
+                    // Throttle scroll updates during streaming to reduce jank
+                    const now = Date.now();
+                    if (now - lastScrollRef.current > 100) {
+                        lastScrollRef.current = now;
+                        scrollToBottom('auto');
+                    }
                 }
             }
         }
-    }, [messages.length, messages[messages.length - 1]?.content.length]);
+    }, [messages.length, messages[messages.length - 1]?.content.length, scrollToBottom]);
 
     // KaTeX rendering
     useEffect(() => {

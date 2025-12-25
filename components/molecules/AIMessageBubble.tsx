@@ -26,19 +26,27 @@ interface AIMessageBubbleProps {
     menuButtonRef: (el: HTMLButtonElement | null) => void;
 }
 
-// Memoized model indicator to prevent re-renders
+// Memoized model indicator to prevent re-renders - skeuomorphic inset style
 const ModelIndicator = memo(({ modelId }: { modelId: string }) => {
     const model = useMemo(() => AVAILABLE_MODELS.find(m => m.id === modelId), [modelId]);
     if (!model) return null;
 
     return (
         <div
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100/40 border border-slate-200/40"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gradient-to-b from-white to-slate-100/50 border border-slate-300/50"
+            style={{
+                boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.12), inset 0 1px 1px rgba(0,0,0,0.08), 0 1px 0 rgba(255,255,255,0.7)'
+            }}
         >
-            <div className="w-5 h-5 rounded-md flex items-center justify-center overflow-hidden bg-gradient-to-b from-slate-50 to-slate-200">
+            <div
+                className="w-5 h-5 rounded-md flex items-center justify-center overflow-hidden bg-gradient-to-b from-white to-slate-50 border border-white/80"
+                style={{
+                    boxShadow: '0 1px 1px rgba(0,0,0,0.12), 0 0.5px 0.5px rgba(0,0,0,0.08)'
+                }}
+            >
                 <ModelIcon iconKey={model.icon} size={18} />
             </div>
-            <span className="text-[9px] text-slate-500 font-semibold tracking-tight">
+            <span className="text-[9px] text-slate-600 font-semibold tracking-tight drop-shadow-[0_2px_0_rgba(255,255,255,0.5)]">
                 {model.name}
             </span>
         </div>
@@ -214,8 +222,9 @@ export const AIMessageBubble: React.FC<AIMessageBubbleProps> = memo(({
     }, [isSpeaking]);
 
     // Create tap handler for mobile-friendly button interactions
-    const createTapHandler = useCallback((handler: () => void) => ({
+    const createTapHandler = useCallback((handler: () => void, disabled?: boolean) => ({
         onClick: (e: React.MouseEvent) => {
+            if (disabled) return;
             if (touchHandledRef.current) {
                 touchHandledRef.current = false;
                 return;
@@ -224,6 +233,7 @@ export const AIMessageBubble: React.FC<AIMessageBubbleProps> = memo(({
             handler();
         },
         onTouchEnd: (e: React.TouchEvent) => {
+            if (disabled) return;
             e.preventDefault();
             e.stopPropagation();
             touchHandledRef.current = true;
@@ -280,17 +290,23 @@ export const AIMessageBubble: React.FC<AIMessageBubbleProps> = memo(({
                         {/* TTS button - only show if configured and has content */}
                         {ttsEnabledRef.current && message.content && !message.isError && (
                             <button
-                                {...createTapHandler(handleSpeak)}
+                                {...createTapHandler(handleSpeak, isLoadingTTS)}
                                 disabled={isLoadingTTS}
-                                className={`p-1.5 rounded-md transition-colors touch-manipulation ${isLoadingTTS
-                                    ? 'text-slate-300 cursor-wait'
+                                aria-disabled={isLoadingTTS}
+                                className={`p-1.5 min-w-[28px] min-h-[28px] rounded-md transition-colors touch-manipulation select-none ${isLoadingTTS
+                                    ? 'text-slate-300 cursor-wait pointer-events-none'
                                     : isSpeaking
-                                        ? 'text-blue-500 bg-blue-50'
-                                        : 'text-slate-400 hover:text-blue-500 hover:bg-blue-50'
+                                        ? 'text-blue-500 bg-blue-50 active:bg-blue-100'
+                                        : 'text-slate-400 hover:text-blue-500 hover:bg-blue-50 active:bg-blue-100'
                                     }`}
-                                title={isSpeaking ? "Stop speaking" : "Read aloud"}
+                                title={isLoadingTTS ? "Loading..." : isSpeaking ? "Stop speaking" : "Read aloud"}
                             >
-                                {isSpeaking ? (
+                                {isLoadingTTS ? (
+                                    <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                    </svg>
+                                ) : isSpeaking ? (
                                     <StopCircleLinear className="w-4 h-4" />
                                 ) : (
                                     <VolumeHighLinear className="w-4 h-4" />

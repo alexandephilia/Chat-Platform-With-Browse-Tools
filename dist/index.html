@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
     <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>Zeta Assistant</title>
@@ -60,6 +60,11 @@
             --color-bg-sidebar: #f8f9fb;
             --color-bg-card: #ffffff;
             --color-bg-input: #ffffff;
+            --color-bg-primary: #ffffff;
+            --color-bg-secondary: #f8f9fb;
+            --color-bg-tertiary: #f1f5f9;
+            --color-bg-hover: rgba(0, 0, 0, 0.04);
+            --color-bg-active: rgba(0, 0, 0, 0.08);
 
             /* Text Colors */
             --color-text-primary: #1e293b;
@@ -72,10 +77,20 @@
             --color-border-default: #e2e8f0;
             --color-border-dark: #cbd5e1;
 
+            /* Accent Colors */
+            --color-accent-primary: #3b82f6;
+            --color-accent-secondary: #60a5fa;
+
             /* Shadows */
             --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.03);
             --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.04);
             --shadow-lg: 0 10px 30px -10px rgba(0, 0, 0, 0.08);
+
+            /* Message Bubbles */
+            --color-bubble-user: #f1f5f9;
+            --color-bubble-ai: #ffffff;
+            --color-bubble-user-text: #1e293b;
+            --color-bubble-ai-text: #1e293b;
 
             /* Typography */
             --text-chat: 14px;
@@ -89,6 +104,48 @@
             --radius-2xl: 2rem;
         }
 
+        /* ========================================
+           DARK MODE THEME
+           ======================================== */
+        .dark {
+            /* Background Colors */
+            --color-bg-page: #0f172a;
+            --color-bg-sidebar: #1e293b;
+            --color-bg-card: #1e293b;
+            --color-bg-input: #334155;
+            --color-bg-primary: #0f172a;
+            --color-bg-secondary: #1e293b;
+            --color-bg-tertiary: #334155;
+            --color-bg-hover: rgba(255, 255, 255, 0.05);
+            --color-bg-active: rgba(255, 255, 255, 0.1);
+
+            /* Text Colors */
+            --color-text-primary: #f1f5f9;
+            --color-text-secondary: #94a3b8;
+            --color-text-muted: #64748b;
+            --color-text-inverse: #0f172a;
+
+            /* Border Colors */
+            --color-border-light: #334155;
+            --color-border-default: #475569;
+            --color-border-dark: #64748b;
+
+            /* Accent Colors */
+            --color-accent-primary: #60a5fa;
+            --color-accent-secondary: #93c5fd;
+
+            /* Shadows */
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.4);
+            --shadow-lg: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+
+            /* Message Bubbles */
+            --color-bubble-user: #334155;
+            --color-bubble-ai: #1e293b;
+            --color-bubble-user-text: #f1f5f9;
+            --color-bubble-ai-text: #f1f5f9;
+        }
+
         body {
             font-family: "Nunito", sans-serif !important;
             overflow: hidden;
@@ -97,6 +154,9 @@
             height: 100%;
             overscroll-behavior: none;
             -webkit-overflow-scrolling: touch;
+            background-color: var(--color-bg-page);
+            color: var(--color-text-primary);
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
         html {
@@ -392,7 +452,6 @@
             color: var(--color-text-primary) !important;
         }
 
-
         .chat-message-ai em,
         .chat-message-ai i {
             font-style: italic !important;
@@ -405,7 +464,9 @@
             padding: 2px 6px 2px 5px !important;
             margin: 0 2px !important;
             border-radius: 5px !important;
-            background: linear-gradient(135deg, rgba(239, 246, 255, 0.95), rgba(219, 234, 254, 0.85)) !important;
+            background: linear-gradient(135deg,
+                    rgba(239, 246, 255, 0.95),
+                    rgba(219, 234, 254, 0.85)) !important;
             border: 1px solid rgba(147, 197, 253, 0.4) !important;
             border-bottom: 1px solid rgba(147, 197, 253, 0.4) !important;
             color: #2563eb !important;
@@ -413,7 +474,8 @@
             font-size: 11px !important;
             font-weight: 600 !important;
             text-decoration: none !important;
-            box-shadow: 0 1px 2px rgba(59, 130, 246, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+            box-shadow: 0 1px 2px rgba(59, 130, 246, 0.08),
+                inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
             transition: all 0.2s ease !important;
             vertical-align: baseline !important;
             line-height: 1.2 !important;
@@ -433,9 +495,12 @@
         }
 
         .chat-message-ai a:hover {
-            background: linear-gradient(135deg, rgba(219, 234, 254, 1), rgba(191, 219, 254, 0.95)) !important;
+            background: linear-gradient(135deg,
+                    rgba(219, 234, 254, 1),
+                    rgba(191, 219, 254, 0.95)) !important;
             border-color: rgba(96, 165, 250, 0.5) !important;
-            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.12), inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.12),
+                inset 0 1px 0 rgba(255, 255, 255, 1) !important;
             transform: translateY(-1px) translateZ(0) !important;
             will-change: transform, opacity !important;
         }
@@ -448,7 +513,9 @@
             padding: 2px 6px 2px 5px !important;
             margin: 0 2px !important;
             border-radius: 5px !important;
-            background: linear-gradient(135deg, rgba(239, 246, 255, 0.95), rgba(219, 234, 254, 0.85)) !important;
+            background: linear-gradient(135deg,
+                    rgba(239, 246, 255, 0.95),
+                    rgba(219, 234, 254, 0.85)) !important;
             border: 1px solid rgba(147, 197, 253, 0.4) !important;
             border-bottom: 1px solid rgba(147, 197, 253, 0.4) !important;
             color: #2563eb !important;
@@ -456,7 +523,8 @@
             font-size: 11px !important;
             font-weight: 600 !important;
             text-decoration: none !important;
-            box-shadow: 0 1px 2px rgba(59, 130, 246, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+            box-shadow: 0 1px 2px rgba(59, 130, 246, 0.08),
+                inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
             transition: all 0.2s ease !important;
             vertical-align: baseline !important;
             line-height: 1.2 !important;
@@ -465,9 +533,12 @@
         }
 
         .chat-message-ai a.citation-link:hover {
-            background: linear-gradient(135deg, rgba(219, 234, 254, 1), rgba(191, 219, 254, 0.95)) !important;
+            background: linear-gradient(135deg,
+                    rgba(219, 234, 254, 1),
+                    rgba(191, 219, 254, 0.95)) !important;
             border-color: rgba(96, 165, 250, 0.5) !important;
-            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.12), inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.12),
+                inset 0 1px 0 rgba(255, 255, 255, 1) !important;
             transform: translateY(-1px) translateZ(0) !important;
             will-change: transform, opacity !important;
         }
@@ -900,7 +971,7 @@
 
         /* Table data cells */
         .chat-message-ai td {
-            padding: 8px 14px !important;
+            padding: 8px 4px !important;
             border: 1px solid rgba(226, 232, 240, 0.6) !important;
             color: var(--color-text-primary) !important;
             font-size: 13px !important;
@@ -1503,7 +1574,7 @@
             // Helper to get domain from URL
             function getDomain(url) {
                 try {
-                    return new URL(url).hostname.replace('www.', '');
+                    return new URL(url).hostname.replace("www.", "");
                 } catch {
                     return url;
                 }
@@ -1511,8 +1582,8 @@
 
             // Check if link should be a citation pill
             function isCitation(link, text, href) {
-                if (!href || !href.startsWith('http')) return false;
-                const trimmed = (text || '').trim();
+                if (!href || !href.startsWith("http")) return false;
+                const trimmed = (text || "").trim();
 
                 // Empty text = citation
                 if (!trimmed) return true;
@@ -1521,19 +1592,23 @@
                 if (/^\d+$/.test(trimmed)) return true;
 
                 // Check if link is inside a list item (Sources section)
-                const parentLi = link.closest('li');
+                const parentLi = link.closest("li");
                 if (parentLi) {
                     // Links in list items are usually citations/sources
                     return true;
                 }
 
                 // Inline citations - short text without periods (not a sentence)
-                if (trimmed.length <= 60 && !trimmed.includes('. ')) {
+                if (trimmed.length <= 60 && !trimmed.includes(". ")) {
                     return true;
                 }
 
                 // Common citation patterns
-                if (/^(\d+|source|ref|link|cite|citation|article|read more|learn more|here|this|view|see)/i.test(trimmed)) {
+                if (
+                    /^(\d+|source|ref|link|cite|citation|article|read more|learn more|here|this|view|see)/i.test(
+                        trimmed
+                    )
+                ) {
                     return true;
                 }
 
@@ -1545,22 +1620,22 @@
 
             // Transform citation links
             function transformCitations() {
-                const containers = document.querySelectorAll('.chat-message-ai');
+                const containers = document.querySelectorAll(".chat-message-ai");
                 if (!containers.length) return;
 
-                containers.forEach(container => {
-                    const links = container.querySelectorAll('a:not(.citation-link)');
-                    links.forEach(link => {
-                        const text = link.textContent || '';
-                        const href = link.getAttribute('href') || '';
+                containers.forEach((container) => {
+                    const links = container.querySelectorAll("a:not(.citation-link)");
+                    links.forEach((link) => {
+                        const text = link.textContent || "";
+                        const href = link.getAttribute("href") || "";
 
                         if (isCitation(link, text, href)) {
-                            link.classList.add('citation-link');
+                            link.classList.add("citation-link");
 
                             // Check if inline (not in a list item) - add subscript style
-                            const parentLi = link.closest('li');
+                            const parentLi = link.closest("li");
                             if (!parentLi) {
-                                link.classList.add('citation-inline');
+                                link.classList.add("citation-inline");
                             }
 
                             // If just a number, show domain instead
@@ -1576,8 +1651,8 @@
             let transformTimeout;
             const observer = new MutationObserver((mutations) => {
                 let shouldTransform = false;
-                mutations.forEach(m => {
-                    if (m.addedNodes.length > 0 || m.type === 'characterData') {
+                mutations.forEach((m) => {
+                    if (m.addedNodes.length > 0 || m.type === "characterData") {
                         shouldTransform = true;
                     }
                 });
@@ -1590,19 +1665,19 @@
 
             // Start observing when DOM is ready
             function init() {
-                const root = document.getElementById('root');
+                const root = document.getElementById("root");
                 if (root) {
                     observer.observe(root, {
                         childList: true,
                         subtree: true,
-                        characterData: true
+                        characterData: true,
                     });
                     transformCitations();
                 }
             }
 
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', init);
+            if (document.readyState === "loading") {
+                document.addEventListener("DOMContentLoaded", init);
             } else {
                 init();
             }
@@ -1628,7 +1703,7 @@
         }
       }
     </script>
-  <script type="module" crossorigin src="/assets/index-BV69QlzO.js"></script>
+  <script type="module" crossorigin src="/assets/index-AIq4p9Zb.js"></script>
   <link rel="stylesheet" crossorigin href="/assets/index-CChzf3nS.css">
 </head>
 

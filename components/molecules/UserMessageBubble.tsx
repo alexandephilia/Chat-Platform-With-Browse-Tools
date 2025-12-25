@@ -110,6 +110,10 @@ export const UserMessageBubble: React.FC<UserMessageBubbleProps> = memo(({
                                     if (el) {
                                         el.style.height = 'auto';
                                         el.style.height = `${el.scrollHeight}px`;
+                                        // Move cursor to end of text
+                                        const len = el.value.length;
+                                        el.setSelectionRange(len, len);
+                                        el.focus();
                                     }
                                 }}
                                 className="w-full p-3 px-4 text-slate-700 bg-slate-50/50 outline-none resize-none overflow-hidden"
@@ -118,7 +122,6 @@ export const UserMessageBubble: React.FC<UserMessageBubbleProps> = memo(({
                                     lineHeight: 'var(--text-chat-line-height)',
                                     fontFamily: 'inherit'
                                 }}
-                                autoFocus
                             />
                         </div>
                     ) : (
