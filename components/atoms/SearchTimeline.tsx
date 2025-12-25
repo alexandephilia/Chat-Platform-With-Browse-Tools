@@ -661,7 +661,7 @@ export const SearchTimeline: React.FC<SearchTimelineProps> = ({ toolCalls, isStr
                                                 <div
                                                     className="rounded-xl overflow-hidden divide-y divide-slate-100/50 w-full sm:w-fit"
                                                     style={{
-                                                        background: 'linear-gradient(to bottom, rgba(255,255,255,0.9), rgba(248,250,252,0.7))',
+                                                        background: 'linear-gradient(rgb(240 240 240 / 36%), rgb(255 255 255))',
                                                         boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.06), inset 0 1px 2px rgba(0,0,0,0.04), 0 1px 0 rgba(255,255,255,0.9)',
                                                         border: '1px solid rgba(226, 232, 240, 0.6)',
                                                         maxWidth: '100%'
@@ -715,12 +715,11 @@ export const SearchTimeline: React.FC<SearchTimelineProps> = ({ toolCalls, isStr
                                         >
                                             {/* Search query pill */}
                                             <div
-                                                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg"
+                                                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg max-w-full"
                                                 style={{
-                                                    background: 'linear-gradient(to bottom, rgba(255,255,255,0.9), rgba(248,250,252,0.7))',
+                                                    background: 'linear-gradient(rgb(240 240 240 / 36%), rgb(255 255 255))',
                                                     boxShadow: 'inset 0 2px 6px rgba(0,0,0,0.06), inset 0 1px 2px rgba(0,0,0,0.04), 0 1px 0 rgba(255,255,255,0.9)',
-                                                    border: '1px solid rgba(226, 232, 240, 0.6)',
-                                                    maxWidth: '350px'
+                                                    border: '1px solid rgba(226, 232, 240, 0.6)'
                                                 }}
                                             >
                                                 <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />

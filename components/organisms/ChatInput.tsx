@@ -488,7 +488,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
                 {/* Toolbar */}
                 <div
-                    className="px-3 pb-1.5 mt-1 flex items-center justify-between"
+                    className="px-3 pb-[0.475rem] sm:pb-1.5 mt-1 flex items-center justify-between"
                 >
                     <div className="flex items-center space-x-1 relative">
                         {/* Plus Button with Menu Trigger */}
