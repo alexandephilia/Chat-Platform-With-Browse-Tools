@@ -1,38 +1,48 @@
-# Zeta AI Assistant
+# 🌌 Zeta AI Assistant
 
-A modern, multi-model AI chat assistant with web search capabilities, built with React 19 and TypeScript.
+A high-performance, multi-model AI chat assistant with real-time web search capabilities. Built with **React 19** and **TypeScript** for a seamless, intelligent experience.
 
-![Zeta AI](https://img.shields.io/badge/React-19-blue) ![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue) ![Vite](https://img.shields.io/badge/Vite-6-purple)
+![Zeta AI](https://img.shields.io/badge/React-19-blue?style=for-the-badge&logo=react) ![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue?style=for-the-badge&logo=typescript) ![Vite](https://img.shields.io/badge/Vite-6-purple?style=for-the-badge&logo=vite)
 
-## Features
+---
 
-### Multi-Model Support
-- **Gemini 3 Flash/Pro** - Google's latest with native thinking and tool support
-- **Kimi K2** - Fast inference via Groq with Exa search tools
-- **Groq Compound** - Built-in web search, code execution, and Wolfram Alpha
-- **DeepSeek V3.1** - Fast model with tool calling via OpenRouter
+> [!IMPORTANT]
+> This project requires several API keys to function. Ensure you have access to Google AI Studio, Groq, OpenRouter, and Exa before proceeding.
 
-### AI Capabilities
-- 🔍 **Web Search** - Real-time search via Exa API with source citations
-- 🧠 **Thinking Mode** - See the model's reasoning process (Gemini, DeepSeek)
-- 📎 **File Attachments** - Upload images, PDFs, Word docs, Excel files
-- 💬 **Chat History** - Persistent conversations with local storage
-- ⚡ **Streaming Responses** - Real-time token streaming with animated markdown
+## ✨ Features
 
-### UI/UX
-- Claymorphism design with smooth animations (Framer Motion)
-- Responsive layout (mobile + desktop)
-- Animated markdown rendering with [flowtoken](https://github.com/flowtoken/flowtoken)
-- Search timeline with image galleries
-- Model picker with capability indicators
+### 🤖 Multi-Model Intelligence
 
-## Quick Start
+- **Gemini 3 Flash/Pro**: Google's cutting-edge models with native reasoning and tool execution.
+- **Kimi K2**: Blazing fast inference via Groq, augmented with Exa search tools.
+- **Groq Compound**: Enterprise-grade capabilities including native web search, code execution, and Wolfram Alpha integration.
+- **DeepSeek V3.1**: Efficient reasoning via OpenRouter.
 
-### Prerequisites
-- Node.js 18+
-- npm or yarn
+### 🧠 Advanced Capabilities
 
-### Installation
+- 🔍 **Exa Web Search**: Real-time information retrieval with precise source citations.
+- 💭 **Chain of Thought**: Visualize the model's reasoning process in real-time.
+- 📁 **Universal File Support**: Seamlessly context-inject images, PDFs, Word docs, and Excel sheets.
+- 📜 **Chat Persistence**: Locally stored conversation history.
+- 🌊 **Smooth Streaming**: Optimized token delivery with animated markdown.
+
+### 🎨 Premium UI/UX
+
+- **Claymorphism Design**: Modern, depth-driven aesthetics.
+- **Framer Motion**: Fluid transitions and micro-animations.
+- **Flowtoken Rendering**: Gorgeous, animated markdown output.
+- **Search Timeline**: Detailed search journey with integrated image galleries.
+
+---
+
+## 🚀 Quick Start
+
+### 📋 Prerequisites
+
+- **Node.js**: version 18 or higher.
+- **Package Manager**: `npm` or `yarn`.
+
+### 📥 Installation
 
 ```bash
 # Clone the repository
@@ -44,83 +54,53 @@ npm install
 
 # Set up environment variables
 cp .env.example .env
-# Edit .env with your API keys
-
-# Start development server
-npm run dev
+# Open .env and insert your secrets
 ```
 
-### Environment Variables
+### ⚙️ Environment Configuration
 
-Create a `.env` file with your API keys:
+> [!WARNING]
+> Never commit your `.env` file to version control.
 
-```env
-# Gemini API Keys (https://aistudio.google.com/apikey)
-VITE_GEMINI_API_KEY_1=your_key_here
-VITE_GEMINI_API_KEY_2=your_key_here  # Optional, for rotation
+| Variable                  | Source                                             | Description                   |
+| :------------------------ | :------------------------------------------------- | :---------------------------- |
+| `VITE_GEMINI_API_KEY_1`   | [AI Studio](https://aistudio.google.com/apikey)    | Primary Google Gemini Key     |
+| `VITE_GROQ_API_KEY`       | [Groq Console](https://console.groq.com/keys)      | Groq API access               |
+| `VITE_OPENROUTER_API_KEY` | [OpenRouter](https://openrouter.ai/keys)           | Access to DeepSeek and others |
+| `VITE_EXA_API_KEY`        | [Exa Dashboard](https://dashboard.exa.ai/api-keys) | Web search capability         |
 
-# Groq API Key (https://console.groq.com/keys)
-VITE_GROQ_API_KEY=your_key_here
+---
 
-# OpenRouter API Key (https://openrouter.ai/keys)
-VITE_OPENROUTER_API_KEY=your_key_here
+## 🏗️ Project Architecture
 
-# Exa Search API Key (https://dashboard.exa.ai/api-keys)
-VITE_EXA_API_KEY=your_key_here
-```
-
-## Project Structure
-
-```
+```text
 ├── components/
-│   ├── atoms/          # Basic UI components (buttons, inputs, icons)
-│   ├── molecules/      # Composite components (message bubbles, cards)
-│   ├── organisms/      # Complex components (sidebar, chat input)
-│   └── templates/      # Page layouts (chat interface)
-├── services/
-│   ├── geminiService.ts    # Google Gemini API integration
-│   ├── groqService.ts      # Groq/Kimi K2 API integration
-│   ├── openRouterService.ts # OpenRouter API integration
-│   ├── exaService.ts       # Exa web search API
-│   ├── modelConfig.ts      # Model capabilities configuration
-│   └── prompts.ts          # System prompts
-├── hooks/
-│   ├── useChatHistory.ts   # Chat persistence
-│   ├── useChatMessages.ts  # Message state management
-│   └── useStreamHandler.ts # Streaming response handler
-├── contexts/
-│   └── AuthContext.tsx     # Authentication state
-└── types.ts                # TypeScript interfaces
+│   ├── atoms/       # Foundation (buttons, inputs, icons)
+│   ├── molecules/   # Compounds (message bubbles, cards)
+│   ├── organisms/   # Complex structures (sidebar, input)
+│   └── templates/   # Full page layouts
+├── services/        # API integrations (Gemini, Groq, Exa)
+├── hooks/           # Logic & state management
+└── types.ts         # Global Type Definitions
 ```
 
-## Tech Stack
+---
 
-- **Framework**: React 19 with TypeScript
-- **Build Tool**: Vite 6
-- **Styling**: Tailwind CSS with custom claymorphism theme
-- **Animations**: Framer Motion
-- **Markdown**: react-markdown + flowtoken for animated streaming
-- **Math**: KaTeX via rehype-katex
-- **Document Parsing**: PDF.js, Mammoth (Word), SheetJS (Excel)
+## 📊 Model Matrix
 
-## Available Scripts
+| Model              | Provider   | Web Search | Thinking  | Multi-modal | Cost      |
+| :----------------- | :--------- | :--------- | :-------- | :---------- | :-------- |
+| **Gemini 3 Flash** | Google     | ✅ Exa     | ✅ Native | ✅          | Paid      |
+| **Gemini 3 Pro**   | Google     | ✅ Exa     | ✅ Native | ✅          | Paid      |
+| **Kimi K2**        | Groq       | ✅ Exa     | ✅ Tags   | ❌          | Free Tier |
+| **Compound**       | Groq       | ✅ Native  | ❌        | ❌          | Free Tier |
+| **DeepSeek V3.1**  | OpenRouter | ✅ Exa     | ✅ Tags   | ❌          | Free Tier |
 
-```bash
-npm run dev      # Start development server
-npm run build    # Build for production
-npm run preview  # Preview production build
-```
+---
 
-## Model Capabilities
+## 📜 Credits & License
 
-| Model | Provider | Tools | Thinking | Images | Free |
-|-------|----------|-------|----------|--------|------|
-| Gemini 3 Flash | Google | ✅ Exa | ✅ Native | ✅ | ❌ |
-| Gemini 3 Pro | Google | ✅ Exa | ✅ Native | ✅ | ❌ |
-| Kimi K2 | Groq | ✅ Exa | ✅ Tags | ❌ | ✅ |
-| Compound | Groq | ✅ Built-in | ❌ | ❌ | ✅ |
-| DeepSeek V3.1 | OpenRouter | ✅ Exa | ✅ Tags | ❌ | ✅ |
+> [!NOTE] > **Copyright © 2024 Alexandephilia**. All rights reserved.
+> Created and maintained by Alexandephilia.
 
-## License
-
-MIT
+This project is licensed under the **MIT License**.
