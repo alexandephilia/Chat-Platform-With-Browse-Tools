@@ -38,32 +38,36 @@
     <style>
         /* ========================================
            TTS HIGHLIGHT STYLES
-           CSS Custom Highlight API for karaoke-style
-           text highlighting during speech playback
+           Karaoke-style text highlighting during speech
            ======================================== */
 
-        /* CSS Custom Highlight API styles (modern browsers) */
-        ::highlight(tts-current-word) {
-            background-color: rgba(59, 130, 246, 0.3);
-            color: inherit;
+        /* TTS Highlight Overlay - replaces markdown during playback */
+        .tts-highlight-overlay {
+            font-family: var(--font-base) !important;
+            font-size: var(--text-chat) !important;
+            line-height: 1.75 !important;
+            color: var(--color-text-primary);
         }
 
-        ::highlight(tts-spoken-words) {
-            color: #94a3b8;
+        /* Individual word styling */
+        .tts-word {
+            display: inline;
+            transition: all 0.1s ease-out;
         }
 
-        /* Fallback styles for browsers without Highlight API */
-        .tts-word-highlight {
-            transition: background-color 0.08s ease, color 0.08s ease;
+        /* Currently spoken word - highlighted */
+        .tts-word-active {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.25) 0%, rgba(99, 102, 241, 0.2) 100%);
+            color: #1e40af;
+            border-radius: 3px;
+            padding: 1px 3px;
+            margin: 0 -1px;
+            font-weight: 600;
+            box-shadow: 0 1px 3px rgba(59, 130, 246, 0.15);
         }
 
-        .tts-word-highlight.tts-word-current {
-            background-color: rgba(59, 130, 246, 0.3);
-            border-radius: 2px;
-            padding: 0 1px;
-        }
-
-        .tts-word-highlight.tts-word-spoken {
+        /* Already spoken words - dimmed */
+        .tts-word-spoken {
             color: #94a3b8;
         }
 

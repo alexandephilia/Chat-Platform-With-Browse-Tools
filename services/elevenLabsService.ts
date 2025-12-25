@@ -623,6 +623,12 @@ export async function textToSpeechWithTimestamps(
 
     const data = await response.json();
 
+    console.log('[TTS Timestamps] Response keys:', Object.keys(data));
+    console.log('[TTS Timestamps] Alignment:', data.alignment ? 'present' : 'missing');
+    if (data.alignment) {
+        console.log('[TTS Timestamps] Characters count:', data.alignment.characters?.length || 0);
+    }
+
     // Convert base64 audio to blob
     const audioBytes = atob(data.audio_base64);
     const audioArray = new Uint8Array(audioBytes.length);
@@ -637,6 +643,11 @@ export async function textToSpeechWithTimestamps(
         data.alignment?.character_start_times_seconds || [],
         data.alignment?.character_end_times_seconds || []
     );
+
+    console.log('[TTS Timestamps] Parsed word timings:', wordTimings.length);
+    if (wordTimings.length > 0) {
+        console.log('[TTS Timestamps] First 3 words:', wordTimings.slice(0, 3));
+    }
 
     return {
         audioBlob,
