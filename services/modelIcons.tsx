@@ -10,7 +10,6 @@
 
 import {
     DeepSeek,
-    Gemini,
     Google,
     Groq,
     Kimi,
@@ -18,7 +17,7 @@ import {
     Moonshot,
     NousResearch,
     OpenRouter,
-    ZAI,
+    ZAI
 } from '@lobehub/icons';
 import React from 'react';
 
@@ -28,8 +27,16 @@ const DEFAULT_SIZE = 32;
 // Model Icons as React components
 // Using .Color where available, .Avatar for avatar style, base for mono
 export const ModelIconComponents = {
-    // Gemini - using .Avatar variant
-    Gemini: (size: number) => <Gemini.Avatar size={size} />,
+    // Gemini - using static PNG for the official colored logo (scaled up for better visibility in picker)
+    Gemini: (size: number) => (
+        <img
+            src="https://registry.npmmirror.com/@lobehub/icons-static-png/latest/files/dark/gemini-color.png"
+            alt="Gemini"
+            width={size * 1.3}
+            height={size * 1.3}
+            style={{ objectFit: 'contain' }}
+        />
+    ),
     // Kimi - has .Color variant (dedicated Kimi icon)
     Kimi: (size: number) => <Kimi.Color size={size} />,
     // Groq - has .Avatar variant
