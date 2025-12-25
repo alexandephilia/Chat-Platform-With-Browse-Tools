@@ -5,8 +5,8 @@
  * API Docs: https://elevenlabs.io/docs/api-reference/text-to-speech
  */
 
-const ELEVENLABS_API_KEY = import.meta.env.VITE_ELEVENLABS_API_KEY;
-const ELEVENLABS_TTS_URL = 'https://api.elevenlabs.io/v1/text-to-speech';
+// API key is now server-side only (in Vercel env vars)
+const TTS_PROXY_URL = '/api/elevenlabs-tts';
 
 // Pre-made voices available on free tier (no cloning needed)
 // Zeta V1 uses original human names, Zeta V2 uses sci-fi themed names
@@ -200,9 +200,11 @@ let currentAudioUrl: string | null = null;
 
 /**
  * Check if ElevenLabs API is configured
+ * Note: This now always returns true since the key is server-side.
+ * Actual availability is checked when making requests.
  */
 export function isElevenLabsConfigured(): boolean {
-    return !!ELEVENLABS_API_KEY;
+    return true; // Key is server-side now
 }
 
 /**
@@ -238,7 +240,7 @@ function stripMarkdown(text: string): string {
 }
 
 /**
- * Convert text to speech using ElevenLabs API
+ * Convert text to speech using ElevenLabs API (via server proxy)
  * @param text - Text to convert (markdown will be stripped)
  * @param options - TTS options
  * @returns Audio blob
@@ -247,10 +249,6 @@ export async function textToSpeech(
     text: string,
     options: TTSOptions = {}
 ): Promise<Blob> {
-    if (!ELEVENLABS_API_KEY) {
-        throw new Error('ElevenLabs API key not configured. Add VITE_ELEVENLABS_API_KEY to your .env file.');
-    }
-
     const {
         voiceKey = getSelectedVoice(),
         modelKey = getSelectedTTSModel(),
@@ -290,21 +288,28 @@ export async function textToSpeech(
         voiceSettings.use_speaker_boost = useSpeakerBoost;
     }
 
-    const response = await fetch(`${ELEVENLABS_TTS_URL}/${voiceId}`, {
+    // Call server-side proxy instead of ElevenLabs directly
+    const response = await fetch(TTS_PROXY_URL, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'xi-api-key': ELEVENLABS_API_KEY,
         },
         body: JSON.stringify({
+            voiceId,
             text: truncatedText,
-            model_id: modelId,
-            voice_settings: voiceSettings,
+            modelId,
+            voiceSettings,
         }),
     });
 
     if (!response.ok) {
-        const errorText = await response.text();
+        let errorMessage = `TTS failed: ${response.status}`;
+        try {
+            const errorData = await response.json();
+            errorMessage = errorData.error || errorMessage;
+        } catch {
+            // Response wasn't JSON, use status text
+        }
 
         if (response.status === 401) {
             throw new Error('Invalid ElevenLabs API key');
@@ -312,8 +317,11 @@ export async function textToSpeech(
         if (response.status === 429) {
             throw new Error('ElevenLabs rate limit exceeded. Try again later or upgrade your plan.');
         }
+        if (response.status === 500 && errorMessage.includes('not configured')) {
+            throw new Error('ElevenLabs API key not configured on server.');
+        }
 
-        throw new Error(`ElevenLabs TTS failed: ${response.status} - ${errorText}`);
+        throw new Error(errorMessage);
     }
 
     return response.blob();
