@@ -241,7 +241,7 @@ const ModelPicker: React.FC<ModelPickerProps> = ({
                     />
                 </div>
 
-                <span className={`font-medium text-slate-600 leading-tight truncate ${isSmall ? 'text-[9px] max-w-[60px]' : 'text-[10px] max-w-[80px]'}`}>
+                <span className={`font-medium text-slate-600 leading-tight truncate ${isSmall ? 'text-[9px] max-w-[90px]' : 'text-[10px] max-w-[110px]'}`}>
                     {selectedModel.name}
                 </span>
 

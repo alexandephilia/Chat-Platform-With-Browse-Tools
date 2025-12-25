@@ -462,7 +462,7 @@ const VoicePicker: React.FC<VoicePickerProps> = ({
                             {/* Voice Submenu (Second Level) */}
                             {activeModel && (
                                 <motion.div
-                                    key={`voice-submenu-${activeModel}`}
+                                    key="voice-submenu"
                                     initial={{ opacity: 0, x: -8 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     exit={{ opacity: 0, x: -8 }}
@@ -626,8 +626,8 @@ const VoiceOption = memo(({
             </div>
 
             {isSelected && (
-                <div className="w-3.5 h-3.5 flex items-center justify-center rounded-full bg-gradient-to-br from-blue-100 to-blue-300 shadow-[inset_0_1px_2px_rgba(255,255,255,0.3),0_1px_3px_rgba(147,197,253,0.4),0_0.5px_1px_rgba(147,197,253,0.6)] opacity-90">
-                    <Check size={8} className="text-white drop-shadow-[0_0.8px_1px_rgba(0,0,0,0.4)]" strokeWidth={3} />
+                <div className="w-3.5 h-3.5 flex items-center justify-center rounded-full bg-gradient-to-br from-blue-400 to-blue-600 shadow-[inset_0_1px_2px_rgba(255,255,255,0.2),0_1px_3px_rgba(37,99,235,0.5),0_0.5px_1px_rgba(37,99,235,0.6)]">
+                    <Check size={8} className="text-white drop-shadow-[0_0.8px_1px_rgba(0,0,0,0.5)]" strokeWidth={3} />
                 </div>
             )}
         </button>
