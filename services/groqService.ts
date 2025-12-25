@@ -12,8 +12,27 @@ import { ExaCategory, exaGetContents, exaSearch } from './exaService';
 import { getDefaultPrompt, getReasoningPrompt, getSearchPrompt } from './prompts';
 import { OPENAI_TOOLS } from './tools';
 
-const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY;
-const GROQ_BASE_URL = 'https://api.groq.com/openai/v1';
+const GROQ_API_KEYS = [
+    import.meta.env.VITE_GROQ_API_KEY_1,
+    import.meta.env.VITE_GROQ_API_KEY_2,
+    import.meta.env.VITE_GROQ_API_KEY_3,
+].filter(Boolean) as string[];
+
+const GROQ_BASE_URL = import.meta.env.VITE_GROQ_BASE_URL || 'https://api.groq.com/openai/v1';
+
+let currentKeyIndex = 0;
+
+function getNextApiKey(): string {
+    if (GROQ_API_KEYS.length === 0) {
+        throw new Error('No Groq API keys configured');
+    }
+    const key = GROQ_API_KEYS[currentKeyIndex];
+    currentKeyIndex = (currentKeyIndex + 1) % GROQ_API_KEYS.length;
+    console.log(`[Groq] Rotating to API key index: ${currentKeyIndex === 0 ? GROQ_API_KEYS.length - 1 : currentKeyIndex - 1}`);
+    return key;
+}
+
+const MAX_RETRIES = Math.max(GROQ_API_KEYS.length, 1);
 
 /**
  * Check if model is a Groq Compound model (has built-in tools)
@@ -345,136 +364,159 @@ Be detailed, informative, and engaging.`
     // Tool call ID - will only be used if model actually uses tools
     const toolCallId = `compound_search_${Date.now()}`;
 
-    try {
-        // Build request with compound_custom tools configuration
-        const enabledTools = getCompoundEnabledTools(modelId);
-        const requestBody: any = {
-            model: modelId,
-            messages,
-            stream: false, // Use non-streaming to get executed_tools reliably
-            max_completion_tokens: 8192,
-            temperature: 0.6,
-        };
+    let lastError: Error | null = null;
 
-        // Only add compound_custom if tools are enabled
-        if (enableTools) {
-            requestBody.compound_custom = {
-                tools: {
-                    enabled_tools: enabledTools
-                }
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+        try {
+            // Build request with compound_custom tools configuration
+            const enabledTools = getCompoundEnabledTools(modelId);
+            const requestBody: any = {
+                model: modelId,
+                messages,
+                stream: false, // Use non-streaming to get executed_tools reliably
+                max_completion_tokens: 8192,
+                temperature: 0.6,
             };
-        }
 
-        console.log(`[Groq Compound] Using model: ${modelId}, enabled tools:`, enabledTools);
+            // Only add compound_custom if tools are enabled
+            if (enableTools) {
+                requestBody.compound_custom = {
+                    tools: {
+                        enabled_tools: enabledTools
+                    }
+                };
+            }
 
-        const response = await fetch(`${GROQ_BASE_URL}/chat/completions`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${GROQ_API_KEY}`,
-                'Content-Type': 'application/json',
-                'Groq-Model-Version': 'latest',
-            },
-            body: JSON.stringify(requestBody),
-        });
+            console.log(`[Groq Compound] Using model: ${modelId}, enabled tools:`, enabledTools);
 
-        if (!response.ok) {
-            const error = await response.text();
-            throw new Error(`Groq API error: ${response.status} - ${error}`);
-        }
+            const response = await fetch(`${GROQ_BASE_URL}/chat/completions`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${getNextApiKey()}`,
+                    'Content-Type': 'application/json',
+                    'Groq-Model-Version': 'latest',
+                },
+                body: JSON.stringify(requestBody),
+            });
 
-        const data = await response.json();
-        const message = data.choices?.[0]?.message;
+            if (!response.ok) {
+                const error = await response.text();
+                const errorMsg = `Groq API error: ${response.status} - ${error}`;
 
-        if (!message) {
-            throw new Error('No message in response');
-        }
+                // Check if rate limited - try next key
+                if (response.status === 429 || error.includes('rate') || error.includes('quota')) {
+                    console.log(`[Groq Compound] Rate limited on attempt ${attempt + 1}/${MAX_RETRIES}, trying next key...`);
+                    lastError = new Error(errorMsg);
+                    continue;
+                }
+                throw new Error(errorMsg);
+            }
 
-        // Extract executed_tools from the response
-        const executedTools = message.executed_tools || [];
-        console.log('[Groq Compound] Executed tools:', executedTools.length);
+            const data = await response.json();
+            const message = data.choices?.[0]?.message;
 
-        // Build search results from executed_tools
-        let searchResults: any[] = [];
-        if (executedTools.length > 0) {
-            for (const tool of executedTools) {
-                console.log('[Groq Compound] Tool executed:', tool.type, tool.arguments);
+            if (!message) {
+                throw new Error('No message in response');
+            }
 
-                // Parse search results from tool output
-                if (tool.output) {
-                    // Try to extract URLs and titles from the output
-                    const urlMatches = tool.output.match(/URL:\s*(https?:\/\/[^\s\n]+)/gi) || [];
-                    const titleMatches = tool.output.match(/Title:\s*([^\n]+)/gi) || [];
+            // Extract executed_tools from the response
+            const executedTools = message.executed_tools || [];
+            console.log('[Groq Compound] Executed tools:', executedTools.length);
 
-                    for (let i = 0; i < Math.max(urlMatches.length, titleMatches.length); i++) {
-                        const url = urlMatches[i]?.replace(/^URL:\s*/i, '').trim();
-                        const title = titleMatches[i]?.replace(/^Title:\s*/i, '').trim() || 'Source';
-                        if (url) {
-                            searchResults.push({ title, url, text: '' });
+            // Build search results from executed_tools
+            let searchResults: any[] = [];
+            if (executedTools.length > 0) {
+                for (const tool of executedTools) {
+                    console.log('[Groq Compound] Tool executed:', tool.type, tool.arguments);
+
+                    // Parse search results from tool output
+                    if (tool.output) {
+                        // Try to extract URLs and titles from the output
+                        const urlMatches = tool.output.match(/URL:\s*(https?:\/\/[^\s\n]+)/gi) || [];
+                        const titleMatches = tool.output.match(/Title:\s*([^\n]+)/gi) || [];
+
+                        for (let i = 0; i < Math.max(urlMatches.length, titleMatches.length); i++) {
+                            const url = urlMatches[i]?.replace(/^URL:\s*/i, '').trim();
+                            const title = titleMatches[i]?.replace(/^Title:\s*/i, '').trim() || 'Source';
+                            if (url) {
+                                searchResults.push({ title, url, text: '' });
+                            }
+                        }
+                    }
+
+                    // Also check for search_results structure
+                    if (tool.search_results?.results) {
+                        for (const result of tool.search_results.results) {
+                            searchResults.push({
+                                title: result.title || 'Untitled',
+                                url: result.url,
+                                text: result.content || '',
+                                score: result.score,
+                            });
                         }
                     }
                 }
-
-                // Also check for search_results structure
-                if (tool.search_results?.results) {
-                    for (const result of tool.search_results.results) {
-                        searchResults.push({
-                            title: result.title || 'Untitled',
-                            url: result.url,
-                            text: result.content || '',
-                            score: result.score,
-                        });
-                    }
-                }
             }
-        }
 
-        // Emit tool call events if tools were used
-        if (enableTools && searchResults.length > 0) {
-            const toolName = isFullCompoundModel(modelId) ? 'compound_tools' : 'web_search';
-            yield {
-                type: 'tool_call_start',
-                toolCall: {
+            // Emit tool call events if tools were used
+            if (enableTools && searchResults.length > 0) {
+                const toolName = isFullCompoundModel(modelId) ? 'compound_tools' : 'web_search';
+                yield {
+                    type: 'tool_call_start',
+                    toolCall: {
+                        id: toolCallId,
+                        name: toolName,
+                        args: { query: prompt.slice(0, 100) },
+                        status: 'completed',
+                        startedAt: new Date(),
+                    }
+                };
+
+                yield {
+                    type: 'tool_call_update',
                     id: toolCallId,
-                    name: toolName,
-                    args: { query: prompt.slice(0, 100) },
                     status: 'completed',
-                    startedAt: new Date(),
-                }
-            };
+                    result: { results: searchResults }
+                };
+            }
 
-            yield {
-                type: 'tool_call_update',
-                id: toolCallId,
-                status: 'completed',
-                result: { results: searchResults }
-            };
+            // Process and stream the content
+            let content = message.content || '';
+
+            // Convert 【】 citations to markdown format
+            content = content.replace(/【([^】]+?),\s*URL:\s*(https?:\/\/[^\s】]+)】/gi, (_: string, title: string, url: string) => {
+                return `[${title.replace(/^Title:\s*/i, '')}](${url})`;
+            });
+            content = content.replace(/【([^】]+)】\((https?:\/\/[^\s\)]+)\)/gi, '[$1]($2)');
+            content = content.replace(/【([^】]+)】/g, '[$1]');
+
+            // Simulate streaming by chunking the response
+            const chunkSize = 20; // Characters per chunk
+            for (let i = 0; i < content.length; i += chunkSize) {
+                const chunk = content.slice(i, i + chunkSize);
+                yield { type: 'text', content: chunk };
+                // Small delay to simulate streaming feel
+                await new Promise(resolve => setTimeout(resolve, 5));
+            }
+
+            yield { type: 'done' };
+            return;
+
+        } catch (error) {
+            lastError = error as Error;
+            console.error(`[Groq Compound] API Error on attempt ${attempt + 1}/${MAX_RETRIES}:`, error);
+
+            const errorMessage = String(error);
+            if (errorMessage.includes('429') || errorMessage.includes('rate') || errorMessage.includes('quota')) {
+                console.log(`[Groq Compound] Rate limited, trying next API key...`);
+                continue;
+            }
+            throw error;
         }
-
-        // Process and stream the content
-        let content = message.content || '';
-
-        // Convert 【】 citations to markdown format
-        content = content.replace(/【([^】]+?),\s*URL:\s*(https?:\/\/[^\s】]+)】/gi, (_, title: string, url: string) => {
-            return `[${title.replace(/^Title:\s*/i, '')}](${url})`;
-        });
-        content = content.replace(/【([^】]+)】\((https?:\/\/[^\s\)]+)\)/gi, '[$1]($2)');
-        content = content.replace(/【([^】]+)】/g, '[$1]');
-
-        // Simulate streaming by chunking the response
-        const chunkSize = 20; // Characters per chunk
-        for (let i = 0; i < content.length; i += chunkSize) {
-            const chunk = content.slice(i, i + chunkSize);
-            yield { type: 'text', content: chunk };
-            // Small delay to simulate streaming feel
-            await new Promise(resolve => setTimeout(resolve, 5));
-        }
-
-    } catch (error) {
-        console.error('[Groq Compound] API Error:', error);
-        throw error;
     }
 
-    yield { type: 'done' };
+    console.error('[Groq Compound] All API keys exhausted');
+    throw lastError || new Error('All Groq API keys failed');
 }
 
 
@@ -540,7 +582,11 @@ export async function* sendMessageToGroqStreamWithTools(
     let continueLoop = true;
     let isFirstIteration = true;
 
-    while (continueLoop) {
+    let lastError: Error | null = null;
+    let retryCount = 0;
+
+    while (continueLoop || retryCount === 0) {
+        if (!continueLoop && retryCount > 0) break; // Exit if not continuing and already tried
         continueLoop = false;
 
         try {
@@ -565,7 +611,7 @@ export async function* sendMessageToGroqStreamWithTools(
             const response = await fetch(`${GROQ_BASE_URL}/chat/completions`, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${GROQ_API_KEY}`,
+                    'Authorization': `Bearer ${getNextApiKey()}`,
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(requestBody),
@@ -574,6 +620,11 @@ export async function* sendMessageToGroqStreamWithTools(
             if (!response.ok) {
                 const error = await response.text();
                 console.error('[Groq/Kimi] API error:', response.status, error);
+
+                // Check if rate limited - throw specific error for retry handling
+                if (response.status === 429 || error.includes('rate') || error.includes('quota')) {
+                    throw new Error(`RATE_LIMITED: ${response.status} - ${error}`);
+                }
                 throw new Error(`Groq API error: ${response.status} - ${error}`);
             }
 
@@ -831,6 +882,21 @@ export async function* sendMessageToGroqStreamWithTools(
                 console.log('[Groq/Kimi] Tool calls processed, continuing loop for model response. Messages:', messages.length);
             }
         } catch (error) {
+            lastError = error as Error;
+            const errorMessage = String(error);
+
+            // Check if rate limited - try next key
+            if (errorMessage.includes('RATE_LIMITED') || errorMessage.includes('429') || errorMessage.includes('rate') || errorMessage.includes('quota')) {
+                retryCount++;
+                if (retryCount < MAX_RETRIES) {
+                    console.log(`[Groq/Kimi] Rate limited on attempt ${retryCount}/${MAX_RETRIES}, trying next key...`);
+                    continueLoop = true; // Force another iteration
+                    continue;
+                }
+                console.error('[Groq/Kimi] All API keys exhausted');
+                throw lastError;
+            }
+
             console.error('[Groq] API Error:', error);
             throw error;
         }
