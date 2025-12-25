@@ -287,6 +287,10 @@ const VoicePicker: React.FC<VoicePickerProps> = ({
     }, []);
 
     const handleSubmenuMouseLeave = useCallback(() => {
+        // Don't auto-close on touch devices (causes accidental closure)
+        const isTouch = window.matchMedia('(pointer: coarse)').matches;
+        if (isTouch) return;
+
         closeTimeoutRef.current = setTimeout(() => {
             setActiveModel(null);
         }, 100);
@@ -300,6 +304,9 @@ const VoicePicker: React.FC<VoicePickerProps> = ({
     }, []);
 
     const handleModelMouseEnter = useCallback((modelKey: TTSModelKey) => {
+        const isTouch = window.matchMedia('(pointer: coarse)').matches;
+        if (isTouch) return; // Prevent hover side effects on mobile
+
         if (closeTimeoutRef.current) {
             clearTimeout(closeTimeoutRef.current);
             closeTimeoutRef.current = null;
