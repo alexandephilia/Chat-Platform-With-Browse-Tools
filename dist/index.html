@@ -38,37 +38,28 @@
     <style>
         /* ========================================
            TTS HIGHLIGHT STYLES
-           Karaoke-style text highlighting during speech
+           Karaoke-style highlighting on RENDERED markdown
+           Words are wrapped in spans during TTS playback
            ======================================== */
 
-        /* TTS Highlight Overlay - replaces markdown during playback */
-        .tts-highlight-overlay {
-            font-family: var(--font-base) !important;
-            font-size: var(--text-chat) !important;
-            line-height: 1.75 !important;
-            color: var(--color-text-primary);
-        }
-
-        /* Individual word styling */
+        /* Base word span - invisible by default */
         .tts-word {
-            display: inline;
-            transition: all 0.1s ease-out;
+            transition: background-color 0.08s ease-out, color 0.15s ease-out;
+            border-radius: 2px;
         }
 
         /* Currently spoken word - highlighted */
-        .tts-word-active {
-            background: linear-gradient(135deg, rgba(59, 130, 246, 0.25) 0%, rgba(99, 102, 241, 0.2) 100%);
-            color: #1e40af;
-            border-radius: 3px;
-            padding: 1px 3px;
-            margin: 0 -1px;
-            font-weight: 600;
-            box-shadow: 0 1px 3px rgba(59, 130, 246, 0.15);
+        .tts-word.tts-word-active {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.3) 0%, rgba(99, 102, 241, 0.25) 100%);
+            color: #1e40af !important;
+            padding: 0 2px;
+            margin: 0 -2px;
+            box-shadow: 0 1px 3px rgba(59, 130, 246, 0.2);
         }
 
         /* Already spoken words - dimmed */
-        .tts-word-spoken {
-            color: #94a3b8;
+        .tts-word.tts-word-spoken {
+            color: #94a3b8 !important;
         }
 
         /* ========================================
@@ -1678,7 +1669,7 @@
         }
       }
     </script>
-  <script type="module" crossorigin src="/assets/index-DmmIw2fs.js"></script>
+  <script type="module" crossorigin src="/assets/index-CTC5JfvS.js"></script>
   <link rel="stylesheet" crossorigin href="/assets/index-CChzf3nS.css">
 </head>
 

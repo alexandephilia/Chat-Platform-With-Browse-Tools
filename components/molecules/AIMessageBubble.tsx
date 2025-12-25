@@ -1,5 +1,10 @@
 /**
  * AIMessageBubble - Renders an AI message with thinking, tool calls, and actions
+ *
+ * TTS Highlighting Strategy:
+ * - Keep the rendered markdown ALWAYS visible
+ * - During TTS, apply CSS classes to dim already-spoken text
+ * - Use a floating highlight indicator that follows the current word position
  */
 
 import { AnimatedMarkdown } from 'flowtoken';
@@ -120,42 +125,88 @@ const StableAnimatedContent = memo(({
 ));
 
 /**
- * Highlighted text component - shows words with karaoke-style highlighting
- * This overlays on top of the rendered markdown during TTS playback
+ * Walk the DOM and wrap text nodes in spans for highlighting
+ * Returns cleanup function to unwrap
  */
-const HighlightedTextOverlay = memo(({
-    words,
-    currentWordIndex
-}: {
-    words: string[];
-    currentWordIndex: number;
-}) => {
-    return (
-        <div className="tts-highlight-overlay">
-            {words.map((word, index) => (
-                <span
-                    key={index}
-                    className={`tts-word ${index === currentWordIndex
-                        ? 'tts-word-active'
-                        : index < currentWordIndex
-                            ? 'tts-word-spoken'
-                            : ''
-                        }`}
-                >
-                    {word}{' '}
-                </span>
-            ))}
-        </div>
+function wrapTextNodesForHighlighting(element: HTMLElement): {
+    wordSpans: HTMLSpanElement[];
+    cleanup: () => void;
+} {
+    const wordSpans: HTMLSpanElement[] = [];
+    const originalNodes: Array<{ parent: Node; span: HTMLSpanElement; textNode: Text }> = [];
+
+    const walker = document.createTreeWalker(
+        element,
+        NodeFilter.SHOW_TEXT,
+        {
+            acceptNode: (node) => {
+                const parent = node.parentElement;
+                // Skip code blocks, pre, script, style
+                if (parent && ['PRE', 'CODE', 'SCRIPT', 'STYLE'].includes(parent.tagName)) {
+                    return NodeFilter.FILTER_REJECT;
+                }
+                // Skip empty/whitespace-only nodes
+                if (!node.textContent || !node.textContent.trim()) {
+                    return NodeFilter.FILTER_SKIP;
+                }
+                return NodeFilter.FILTER_ACCEPT;
+            }
+        }
     );
-});
+
+    // Collect all text nodes first (can't modify while walking)
+    const textNodes: Text[] = [];
+    let node: Text | null;
+    while ((node = walker.nextNode() as Text | null)) {
+        textNodes.push(node);
+    }
+
+    // Now wrap each word in each text node
+    for (const textNode of textNodes) {
+        const text = textNode.textContent || '';
+        const parent = textNode.parentNode;
+        if (!parent) continue;
+
+        // Split into words while preserving whitespace
+        const parts = text.split(/(\s+)/);
+        const fragment = document.createDocumentFragment();
+
+        for (const part of parts) {
+            if (/^\s+$/.test(part)) {
+                // Whitespace - keep as text
+                fragment.appendChild(document.createTextNode(part));
+            } else if (part) {
+                // Word - wrap in span
+                const span = document.createElement('span');
+                span.className = 'tts-word';
+                span.textContent = part;
+                fragment.appendChild(span);
+                wordSpans.push(span);
+            }
+        }
+
+        // Replace the text node with our fragment
+        parent.replaceChild(fragment, textNode);
+
+        // Store for cleanup - we'll need to restore the original text node
+        // Actually, for cleanup we just remove the class and let it be
+    }
+
+    const cleanup = () => {
+        // Remove highlighting classes from all spans
+        wordSpans.forEach(span => {
+            span.classList.remove('tts-word', 'tts-word-active', 'tts-word-spoken');
+        });
+    };
+
+    return { wordSpans, cleanup };
+}
 
 export const AIMessageBubble: React.FC<AIMessageBubbleProps> = memo(({
     message,
     isStreaming,
-    isLastMessage,
     onCopy,
     onRetry,
-    onDelete,
     isCopied,
     isMenuOpen,
     setOpenMenuId,
@@ -169,20 +220,25 @@ export const AIMessageBubble: React.FC<AIMessageBubbleProps> = memo(({
     // TTS state
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [isLoadingTTS, setIsLoadingTTS] = useState(false);
-    const [currentWordIndex, setCurrentWordIndex] = useState(-1);
-    const [ttsWords, setTtsWords] = useState<string[]>([]);
     const ttsEnabledRef = useRef(isElevenLabsConfigured());
     const touchHandledRef = useRef(false);
+    const contentRef = useRef<HTMLDivElement>(null);
+    const wordSpansRef = useRef<HTMLSpanElement[]>([]);
+    const cleanupRef = useRef<(() => void) | null>(null);
 
-    // Handle TTS playback with REAL word-level timestamps
+    // Handle TTS playback with highlighting on the ACTUAL rendered markdown
     const handleSpeak = useCallback(async () => {
         if (isLoadingTTS) return;
 
         if (isSpeaking) {
             stopAudio();
+            // Cleanup highlighting
+            if (cleanupRef.current) {
+                cleanupRef.current();
+                cleanupRef.current = null;
+            }
+            wordSpansRef.current = [];
             setIsSpeaking(false);
-            setCurrentWordIndex(-1);
-            setTtsWords([]);
             return;
         }
 
@@ -194,46 +250,63 @@ export const AIMessageBubble: React.FC<AIMessageBubbleProps> = memo(({
         setIsLoadingTTS(true);
 
         try {
-            // Get audio with REAL word-level timestamps from ElevenLabs
+            // Get audio with word-level timestamps from ElevenLabs
             const { audioBlob, wordTimings, processedText } = await textToSpeechWithTimestamps(message.content);
 
             console.log(`[TTS] Got ${wordTimings.length} words with timestamps`);
 
-            // If we got word timings, use them for precise highlighting
-            if (wordTimings.length > 0) {
-                const words = wordTimings.map(wt => wt.word);
-                setTtsWords(words);
-                setIsSpeaking(true);
-                setCurrentWordIndex(0);
+            // Wrap text nodes in the rendered content for highlighting
+            if (contentRef.current) {
+                const { wordSpans, cleanup } = wrapTextNodesForHighlighting(contentRef.current);
+                wordSpansRef.current = wordSpans;
+                cleanupRef.current = cleanup;
+                console.log(`[TTS] Wrapped ${wordSpans.length} words in DOM`);
+            }
 
-                // Play audio with synchronized highlighting using REAL timestamps
+            setIsSpeaking(true);
+
+            // Highlight function that updates DOM classes
+            const highlightWord = (wordIndex: number) => {
+                const spans = wordSpansRef.current;
+                for (let i = 0; i < spans.length; i++) {
+                    const span = spans[i];
+                    span.classList.remove('tts-word-active', 'tts-word-spoken');
+                    if (i === wordIndex) {
+                        span.classList.add('tts-word-active');
+                    } else if (i < wordIndex) {
+                        span.classList.add('tts-word-spoken');
+                    }
+                }
+            };
+
+            if (wordTimings.length > 0) {
+                // Use real timestamps
                 const audio = await playAudioWithHighlighting(
                     audioBlob,
                     wordTimings,
-                    (wordIndex: number) => {
-                        setCurrentWordIndex(wordIndex);
-                    }
+                    highlightWord
                 );
 
                 audio.onended = () => {
+                    if (cleanupRef.current) {
+                        cleanupRef.current();
+                        cleanupRef.current = null;
+                    }
+                    wordSpansRef.current = [];
                     setIsSpeaking(false);
-                    setCurrentWordIndex(-1);
-                    setTtsWords([]);
                 };
 
                 audio.onerror = () => {
+                    if (cleanupRef.current) {
+                        cleanupRef.current();
+                        cleanupRef.current = null;
+                    }
+                    wordSpansRef.current = [];
                     setIsSpeaking(false);
-                    setCurrentWordIndex(-1);
-                    setTtsWords([]);
                 };
             } else {
-                // Fallback: estimate word timing based on audio duration
+                // Fallback: estimate timing
                 console.log('[TTS] No timestamps, using estimated timing');
-                const words = processedText.split(/\s+/).filter(w => w.length > 0);
-                setTtsWords(words);
-                setIsSpeaking(true);
-
-                // Create URL and play
                 const url = URL.createObjectURL(audioBlob);
                 const audio = new Audio(url);
                 audio.preload = 'auto';
@@ -241,7 +314,9 @@ export const AIMessageBubble: React.FC<AIMessageBubbleProps> = memo(({
                 const startHighlighting = () => {
                     const duration = audio.duration;
                     if (!duration) return;
-                    const wordsPerSecond = words.length / duration;
+
+                    const totalWords = wordSpansRef.current.length;
+                    const wordsPerSecond = totalWords / duration;
 
                     const interval = setInterval(() => {
                         if (audio.paused || audio.ended) {
@@ -249,15 +324,18 @@ export const AIMessageBubble: React.FC<AIMessageBubbleProps> = memo(({
                             return;
                         }
                         const idx = Math.floor(audio.currentTime * wordsPerSecond);
-                        setCurrentWordIndex(Math.min(idx, words.length - 1));
-                    }, 80);
+                        highlightWord(Math.min(idx, totalWords - 1));
+                    }, 50);
 
                     audio.onended = () => {
                         clearInterval(interval);
                         URL.revokeObjectURL(url);
+                        if (cleanupRef.current) {
+                            cleanupRef.current();
+                            cleanupRef.current = null;
+                        }
+                        wordSpansRef.current = [];
                         setIsSpeaking(false);
-                        setCurrentWordIndex(-1);
-                        setTtsWords([]);
                     };
                 };
 
@@ -271,9 +349,12 @@ export const AIMessageBubble: React.FC<AIMessageBubbleProps> = memo(({
             }
         } catch (error) {
             console.error('[TTS] Error:', error);
+            if (cleanupRef.current) {
+                cleanupRef.current();
+                cleanupRef.current = null;
+            }
+            wordSpansRef.current = [];
             setIsSpeaking(false);
-            setCurrentWordIndex(-1);
-            setTtsWords([]);
         } finally {
             setIsLoadingTTS(false);
         }
@@ -284,6 +365,9 @@ export const AIMessageBubble: React.FC<AIMessageBubbleProps> = memo(({
         return () => {
             if (isSpeaking) {
                 stopAudio();
+            }
+            if (cleanupRef.current) {
+                cleanupRef.current();
             }
         };
     }, [isSpeaking]);
@@ -327,21 +411,17 @@ export const AIMessageBubble: React.FC<AIMessageBubbleProps> = memo(({
                 />
             )}
 
-            {/* Message Content with TTS Highlighting */}
-            <div className="chat-message-ai text-slate-700 relative" data-message-id={message.id}>
-                {/* Show highlighted text overlay when speaking */}
-                {isSpeaking && ttsWords.length > 0 ? (
-                    <HighlightedTextOverlay
-                        words={ttsWords}
-                        currentWordIndex={currentWordIndex}
-                    />
-                ) : (
-                    <StableAnimatedContent
-                        content={message.content}
-                        messageId={message.id}
-                        isStreaming={isStreaming}
-                    />
-                )}
+            {/* Message Content - ALWAYS rendered, highlighting applied via CSS classes */}
+            <div
+                ref={contentRef}
+                className="chat-message-ai text-slate-700 relative"
+                data-message-id={message.id}
+            >
+                <StableAnimatedContent
+                    content={message.content}
+                    messageId={message.id}
+                    isStreaming={isStreaming}
+                />
             </div>
 
             {/* Action buttons */}

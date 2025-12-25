@@ -355,10 +355,80 @@ function stripMarkdown(text: string, keepAudioTags: boolean = false): string {
 }
 
 /**
+ * Add natural pauses for ElevenLabs V3 using ellipses and punctuation
+ * 
+ * V3 does NOT support SSML <break> tags. Instead, use:
+ * - Ellipses (…) for pauses and dramatic weight
+ * - Standard punctuation for natural rhythm
+ * - Line breaks for longer pauses
+ * 
+ * @see https://elevenlabs.io/docs/overview/capabilities/text-to-speech/best-practices#prompting-eleven-v3-alpha
+ */
+function addNaturalPauses(text: string): string {
+    let result = text
+        // Add pause after transitional phrases
+        .replace(/\. (But|However|Nevertheless|Meanwhile|Anyway|Still|Yet|So|Then|Now|Actually|Basically|Essentially|Importantly|Interestingly)/g, '. … $1')
+        // Add pause after question marks when continuing (rhetorical/dramatic questions)
+        .replace(/\? (And|But|So|Well|Because)/g, '? … $1')
+        // Add emphasis pause before important words
+        .replace(/(most importantly|the key (is|point)|here's the thing|the truth is|in fact|to be honest|frankly)/gi, '… $1')
+        // Add pause after lists intro
+        .replace(/(:)\s*(First|1\.|Here)/gi, '$1 … $2')
+        // Add pause for dramatic reveals
+        .replace(/(turns out|it appears|surprisingly|unexpectedly|remarkably)/gi, '… $1')
+        // Add hesitation-style pause for thinking phrases
+        .replace(/(I think|I believe|In my opinion|From my perspective)/gi, '$1 …')
+        // Clean up any double ellipses that may have been created
+        .replace(/…\s*…/g, '…')
+        // Ensure ellipses are the proper character (not three dots)
+        .replace(/\.\.\.(?!\.)/g, '…')
+        // Add pause between major sections (double newlines)
+        .replace(/\n\n/g, '\n… \n');
+    
+    return result;
+}
+
+/**
+ * Add emphasis through capitalization for key words
+ * V3 responds to CAPITALIZATION for emphasis
+ * 
+ * @see https://elevenlabs.io/docs/overview/capabilities/text-to-speech/best-practices#punctuation
+ */
+function addEmphasisCapitalization(text: string): string {
+    // List of emphasis words that should be capitalized for vocal emphasis
+    const emphasisPatterns = [
+        // Superlatives and intensifiers
+        { pattern: /\b(very|really|extremely|incredibly|absolutely|completely|totally)\b/gi, replacement: (m: string) => m.toUpperCase() },
+        // Important/key words when preceded by qualifiers
+        { pattern: /\b(most important|key point|crucial|critical|essential|vital)\b/gi, replacement: (m: string) => m.toUpperCase() },
+        // Strong negatives
+        { pattern: /\b(never|always|must|cannot|won't|definitely|certainly)\b/gi, replacement: (m: string) => m.toUpperCase() },
+        // Action words
+        { pattern: /\b(now|today|immediately|right now)\b/gi, replacement: (m: string) => m.toUpperCase() },
+    ];
+    
+    let result = text;
+    let emphasisCount = 0;
+    const maxEmphasis = 4; // Don't over-emphasize
+    
+    for (const { pattern, replacement } of emphasisPatterns) {
+        if (emphasisCount >= maxEmphasis) break;
+        result = result.replace(pattern, (match) => {
+            if (emphasisCount >= maxEmphasis) return match;
+            emphasisCount++;
+            return replacement(match);
+        });
+    }
+    
+    return result;
+}
+
+/**
  * Add expressive audio tags for ElevenLabs V3 model
  *
  * V3 supports tags like [laughs], [whispers], [sarcastic], [curious], [excited], etc.
  * These tags control vocal delivery and emotional expression.
+ * Also supports compound tags like [frustrated sigh], [happy gasp], etc.
  *
  * Per ElevenLabs docs: "The voice you choose and its training samples will affect tag effectiveness"
  * Tags work best when matched to the voice's character and training data.
@@ -369,18 +439,19 @@ function addExpressionTags(text: string): string {
     // Split into sentences for analysis
     const sentences = text.split(/(?<=[.!?])\s+/);
     let tagCount = 0;
-    const maxTags = 6; // Limit tags to avoid over-expression
+    const maxTags = 8; // Increased limit for more natural expression
 
     const result = sentences.map(sentence => {
         const lowerSentence = sentence.toLowerCase();
 
         // Skip very short sentences or if we've added enough tags
-        if (sentence.length < 20 || tagCount >= maxTags) return sentence;
+        if (sentence.length < 15 || tagCount >= maxTags) return sentence;
 
         // Detect questions - add curious tone (documented tag)
         if (sentence.trim().endsWith('?')) {
             if (lowerSentence.includes('how') || lowerSentence.includes('why') ||
-                lowerSentence.includes('what') || lowerSentence.includes('could')) {
+                lowerSentence.includes('what') || lowerSentence.includes('could') ||
+                lowerSentence.includes('would') || lowerSentence.includes('is it')) {
                 tagCount++;
                 return `[curious] ${sentence}`;
             }
@@ -391,7 +462,8 @@ function addExpressionTags(text: string): string {
             if (lowerSentence.includes('great') || lowerSentence.includes('amazing') ||
                 lowerSentence.includes('awesome') || lowerSentence.includes('fantastic') ||
                 lowerSentence.includes('wonderful') || lowerSentence.includes('excellent') ||
-                lowerSentence.includes('love') || lowerSentence.includes('perfect')) {
+                lowerSentence.includes('love') || lowerSentence.includes('perfect') ||
+                lowerSentence.includes('incredible') || lowerSentence.includes('brilliant')) {
                 tagCount++;
                 return `[excited] ${sentence}`;
             }
@@ -400,37 +472,58 @@ function addExpressionTags(text: string): string {
         // Detect humor/amusement - use laughs tag (documented tag)
         if (lowerSentence.includes('haha') || lowerSentence.includes('funny') ||
             lowerSentence.includes('hilarious') || lowerSentence.includes('joke') ||
-            lowerSentence.includes('lol')) {
+            lowerSentence.includes('lol') || lowerSentence.includes('lmao') ||
+            lowerSentence.includes('amusing')) {
             tagCount++;
             return `[laughs] ${sentence}`;
         }
 
         // Detect sarcasm (documented tag)
         if (lowerSentence.includes('obviously') || lowerSentence.includes('of course') ||
-            lowerSentence.includes('sure thing') || lowerSentence.includes('yeah right')) {
+            lowerSentence.includes('sure thing') || lowerSentence.includes('yeah right') ||
+            lowerSentence.includes('no kidding') || lowerSentence.includes('wow, really')) {
             tagCount++;
             return `[sarcastic] ${sentence}`;
         }
 
         // Detect sadness/empathy - use sighs (documented tag)
         if (lowerSentence.includes('sorry to hear') || lowerSentence.includes('unfortunately') ||
-            lowerSentence.includes('sadly') || lowerSentence.includes('i understand')) {
+            lowerSentence.includes('sadly') || lowerSentence.includes('i understand') ||
+            lowerSentence.includes('that\'s tough') || lowerSentence.includes('my condolences')) {
             tagCount++;
             return `[sighs] ${sentence}`;
+        }
+        
+        // Detect frustration - compound tag (works with many voices)
+        if (lowerSentence.includes('frustrat') || lowerSentence.includes('annoying') ||
+            lowerSentence.includes('ugh') || lowerSentence.includes('argh') ||
+            lowerSentence.includes('come on') || lowerSentence.includes('seriously?')) {
+            tagCount++;
+            return `[exhales] ${sentence}`;
         }
 
         // Detect whisper-worthy content (documented tag)
         if (lowerSentence.includes('secret') || lowerSentence.includes('between us') ||
-            lowerSentence.includes('quietly') || lowerSentence.includes('confidential')) {
+            lowerSentence.includes('quietly') || lowerSentence.includes('confidential') ||
+            lowerSentence.includes('don\'t tell') || lowerSentence.includes('private')) {
             tagCount++;
             return `[whispers] ${sentence}`;
         }
 
         // Detect mischief (documented tag)
         if (lowerSentence.includes('trick') || lowerSentence.includes('sneaky') ||
-            lowerSentence.includes('clever') || lowerSentence.includes('hack')) {
+            lowerSentence.includes('clever') || lowerSentence.includes('hack') ||
+            lowerSentence.includes('cheat') || lowerSentence.includes('shortcut')) {
             tagCount++;
             return `[mischievously] ${sentence}`;
+        }
+        
+        // Detect surprise/realization (use gasps - common working tag)
+        if (lowerSentence.includes('oh!') || lowerSentence.includes('wow') ||
+            lowerSentence.includes('wait,') || lowerSentence.includes('holy') ||
+            lowerSentence.includes('oh my') || lowerSentence.includes('no way')) {
+            tagCount++;
+            return `[gasps] ${sentence}`;
         }
 
         return sentence;
@@ -443,6 +536,27 @@ function addExpressionTags(text: string): string {
     }
 
     return result;
+}
+
+/**
+ * Full V3 text processing pipeline
+ * Applies pauses, emphasis, and expression tags for natural-sounding speech
+ */
+function processTextForV3(text: string): string {
+    let processed = text;
+    
+    // Step 1: Add natural pauses via ellipses
+    processed = addNaturalPauses(processed);
+    
+    // Step 2: Add emphasis via capitalization (limited to avoid shouting)
+    processed = addEmphasisCapitalization(processed);
+    
+    // Step 3: Add expression tags
+    processed = addExpressionTags(processed);
+    
+    console.log('[V3 Pipeline] Full processed text sample:', processed.substring(0, 400));
+    
+    return processed;
 }
 
 /**
@@ -478,12 +592,11 @@ export async function textToSpeech(
     // For V2, use default 0.5 (Natural mode)
     const stability = customStability ?? (isV3 ? 0.3 : 0.5);
 
-    // For V3, add expressive audio tags to make speech more natural
+    // For V3, apply full processing pipeline (pauses, emphasis, expression tags)
     let processedText = stripMarkdown(text, isV3);
     if (isV3) {
-        processedText = addExpressionTags(processedText);
+        processedText = processTextForV3(processedText);
         console.log('[TTS V3] Using stability:', stability, '(Creative mode for expression)');
-        console.log('[TTS V3] Text preview:', processedText.substring(0, 300));
     }
 
     if (!processedText) {
