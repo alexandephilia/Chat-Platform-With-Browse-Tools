@@ -102,6 +102,27 @@ export const OPENAI_TOOLS = [
     {
         type: 'function',
         function: {
+            name: 'search_research_papers',
+            description: 'Search academic research papers and scientific publications from arxiv, pubmed, and other sources.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    query: {
+                        type: 'string',
+                        description: 'Research topic or paper title to search',
+                    },
+                    numResults: {
+                        type: 'number',
+                        description: 'Results count (1-10, default 5)',
+                    },
+                },
+                required: ['query'],
+            },
+        },
+    },
+    {
+        type: 'function',
+        function: {
             name: 'crawl_website',
             description: 'Crawl a website and its subpages for comprehensive information.',
             parameters: {

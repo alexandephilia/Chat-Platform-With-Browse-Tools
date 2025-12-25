@@ -1,10 +1,11 @@
-import { hasBuiltInTools } from '@/services/modelConfig';
+import { getModelCapabilities, hasBuiltInTools } from '@/services/modelConfig';
 import { IconWorldBolt, IconWorldSearch } from '@tabler/icons-react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { FileText, Image as ImageIcon, Paperclip, Plus, Send, X } from 'lucide-react';
+import { FileText, Image as ImageIcon, Mic, Paperclip, Plus, Send, Square, X } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
+import { useVoiceRecorder } from '../../hooks/useVoiceRecorder';
 import { extractTextFromDocument } from '../../services/documentService';
 import { Attachment } from '../../types';
 import { GlobalLinear, LightbulbLineDuotone } from '../atoms/Icons';
@@ -55,6 +56,24 @@ const ChatInput: React.FC<ChatInputProps> = ({
     const [attachments, setAttachments] = useState<Attachment[]>([]);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isSearchTypeMenuOpen, setIsSearchTypeMenuOpen] = useState(false);
+
+    // Voice recorder hook
+    const {
+        state: voiceState,
+        startRecording,
+        stopRecording,
+        duration: recordingDuration,
+        isSupported: isVoiceSupported,
+    } = useVoiceRecorder({
+        onTranscription: (text) => {
+            setInput(prev => prev ? `${prev} ${text}` : text);
+            toast.success('Voice transcribed!');
+        },
+        onError: (error) => {
+            toast.error(error);
+        },
+    });
+
     const [menuPlacement, setMenuPlacement] = useState<'top' | 'bottom'>('top');
     const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
     const [searchTypeMenuPosition, setSearchTypeMenuPosition] = useState({ x: 0, y: 0 });
@@ -546,55 +565,96 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
                         <div className="h-3 w-[1px] bg-slate-200 mx-1"></div>
 
-                        {/* Reasoning Toggle (Lightbulb) */}
-                        <button
-                            {...createTapHandler(() => onReasoningToggle?.(!reasoningEnabled))}
-                            className={`
-                                p-1.5 rounded-xl transition-colors duration-200 flex items-center border touch-manipulation
-                                ${reasoningEnabled
-                                    ? 'text-amber-500 bg-amber-50 shadow-[inset_0_2px_4px_rgba(245,158,11,0.15),0_0_8px_rgba(245,158,11,0.2)] border-amber-200/60'
-                                    : 'text-slate-400 hover:text-amber-500 bg-slate-50/50 shadow-[inset_0_2px_4px_rgba(0,0,0,0.06),inset_0_1px_1px_rgba(0,0,0,0.04),0_1px_0_rgba(255,255,255,0.8)] border-slate-200/40 hover:bg-amber-50 hover:border-amber-200/40'
-                                }
-                                active:scale-95
-                            `}
-                            title={reasoningEnabled ? "Reasoning enabled" : "Enable reasoning mode"}
-                        >
-                            <LightbulbLineDuotone width={18} height={18} />
-                        </button>
+                        {/* Reasoning Toggle (Lightbulb) - Disabled for models that don't support thinking */}
+                        {(() => {
+                            const capabilities = getModelCapabilities(selectedModel.id);
+                            const supportsThinking = capabilities?.supportsThinking ?? false;
 
-                        {/* Web Search Toggle with Type Selector */}
-                        <div className="relative flex items-center">
-                            {/* Globe Button - Click to open menu (disabled for built-in tool models) */}
-                            {hasBuiltInTools(selectedModel.id) ? (
-                                // Built-in tools indicator - always on, not clickable
-                                <div
-                                    className="p-1.5 rounded-xl flex items-center gap-0.5 border touch-manipulation text-blue-600 bg-blue-50 shadow-[inset_0_2px_4px_rgba(59,130,246,0.15)] border-blue-200/40 cursor-default"
-                                    title="Built-in tools always enabled"
-                                >
-                                    <GlobalLinear width={18} height={18} />
-                                </div>
-                            ) : (
+                            if (!supportsThinking) {
+                                // Disabled state for models that don't support reasoning
+                                return (
+                                    <div
+                                        className="p-1.5 rounded-xl flex items-center border touch-manipulation text-slate-400 bg-slate-100 shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)] border-slate-200/40 cursor-not-allowed"
+                                        title="Reasoning not supported by this model"
+                                    >
+                                        <LightbulbLineDuotone width={18} height={18} />
+                                    </div>
+                                );
+                            }
+
+                            return (
                                 <button
-                                    ref={searchTypeButtonRef}
-                                    {...createTapHandler(() => setIsSearchTypeMenuOpen(!isSearchTypeMenuOpen))}
+                                    {...createTapHandler(() => onReasoningToggle?.(!reasoningEnabled))}
                                     className={`
-                                        p-1.5 rounded-xl transition-colors duration-200 flex items-center gap-0.5 border touch-manipulation
-                                        ${isSearchTypeMenuOpen
-                                            ? 'bg-gradient-to-br from-white via-white to-slate-100 shadow-[0_4px_8px_-2px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,1)] border-slate-300/60'
-                                            : webSearchEnabled
-                                                ? `${searchType === 'fast' ? 'text-emerald-600 bg-emerald-50 shadow-[inset_0_2px_4px_rgba(16,185,129,0.15)] border-emerald-200/40' : searchType === 'deep' ? 'text-violet-600 bg-violet-50 shadow-[inset_0_2px_4px_rgba(139,92,246,0.15)] border-violet-200/40' : 'text-blue-600 bg-blue-50 shadow-[inset_0_2px_4px_rgba(59,130,246,0.15)] border-blue-200/40'}`
-                                                : 'text-slate-400 hover:text-blue-500 bg-slate-50/50 shadow-[inset_0_2px_4px_rgba(0,0,0,0.06),inset_0_1px_1px_rgba(0,0,0,0.04),0_1px_0_rgba(255,255,255,0.8)] border-slate-200/40 hover:bg-blue-50 hover:border-blue-200/40'
+                                        p-1.5 rounded-xl transition-colors duration-200 flex items-center border touch-manipulation
+                                        ${reasoningEnabled
+                                            ? 'text-amber-500 bg-amber-50 shadow-[inset_0_2px_4px_rgba(245,158,11,0.15),0_0_8px_rgba(245,158,11,0.2)] border-amber-200/60'
+                                            : 'text-slate-400 hover:text-amber-500 bg-slate-50/50 shadow-[inset_0_2px_4px_rgba(0,0,0,0.06),inset_0_1px_1px_rgba(0,0,0,0.04),0_1px_0_rgba(255,255,255,0.8)] border-slate-200/40 hover:bg-amber-50 hover:border-amber-200/40'
                                         }
                                         active:scale-95
                                     `}
-                                    title="Web search options"
+                                    title={reasoningEnabled ? "Reasoning enabled" : "Enable reasoning mode"}
                                 >
-                                    {webSearchEnabled
-                                        ? getSearchTypeIcon(searchType, 18, true)
-                                        : <GlobalLinear width={18} height={18} />
-                                    }
+                                    <LightbulbLineDuotone width={18} height={18} />
                                 </button>
-                            )}
+                            );
+                        })()}
+
+                        {/* Web Search Toggle with Type Selector */}
+                        <div className="relative flex items-center">
+                            {/* Globe Button - Click to open menu (disabled for built-in tool models or models without tool support) */}
+                            {(() => {
+                                const capabilities = getModelCapabilities(selectedModel.id);
+                                const supportsTools = capabilities?.supportsTools ?? false;
+
+                                // If model doesn't support tools at all (like Routeway models)
+                                if (!supportsTools) {
+                                    return (
+                                        <div
+                                            className="p-1.5 rounded-xl flex items-center gap-0.5 border touch-manipulation text-slate-400 bg-slate-100 shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)] border-slate-200/40 cursor-not-allowed"
+                                            title="Web search not supported by this model"
+                                        >
+                                            <GlobalLinear width={18} height={18} />
+                                        </div>
+                                    );
+                                }
+
+                                // If model has built-in tools (like Groq Compound)
+                                if (hasBuiltInTools(selectedModel.id)) {
+                                    return (
+                                        <div
+                                            className="p-1.5 rounded-xl flex items-center gap-0.5 border touch-manipulation text-blue-600 bg-blue-50 shadow-[inset_0_2px_4px_rgba(59,130,246,0.15)] border-blue-200/40 cursor-default"
+                                            title="Built-in tools always enabled"
+                                        >
+                                            <GlobalLinear width={18} height={18} />
+                                        </div>
+                                    );
+                                }
+
+                                // Normal interactive button for Exa-based models
+                                return (
+                                    <button
+                                        ref={searchTypeButtonRef}
+                                        {...createTapHandler(() => setIsSearchTypeMenuOpen(!isSearchTypeMenuOpen))}
+                                        className={`
+                                            p-1.5 rounded-xl transition-colors duration-200 flex items-center gap-0.5 border touch-manipulation
+                                            ${isSearchTypeMenuOpen
+                                                ? 'bg-gradient-to-br from-white via-white to-slate-100 shadow-[0_4px_8px_-2px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,1)] border-slate-300/60'
+                                                : webSearchEnabled
+                                                    ? `${searchType === 'fast' ? 'text-emerald-600 bg-emerald-50 shadow-[inset_0_2px_4px_rgba(16,185,129,0.15)] border-emerald-200/40' : searchType === 'deep' ? 'text-violet-600 bg-violet-50 shadow-[inset_0_2px_4px_rgba(139,92,246,0.15)] border-violet-200/40' : 'text-blue-600 bg-blue-50 shadow-[inset_0_2px_4px_rgba(59,130,246,0.15)] border-blue-200/40'}`
+                                                    : 'text-slate-400 hover:text-blue-500 bg-slate-50/50 shadow-[inset_0_2px_4px_rgba(0,0,0,0.06),inset_0_1px_1px_rgba(0,0,0,0.04),0_1px_0_rgba(255,255,255,0.8)] border-slate-200/40 hover:bg-blue-50 hover:border-blue-200/40'
+                                            }
+                                            active:scale-95
+                                        `}
+                                        title="Web search options"
+                                    >
+                                        {webSearchEnabled
+                                            ? getSearchTypeIcon(searchType, 18, true)
+                                            : <GlobalLinear width={18} height={18} />
+                                        }
+                                    </button>
+                                );
+                            })()}
                         </div>
 
                         {/* Search Type Menu Portal - Outside the button container (only for non-built-in models) */}
@@ -771,7 +831,62 @@ const ChatInput: React.FC<ChatInputProps> = ({
                     </div>
 
                     {/* Send Button Container - with shine border wrapper when loading */}
-                    <div className="relative">
+                    <div className="relative flex items-center gap-2">
+                        {/* Voice Recording Button */}
+                        {isVoiceSupported && (
+                            <div className="relative">
+                                {/* Recording pulse animation */}
+                                {voiceState === 'recording' && (
+                                    <div className="absolute inset-0 rounded-full bg-red-500/20 animate-ping" />
+                                )}
+
+                                <button
+                                    onClick={async () => {
+                                        if (voiceState === 'idle') {
+                                            await startRecording();
+                                        } else if (voiceState === 'recording') {
+                                            await stopRecording();
+                                        }
+                                    }}
+                                    disabled={disabled || voiceState === 'processing'}
+                                    className={`
+                                        relative w-9 h-9 flex items-center justify-center rounded-full transition-all duration-300 overflow-hidden group/voice
+                                        ${voiceState === 'recording'
+                                            ? 'bg-red-500 text-white shadow-[0_4px_12px_rgba(239,68,68,0.4),inset_0_2px_4px_rgba(255,255,255,0.3),inset_0_-2px_4px_rgba(0,0,0,0.1),0_0_0_1px_rgba(239,68,68,1)] active:scale-[0.96]'
+                                            : voiceState === 'processing'
+                                                ? 'bg-amber-500 text-white shadow-[0_4px_12px_rgba(245,158,11,0.3),inset_0_2px_4px_rgba(255,255,255,0.3)] cursor-wait'
+                                                : 'bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700 shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)] active:scale-[0.96]'
+                                        }
+                                    `}
+                                    title={
+                                        voiceState === 'recording'
+                                            ? `Recording... ${recordingDuration}s (click to stop)`
+                                            : voiceState === 'processing'
+                                                ? 'Transcribing...'
+                                                : 'Voice input'
+                                    }
+                                >
+                                    {voiceState === 'recording' ? (
+                                        <Square size={14} fill="currentColor" className="relative z-10" />
+                                    ) : voiceState === 'processing' ? (
+                                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    ) : (
+                                        <Mic size={16} className="relative z-10" />
+                                    )}
+                                </button>
+
+                                {/* Recording duration badge */}
+                                {voiceState === 'recording' && (
+                                    <div className="absolute -top-1 -right-1 bg-red-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center shadow-lg">
+                                        {recordingDuration}s
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Separator between voice and send */}
+                        <div className="h-5 w-[1px] bg-gradient-to-b from-transparent via-slate-300 to-transparent" />
+
                         {/* Animated Shine Border (only when loading) */}
                         {disabled && (
                             <>

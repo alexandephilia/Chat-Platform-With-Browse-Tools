@@ -4,9 +4,9 @@
 
 import { AnimatedMarkdown } from 'flowtoken';
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ModelIcon } from '../../services/modelIcons';
 import { Message } from '../../types';
 import { CopyLinear, MoreDotsLinear, RefreshSquareLinear } from '../atoms/Icons';
-import { LazyImage } from '../atoms/LazyImage';
 import { SearchTimeline } from '../atoms/SearchTimeline';
 import { ThinkingBlock } from '../atoms/ThinkingBlock';
 import { AVAILABLE_MODELS } from '../molecules/ModelPicker';
@@ -34,14 +34,8 @@ const ModelIndicator = memo(({ modelId }: { modelId: string }) => {
         <div
             className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100/40 border border-slate-200/40"
         >
-            <div className="w-4 h-4 rounded-md flex items-center justify-center overflow-hidden bg-gradient-to-b from-slate-50 to-slate-200">
-                <LazyImage
-                    src={model.icon}
-                    alt=""
-                    className="w-3 h-3 object-contain"
-                    width={12}
-                    height={12}
-                />
+            <div className="w-5 h-5 rounded-md flex items-center justify-center overflow-hidden bg-gradient-to-b from-slate-50 to-slate-200">
+                <ModelIcon iconKey={model.icon} size={18} />
             </div>
             <span className="text-[9px] text-slate-500 font-semibold tracking-tight">
                 {model.name}
@@ -138,7 +132,7 @@ const StableAnimatedContent = memo(({
             content={content}
             sep="diff"
             animation={animationEnabled ? "blurAndSharpen" : null}
-            animationDuration="0.6s"
+            animationDuration="1.8s"
             animationTimingFunction="ease-in-out"
             customComponents={customComponents}
         />

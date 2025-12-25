@@ -498,19 +498,31 @@ export interface ExaContentsResponse {
  * Endpoint: POST https://api.exa.ai/contents
  * @param urls - URLs to fetch
  * @param maxCharsPerUrl - Maximum characters per URL content (default 3000)
+ * @param livecrawl - Livecrawl option: 'always' | 'preferred' | 'fallback' | 'never' (default 'preferred')
+ * @param livecrawlTimeout - Timeout in ms for livecrawl (default 10000, use with 'preferred')
  */
-export async function exaGetContents(urls: string[], maxCharsPerUrl: number = 3000): Promise<ExaContentsResponse> {
+export async function exaGetContents(
+    urls: string[],
+    maxCharsPerUrl: number = 3000,
+    livecrawl: 'always' | 'preferred' | 'fallback' | 'never' = 'preferred',
+    livecrawlTimeout: number = 10000
+): Promise<ExaContentsResponse> {
     if (!urls || urls.length === 0) {
         return { results: [] };
     }
 
-    const body = {
+    const body: Record<string, any> = {
         ids: urls,
         text: {
-            maxCharacters: maxCharsPerUrl, // Limit content size per URL
+            maxCharacters: maxCharsPerUrl,
         },
-        livecrawl: 'always', // Always fetch fresh content
+        livecrawl,
     };
+
+    // Add timeout for 'preferred' mode (recommended by Exa docs)
+    if (livecrawl === 'preferred' && livecrawlTimeout > 0) {
+        body.livecrawl_timeout = livecrawlTimeout;
+    }
 
     console.log('[Exa] Contents request for URLs:', urls, 'maxChars:', maxCharsPerUrl);
 

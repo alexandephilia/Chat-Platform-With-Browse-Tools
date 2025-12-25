@@ -1,6 +1,6 @@
 import { FunctionCallingConfigMode, GoogleGenAI } from '@google/genai';
 import { Attachment, ToolCall, ToolCallStatus } from '../types';
-import { ExaCategory, exaGetContents, exaSearch, formatExaResultsForContext } from './exaService';
+import { ExaCategory, exaAnswer, exaGetContents, exaSearch, formatExaResultsForContext } from './exaService';
 import { getDefaultPrompt, getSearchPrompt } from './prompts';
 import { GEMINI_TOOLS } from './tools';
 

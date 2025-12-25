@@ -190,6 +190,26 @@ async function executeToolCall(name: string, args: Record<string, any>): Promise
                 return githubResult;
             }
 
+            case 'search_research_papers': {
+                const researchResult = await exaSearch({
+                    query: args.query,
+                    numResults,
+                    category: 'research paper',
+                    text: { maxCharacters: 300 },
+                    type: searchType,
+                });
+                if (researchResult.results) {
+                    researchResult.results = researchResult.results.map(r => ({
+                        ...r,
+                        text: r.text && r.text.length > 300 ? r.text.slice(0, 300) + '...' : r.text,
+                        highlights: undefined,
+                        highlightScores: undefined,
+                        summary: undefined,
+                    }));
+                }
+                return researchResult;
+            }
+
             case 'search_people': {
                 const peopleResult = await exaSearch({
                     query: args.query,

@@ -67,12 +67,12 @@ function AppContent() {
                 closeButton
                 toastOptions={{
                     style: {
-                        fontSize: '10px',
-                        padding: '6px 10px',
+                        fontSize: '11px',
+                        padding: '8px 12px',
                         minHeight: 'auto',
-                        maxWidth: '180px',
-                        width: '180px',
-                        right: '16px',
+                        maxWidth: '280px',
+                        width: 'auto',
+                        right: '12px',
                     },
                     className: "sonner-toast-right-close"
                 }}

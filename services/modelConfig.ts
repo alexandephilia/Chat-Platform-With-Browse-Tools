@@ -3,23 +3,10 @@
  * Defines capabilities for each AI model to manage features consistently
  */
 
-// Model icon URLs
-export const MODEL_ICONS = {
-    GEMINI: 'https://registry.npmmirror.com/@lobehub/icons-static-png/latest/files/dark/gemini-color.png',
-    GPT: 'https://cdn.iconscout.com/icon/free/png-256/free-chatgpt-icon-svg-download-png-7576880.png?f=webp',
-    KIMI: 'https://images.seeklogo.com/logo-png/61/2/kimi-logo-png_seeklogo-611650.png',
-    GROQ: 'https://console.groq.com/_next/image?url=%2Fgroq-circle.png&w=48&q=75',
-    DEEPSEEK: 'https://registry.npmmirror.com/@lobehub/icons-static-png/latest/files/dark/deepseek-color.png',
-} as const;
+import { ModelIconKey, ProviderIconKey } from "./modelIcons";
 
-// Provider icon URLs (add your own icons here)
-export const PROVIDER_ICONS: Record<string, string> = {
-    'Google': 'https://www.freepnglogos.com/uploads/google-logo-png/google-logo-png-webinar-optimizing-for-success-google-business-webinar-13.png',
-    'Groq': 'https://console.groq.com/_next/image?url=%2Fgroq-circle.png&w=48&q=75',
-    'OpenRouter': 'https://uxwing.com/wp-content/themes/uxwing/download/brands-and-social-media/openrouter-icon.png',
-} as const;
 
-export type ModelProvider = 'gemini' | 'openrouter' | 'groq';
+export type ModelProvider = "gemini" | "openrouter" | "groq" | "routeway";
 
 /**
  * Tool provider for web search
@@ -27,7 +14,7 @@ export type ModelProvider = 'gemini' | 'openrouter' | 'groq';
  * - 'exa': Uses Exa API for search (requires local function calling)
  * - 'none': No search capability
  */
-export type ToolProvider = 'built-in' | 'exa' | 'none';
+export type ToolProvider = "built-in" | "exa" | "none";
 
 /**
  * Model capabilities configuration
@@ -58,8 +45,9 @@ export interface AIModel {
     name: string;
     provider: ModelProvider;
     providerLabel: string;
+    providerIcon: ProviderIconKey;
     description: string;
-    icon: string;
+    icon: ModelIconKey;
     isFree?: boolean;
     capabilities: ModelCapabilities;
 }
@@ -69,16 +57,17 @@ export interface AIModel {
  */
 export const AVAILABLE_MODELS: AIModel[] = [
     {
-        id: 'gemini-3-flash-preview',
-        name: 'Gemini 3 Flash',
-        provider: 'gemini',
-        providerLabel: 'Google',
-        description: 'Fast + Tools + Thinking',
-        icon: MODEL_ICONS.GEMINI,
+        id: "gemini-3-flash-preview",
+        name: "Gemini 3 Flash",
+        provider: "gemini",
+        providerLabel: "Google",
+        providerIcon: "Google",
+        description: "Fast + Tools + Thinking",
+        icon: "Gemini",
         isFree: false,
         capabilities: {
             supportsTools: true,
-            toolProvider: 'exa',
+            toolProvider: "exa",
             supportsThinking: true,
             hasNativeReasoning: true,
             supportsImages: true,
@@ -86,19 +75,20 @@ export const AVAILABLE_MODELS: AIModel[] = [
             maxContextLength: 1000000,
             supportsToolsWithThinking: true,
             supportsAttachmentsWithTools: true,
-        }
+        },
     },
     {
-        id: 'gemini-3-pro-preview',
-        name: 'Gemini 3 Pro',
-        provider: 'gemini',
-        providerLabel: 'Google',
-        description: 'Advanced + Tools + Thinking',
-        icon: MODEL_ICONS.GEMINI,
+        id: "gemini-3-pro-preview",
+        name: "Gemini 3 Pro",
+        provider: "gemini",
+        providerLabel: "Google",
+        providerIcon: "Google",
+        description: "Advanced + Tools + Thinking",
+        icon: "Gemini",
         isFree: false,
         capabilities: {
             supportsTools: true,
-            toolProvider: 'exa',
+            toolProvider: "exa",
             supportsThinking: true,
             hasNativeReasoning: true,
             supportsImages: true,
@@ -106,39 +96,41 @@ export const AVAILABLE_MODELS: AIModel[] = [
             maxContextLength: 1000000,
             supportsToolsWithThinking: true,
             supportsAttachmentsWithTools: true,
-        }
+        },
     },
     {
-        id: 'moonshotai/kimi-k2-instruct-0905',
-        name: 'Kimi K2',
-        provider: 'groq',
-        providerLabel: 'Groq', // Kimi K2 is hosted on Groq
-        description: 'Fast + Tools',
-        icon: MODEL_ICONS.KIMI,
+        id: "moonshotai/kimi-k2-instruct-0905",
+        name: "Kimi K2",
+        provider: "groq",
+        providerLabel: "Groq",
+        providerIcon: "Groq",
+        description: "Fast + Tools",
+        icon: "Kimi",
         isFree: true,
         capabilities: {
             supportsTools: true,
-            toolProvider: 'exa', // Uses Exa via local function calling
-            supportsThinking: true, // Tag-based thinking
+            toolProvider: "exa",
+            supportsThinking: true,
             hasNativeReasoning: false,
-            supportsImages: false, // Groq/Kimi doesn't support images
+            supportsImages: false,
             supportsDocuments: true,
             maxContextLength: 131072,
-            supportsToolsWithThinking: false, // Can't do both simultaneously
-            supportsAttachmentsWithTools: true, // Documents work with tools
-        }
+            supportsToolsWithThinking: false,
+            supportsAttachmentsWithTools: true,
+        },
     },
     {
-        id: 'groq/compound-mini',
-        name: 'Compound Mini',
-        provider: 'groq',
-        providerLabel: 'Groq',
-        description: 'Fast + Built-in Search',
-        icon: MODEL_ICONS.GROQ,
+        id: "groq/compound-mini",
+        name: "Compound Mini",
+        provider: "groq",
+        providerLabel: "Groq",
+        providerIcon: "Groq",
+        description: "Fast + Built-in Search",
+        icon: "Groq",
         isFree: true,
         capabilities: {
             supportsTools: true,
-            toolProvider: 'built-in', // Uses Groq's server-side search
+            toolProvider: "built-in",
             supportsThinking: false,
             hasNativeReasoning: false,
             supportsImages: false,
@@ -146,19 +138,20 @@ export const AVAILABLE_MODELS: AIModel[] = [
             maxContextLength: 32768,
             supportsToolsWithThinking: false,
             supportsAttachmentsWithTools: true,
-        }
+        },
     },
     {
-        id: 'groq/compound',
-        name: 'Compound',
-        provider: 'groq',
-        providerLabel: 'Groq',
-        description: 'Multi-tools + Web + Code',
-        icon: MODEL_ICONS.GROQ,
+        id: "groq/compound",
+        name: "Compound",
+        provider: "groq",
+        providerLabel: "Groq",
+        providerIcon: "Groq",
+        description: "Multi-tools + Web + Code",
+        icon: "Groq",
         isFree: true,
         capabilities: {
             supportsTools: true,
-            toolProvider: 'built-in', // Uses Groq's server-side tools
+            toolProvider: "built-in",
             supportsThinking: false,
             hasNativeReasoning: false,
             supportsImages: false,
@@ -166,48 +159,117 @@ export const AVAILABLE_MODELS: AIModel[] = [
             maxContextLength: 131072,
             supportsToolsWithThinking: false,
             supportsAttachmentsWithTools: true,
-        }
+        },
     },
     {
-        id: 'nex-agi/deepseek-v3.1-nex-n1:free',
-        name: 'DeepSeek V3.1',
-        provider: 'openrouter',
-        providerLabel: 'OpenRouter',
-        description: 'Fast + Tools',
-        icon: MODEL_ICONS.DEEPSEEK,
+        id: "nex-agi/deepseek-v3.1-nex-n1:free",
+        name: "DeepSeek V3.1",
+        provider: "openrouter",
+        providerLabel: "OpenRouter",
+        providerIcon: "OpenRouter",
+        description: "Fast + Tools",
+        icon: "DeepSeek",
         isFree: true,
         capabilities: {
             supportsTools: true,
-            toolProvider: 'exa', // Uses Exa via OpenRouter function calling
-            supportsThinking: true, // Tag-based thinking
+            toolProvider: "exa",
+            supportsThinking: true,
             hasNativeReasoning: false,
-            supportsImages: false, // DeepSeek V3 doesn't support images well
+            supportsImages: false,
             supportsDocuments: true,
             maxContextLength: 65536,
-            supportsToolsWithThinking: false, // Can't do both simultaneously
+            supportsToolsWithThinking: false,
             supportsAttachmentsWithTools: true,
-        }
-    }
+        },
+    },
+    {
+        id: "glm-4.6:free",
+        name: "GLM 4.5 Air",
+        provider: "openrouter",
+        providerLabel: "OpenRouter",
+        providerIcon: "OpenRouter",
+        description: "Fast + Tools + Agent",
+        icon: "GLM",
+        isFree: true,
+        capabilities: {
+            supportsTools: true,
+            toolProvider: "exa",
+            supportsThinking: true,
+            hasNativeReasoning: false,
+            supportsImages: false,
+            supportsDocuments: true,
+            maxContextLength: 128000,
+            supportsToolsWithThinking: false,
+            supportsAttachmentsWithTools: true,
+        },
+    },
+    {
+        id: "nousresearch/hermes-3-llama-3.1-405b:free",
+        name: "Hermes 3",
+        provider: "openrouter",
+        providerLabel: "OpenRouter",
+        providerIcon: "OpenRouter",
+        description: "Large + Tools + Free",
+        icon: "NousResearch",
+        isFree: true,
+        capabilities: {
+            supportsTools: true,
+            toolProvider: "exa",
+            supportsThinking: true,
+            hasNativeReasoning: false,
+            supportsImages: false,
+            supportsDocuments: true,
+            maxContextLength: 131072,
+            supportsToolsWithThinking: false,
+            supportsAttachmentsWithTools: true,
+        },
+    },
+    {
+        id: "minimax-m2:free",
+        name: "MiniMax M2",
+        provider: "routeway",
+        providerLabel: "Routeway",
+        providerIcon: "Routeway",
+        description: "Fast + Free",
+        icon: "Minimax",
+        isFree: true,
+        capabilities: {
+            supportsTools: false,
+            toolProvider: "none",
+            supportsThinking: false,
+            hasNativeReasoning: false,
+            supportsImages: false,
+            supportsDocuments: true,
+            maxContextLength: 196608,
+            supportsToolsWithThinking: false,
+            supportsAttachmentsWithTools: false,
+        },
+    },
 ];
 
 /**
  * Get model by ID
  */
 export function getModelById(modelId: string): AIModel | undefined {
-    return AVAILABLE_MODELS.find(m => m.id === modelId);
+    return AVAILABLE_MODELS.find((m) => m.id === modelId);
 }
 
 /**
  * Get model capabilities by ID
  */
-export function getModelCapabilities(modelId: string): ModelCapabilities | undefined {
+export function getModelCapabilities(
+    modelId: string
+): ModelCapabilities | undefined {
     return getModelById(modelId)?.capabilities;
 }
 
 /**
  * Check if a model supports a specific feature
  */
-export function modelSupports(modelId: string, feature: keyof ModelCapabilities): boolean {
+export function modelSupports(
+    modelId: string,
+    feature: keyof ModelCapabilities
+): boolean {
     const capabilities = getModelCapabilities(modelId);
     if (!capabilities) return false;
     return !!capabilities[feature];
@@ -242,13 +304,13 @@ export function validateModelSettings(
     if (!capabilities || !model) {
         return {
             isValid: false,
-            warnings: ['Unknown model'],
-            disabledFeatures: {}
+            warnings: ["Unknown model"],
+            disabledFeatures: {},
         };
     }
 
     const warnings: string[] = [];
-    const disabledFeatures: ValidationResult['disabledFeatures'] = {};
+    const disabledFeatures: ValidationResult["disabledFeatures"] = {};
 
     // Check tools support
     if (settings.webSearchEnabled && !capabilities.supportsTools) {
@@ -263,8 +325,14 @@ export function validateModelSettings(
     }
 
     // Check tools + thinking combination
-    if (settings.webSearchEnabled && settings.reasoningEnabled && !capabilities.supportsToolsWithThinking) {
-        warnings.push(`${model.name} can't use tools and thinking together. Thinking will be disabled.`);
+    if (
+        settings.webSearchEnabled &&
+        settings.reasoningEnabled &&
+        !capabilities.supportsToolsWithThinking
+    ) {
+        warnings.push(
+            `${model.name} can't use tools and thinking together. Thinking will be disabled.`
+        );
         disabledFeatures.thinking = true;
     }
 
@@ -275,9 +343,11 @@ export function validateModelSettings(
     }
 
     // Check attachments + tools combination
-    if ((settings.hasImageAttachments || settings.hasDocumentAttachments) &&
+    if (
+        (settings.hasImageAttachments || settings.hasDocumentAttachments) &&
         settings.webSearchEnabled &&
-        !capabilities.supportsAttachmentsWithTools) {
+        !capabilities.supportsAttachmentsWithTools
+    ) {
         warnings.push(`${model.name} can't use attachments with web search`);
         disabledFeatures.tools = true;
     }
@@ -285,7 +355,7 @@ export function validateModelSettings(
     return {
         isValid: warnings.length === 0,
         warnings,
-        disabledFeatures
+        disabledFeatures,
     };
 }
 
@@ -321,35 +391,45 @@ export function getEffectiveSettings(
     // For built-in tool providers (like Groq Compound), tools are ALWAYS enabled
     // The globe toggle only controls Exa-based search for other models
     let effectiveWebSearch: boolean;
-    if (capabilities.toolProvider === 'built-in') {
+    if (capabilities.toolProvider === "built-in") {
         // Built-in tools are always on - they're part of the model
         effectiveWebSearch = true;
     } else {
         // For Exa-based models, respect the user's toggle
-        effectiveWebSearch = settings.webSearchEnabled && capabilities.supportsTools;
+        effectiveWebSearch =
+            settings.webSearchEnabled && capabilities.supportsTools;
     }
 
-    let effectiveReasoning = settings.reasoningEnabled && capabilities.supportsThinking;
+    let effectiveReasoning =
+        settings.reasoningEnabled && capabilities.supportsThinking;
 
     // If both are enabled but model doesn't support combination, prioritize tools
-    if (effectiveWebSearch && effectiveReasoning && !capabilities.supportsToolsWithThinking) {
+    if (
+        effectiveWebSearch &&
+        effectiveReasoning &&
+        !capabilities.supportsToolsWithThinking
+    ) {
         effectiveReasoning = false;
     }
 
     // If attachments are present and model doesn't support attachments with tools
     // (Only applies to Exa-based models, built-in tools handle this differently)
-    if (capabilities.toolProvider !== 'built-in' &&
+    if (
+        capabilities.toolProvider !== "built-in" &&
         (settings.hasImageAttachments || settings.hasDocumentAttachments) &&
         effectiveWebSearch &&
-        !capabilities.supportsAttachmentsWithTools) {
+        !capabilities.supportsAttachmentsWithTools
+    ) {
         effectiveWebSearch = false;
     }
 
     return {
         webSearchEnabled: effectiveWebSearch,
         reasoningEnabled: effectiveReasoning,
-        canProcessImages: settings.hasImageAttachments && capabilities.supportsImages,
-        canProcessDocuments: settings.hasDocumentAttachments && capabilities.supportsDocuments,
+        canProcessImages:
+            settings.hasImageAttachments && capabilities.supportsImages,
+        canProcessDocuments:
+            settings.hasDocumentAttachments && capabilities.supportsDocuments,
     };
 }
 
@@ -357,8 +437,10 @@ export function getEffectiveSettings(
  * Check if model is a DeepSeek R1 variant (has native reasoning)
  */
 export function isDeepSeekR1(modelId: string): boolean {
-    return modelId.toLowerCase().includes('deepseek-r1') ||
-        modelId.toLowerCase().includes('deepseek/r1');
+    return (
+        modelId.toLowerCase().includes("deepseek-r1") ||
+        modelId.toLowerCase().includes("deepseek/r1")
+    );
 }
 
 /**
@@ -366,7 +448,10 @@ export function isDeepSeekR1(modelId: string): boolean {
  */
 export function usesTagBasedThinking(modelId: string): boolean {
     const capabilities = getModelCapabilities(modelId);
-    return capabilities?.supportsThinking === true && capabilities?.hasNativeReasoning === false;
+    return (
+        capabilities?.supportsThinking === true &&
+        capabilities?.hasNativeReasoning === false
+    );
 }
 
 /**
@@ -375,5 +460,5 @@ export function usesTagBasedThinking(modelId: string): boolean {
  */
 export function hasBuiltInTools(modelId: string): boolean {
     const capabilities = getModelCapabilities(modelId);
-    return capabilities?.toolProvider === 'built-in';
+    return capabilities?.toolProvider === "built-in";
 }

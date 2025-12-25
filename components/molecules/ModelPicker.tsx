@@ -2,8 +2,8 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Check, ChevronDown, ChevronRight } from 'lucide-react';
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { AIModel, AVAILABLE_MODELS, ModelProvider, PROVIDER_ICONS } from '../../services/modelConfig';
-import { LazyImage } from '../atoms/LazyImage';
+import { AIModel, AVAILABLE_MODELS, ModelProvider } from '../../services/modelConfig';
+import { ModelIcon, ProviderIcon, ProviderIconKey } from '../../services/modelIcons';
 import { StatusPill } from '../atoms/StatusPill';
 
 // Re-export types and models for backward compatibility
@@ -13,7 +13,7 @@ export type { AIModel, ModelProvider };
 interface ProviderInfo {
     id: ModelProvider | string;
     label: string;
-    icon: string;
+    iconKey: ProviderIconKey;
     models: AIModel[];
 }
 
@@ -48,7 +48,7 @@ const ModelPicker: React.FC<ModelPickerProps> = ({
                 providerMap.set(key, {
                     id: model.provider,
                     label: model.providerLabel,
-                    icon: PROVIDER_ICONS[model.providerLabel] || '',
+                    iconKey: model.providerIcon,
                     models: []
                 });
             }
@@ -232,15 +232,12 @@ const ModelPicker: React.FC<ModelPickerProps> = ({
             >
                 <div className={`
                     flex items-center justify-center rounded overflow-hidden bg-slate-100
-                    ${isSmall ? 'w-3.5 h-3.5' : 'w-5 h-5'}
+                    ${isSmall ? 'w-4 h-4' : 'w-6 h-6'}
                     shadow-[inset_0_1px_2px_rgba(0,0,0,0.06)]
                 `}>
-                    <LazyImage
-                        src={selectedModel.icon}
-                        alt={selectedModel.name}
-                        className={`object-contain ${isSmall ? 'w-3 h-3' : 'w-4 h-4'}`}
-                        width={isSmall ? 12 : 16}
-                        height={isSmall ? 12 : 16}
+                    <ModelIcon
+                        iconKey={selectedModel.icon}
+                        size={isSmall ? 16 : 24}
                     />
                 </div>
 
@@ -318,38 +315,20 @@ const ModelPicker: React.FC<ModelPickerProps> = ({
                                                     }
                                                 `}
                                             >
-                                                {provider.icon ? (
-                                                    <div className="w-5 h-5 rounded-full transition-all duration-300 relative flex items-center justify-center shrink-0 shadow-[inset_0_2px_3px_rgba(0,0,0,0.08),0_1px_0_rgba(255,255,255,0.8)]">
-                                                        <div
-                                                            className="absolute w-3.5 h-3.5 rounded-full transition-all duration-300 transform flex items-center justify-center"
-                                                            style={{
-                                                                background: 'linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%)',
-                                                                boxShadow: '0_2px_4px_rgba(0,0,0,0.1),0_1px_1px_rgba(0,0,0,0.05),inset_0_1px_0_rgba(255,255,255,1)'
-                                                            }}
-                                                        >
-                                                            <LazyImage
-                                                                src={provider.icon}
-                                                                alt={provider.label}
-                                                                className="w-3.5 h-3.5 object-contain"
-                                                                width={14}
-                                                                height={14}
-                                                            />
-                                                        </div>
+                                                <div className="w-5 h-5 rounded-full transition-all duration-300 relative flex items-center justify-center shrink-0 shadow-[inset_0_2px_3px_rgba(0,0,0,0.08),0_1px_0_rgba(255,255,255,0.8)]">
+                                                    <div
+                                                        className="absolute w-3.5 h-3.5 rounded-full transition-all duration-300 transform flex items-center justify-center"
+                                                        style={{
+                                                            background: 'linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%)',
+                                                            boxShadow: '0_2px_4px_rgba(0,0,0,0.1),0_1px_1px_rgba(0,0,0,0.05),inset_0_1px_0_rgba(255,255,255,1)'
+                                                        }}
+                                                    >
+                                                        <ProviderIcon
+                                                            iconKey={provider.iconKey}
+                                                            size={18}
+                                                        />
                                                     </div>
-                                                ) : (
-                                                    <div className="w-5 h-5 rounded-full transition-all duration-300 relative flex items-center justify-center shrink-0 shadow-[inset_0_2px_3px_rgba(0,0,0,0.08),0_1px_0_rgba(255,255,255,0.8)]">
-                                                        <div
-                                                            className="absolute w-3.5 h-3.5 rounded-full transition-all duration-300 transform flex items-center justify-center text-[8px] font-bold"
-                                                            style={{
-                                                                background: 'linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%)',
-                                                                boxShadow: '0_2px_4px_rgba(0,0,0,0.1),0_1px_1px_rgba(0,0,0,0.05),inset_0_1px_0_rgba(255,255,255,1)',
-                                                                color: hasSelectedModel ? '#2563eb' : '#64748b'
-                                                            }}
-                                                        >
-                                                            {provider.label.charAt(0)}
-                                                        </div>
-                                                    </div>
-                                                )}
+                                                </div>
 
                                                 <span className={`flex-1 text-[11px] font-medium text-left ${hasSelectedModel ? 'text-blue-600' : 'text-slate-700'}`}>
                                                     {provider.label}
@@ -410,12 +389,9 @@ const ModelPicker: React.FC<ModelPickerProps> = ({
                                                                     boxShadow: '0_2px_4px_rgba(0,0,0,0.1),0_1px_1px_rgba(0,0,0,0.05),inset_0_1px_0_rgba(255,255,255,1)'
                                                                 }}
                                                             >
-                                                                <LazyImage
-                                                                    src={model.icon}
-                                                                    alt={model.name}
-                                                                    className="w-3.5 h-3.5 object-contain"
-                                                                    width={14}
-                                                                    height={14}
+                                                                <ModelIcon
+                                                                    iconKey={model.icon}
+                                                                    size={18}
                                                                 />
                                                             </div>
                                                         </div>

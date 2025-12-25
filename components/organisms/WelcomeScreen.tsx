@@ -305,7 +305,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                             paddingRight: 'calc(50vw - 100px)',
                         }}
                     >
-                        <AnimatePresence mode="wait">
+                        <AnimatePresence>
                             {memoizedSuggestions.map((card, index) => (
                                 <motion.div
                                     key={`mobile-${refreshKey}-${card.title}`}
@@ -315,7 +315,10 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                                     animate="visible"
                                     exit="exit"
                                     className="flex-shrink-0 snap-center"
-                                    style={{ width: '200px' }}
+                                    style={{ 
+                                        width: '200px',
+                                        willChange: 'opacity, transform, filter'
+                                    }}
                                 >
                                     <ClayCard
                                         title={card.title}
@@ -389,7 +392,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                 }}
             >
                 <div className="grid grid-cols-3 gap-2 md:gap-4 w-full">
-                    <AnimatePresence mode="wait">
+                    <AnimatePresence>
                         {memoizedSuggestions.map((card, index) => (
                             <motion.div
                                 key={`${refreshKey}-${card.title}`}
@@ -398,6 +401,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                                 initial="hidden"
                                 animate="visible"
                                 exit="exit"
+                                style={{ willChange: 'opacity, transform, filter' }}
                             >
                                 <ClayCard
                                     title={card.title}

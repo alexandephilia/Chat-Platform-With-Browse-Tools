@@ -1,15 +1,18 @@
 /**
- * OpenRouter Service with Tool Calling Support
- * Uses DeepSeek V3.1 and other models with Exa search tools
- * API Docs: https://openrouter.ai/docs
+ * Routeway Service with Tool Calling Support
+ * Uses DeepSeek V3.2 and other models with Exa search tools
+ * API Docs: https://docs.routeway.ai
+ *
+ * Routeway is OpenAI-compatible, similar to OpenRouter
  */
 
 import { Attachment, ToolCall, ToolCallStatus } from '../types';
 import { exaAnswer, ExaCategory, exaGetContents, exaSearch } from './exaService';
 import { getDefaultPrompt, getReasoningPrompt, getSearchPrompt } from './prompts';
 import { OPENAI_TOOLS } from './tools';
-const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
-const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
+
+const ROUTEWAY_API_KEY = import.meta.env.VITE_ROUTEWAY_API_KEY;
+const ROUTEWAY_BASE_URL = 'https://api.routeway.ai/v1';
 
 // Search type for Exa API
 export type ExaSearchType = 'auto' | 'fast' | 'deep';
@@ -18,7 +21,7 @@ export type ExaSearchType = 'auto' | 'fast' | 'deep';
 let currentSearchType: ExaSearchType = 'auto';
 
 /**
- * Compact formatter for OpenRouter to minimize tokens
+ * Compact formatter for Routeway to minimize tokens
  */
 function formatExaResultsCompact(results: any[]): string {
     if (!results?.length) return 'No results found.';
@@ -36,94 +39,13 @@ SOURCES:
 ${formatted}`;
 }
 
-/**
- * Detect if text looks like reasoning/planning (not actual response)
- * DeepSeek and similar models output their thinking process as regular text
- */
-export function isReasoningText(text: string): boolean {
-    const reasoningPatterns = [
-        // English patterns
-        /^(i will|i'll|let me|i('ll| will) (search|look|find|check|visit|navigate|browse|try|get|fetch))/i,
-        /^(searching|looking for|checking|visiting|navigating|browsing|fetching)/i,
-        /^(i need to|i should|first,? i|now i|next,? i)/i,
-        /^(let's|let us)/i,
-        /^(to (get|find|search|check|verify|confirm))/i,
-        // Indonesian patterns
-        /^(saya akan|saya perlu|saya harus|mari (kita|saya))/i,
-        /^(mencari|mengunjungi|memeriksa|untuk (mendapatkan|mencari|menemukan))/i,
-        /^(sekarang saya|selanjutnya saya)/i,
-    ];
-
-    const trimmed = text.trim();
-    // Check if any line starts with reasoning pattern
-    const lines = trimmed.split('\n');
-    for (const line of lines) {
-        const lineTrimmed = line.trim();
-        if (lineTrimmed && reasoningPatterns.some(pattern => pattern.test(lineTrimmed))) {
-            return true;
-        }
-    }
-    return false;
-}
-
-/**
- * Filter out reasoning text from content, returning only actual response
- * Returns { reasoning: string, content: string }
- */
-export function filterReasoningFromContent(text: string): { reasoning: string; content: string } {
-    if (!text) return { reasoning: '', content: '' };
-
-    const reasoningPatterns = [
-        /^(i will|i'll|let me|i('ll| will) (search|look|find|check|visit|navigate|browse|try|get|fetch))/i,
-        /^(searching|looking for|checking|visiting|navigating|browsing|fetching)/i,
-        /^(i need to|i should|first,? i|now i|next,? i)/i,
-        /^(let's|let us)/i,
-        /^(to (get|find|search|check|verify|confirm))/i,
-        /^(saya akan|saya perlu|saya harus|mari (kita|saya))/i,
-        /^(mencari|mengunjungi|memeriksa|untuk (mendapatkan|mencari|menemukan))/i,
-        /^(sekarang saya|selanjutnya saya)/i,
-    ];
-
-    const lines = text.split('\n');
-    const reasoningLines: string[] = [];
-    const contentLines: string[] = [];
-    let foundContent = false;
-
-    for (const line of lines) {
-        const lineTrimmed = line.trim();
-
-        // Once we find actual content, everything after is content
-        if (foundContent) {
-            contentLines.push(line);
-            continue;
-        }
-
-        // Check if this line is reasoning
-        const isReasoning = lineTrimmed && reasoningPatterns.some(pattern => pattern.test(lineTrimmed));
-
-        if (isReasoning || (!lineTrimmed && reasoningLines.length > 0 && contentLines.length === 0)) {
-            // It's reasoning or an empty line between reasoning
-            reasoningLines.push(line);
-        } else if (lineTrimmed) {
-            // Found actual content
-            foundContent = true;
-            contentLines.push(line);
-        }
-    }
-
-    return {
-        reasoning: reasoningLines.join('\n').trim(),
-        content: contentLines.join('\n').trim()
-    };
-}
-
 interface ChatMessage {
     role: 'user' | 'model' | 'assistant' | 'system';
     content: string;
     attachments?: Attachment[];
 }
 
-interface OpenRouterMessage {
+interface RoutewayMessage {
     role: 'user' | 'assistant' | 'system' | 'tool';
     content: string | Array<{ type: string; text?: string; image_url?: { url: string } }> | null;
     tool_calls?: any[];
@@ -132,55 +54,40 @@ interface OpenRouterMessage {
 }
 
 // Event types for streaming with tool calls
-export type OpenRouterStreamEvent =
+export type RoutewayStreamEvent =
     | { type: 'text'; content: string }
     | { type: 'thinking'; content: string }
     | { type: 'thinking_done' }
     | { type: 'planning'; content: string }
     | { type: 'tool_call_start'; toolCall: ToolCall }
-    | { type: 'tool_call_update'; id: string; status: ToolCallStatus; result?: any; error?: string; progress?: string }
+    | { type: 'tool_call_update'; id: string; status: ToolCallStatus; result?: any; error?: string }
     | { type: 'done' };
 
 // Tool execution timeout in milliseconds
 const TOOL_TIMEOUT_MS = 15000;
 
-// Global abort controller for cancelling requests
-let globalAbortController: AbortController | null = null;
-
 /**
- * Wrap a promise with a timeout and abort controller
+ * Wrap a promise with a timeout
  */
-function withTimeout<T>(promise: Promise<T>, timeoutMs: number, toolName: string, abortController?: AbortController): Promise<T> {
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, toolName: string): Promise<T> {
     return Promise.race([
         promise,
-        new Promise<T>((_, reject) => {
-            const timeoutId = setTimeout(() => {
-                reject(new Error(`${toolName} timed out after ${timeoutMs / 1000}s`));
-            }, timeoutMs);
-
-            // Clear timeout if abort controller triggers
-            if (abortController) {
-                abortController.signal.addEventListener('abort', () => {
-                    clearTimeout(timeoutId);
-                });
-            }
-        })
+        new Promise<T>((_, reject) =>
+            setTimeout(() => reject(new Error(`${toolName} timed out after ${timeoutMs / 1000}s`)), timeoutMs)
+        )
     ]);
 }
 
 /**
- * Execute a tool call with timeout and abort controller
+ * Execute a tool call with timeout
  */
 async function executeToolCall(name: string, args: Record<string, any>): Promise<any> {
     const numResults = Math.min(args.numResults || 5, 5);
 
-    // Create abort controller for this specific tool call
-    const toolAbortController = new AbortController();
-
     const executeWithTimeout = async () => {
         switch (name) {
             case 'web_search': {
-                const searchResult = await exaSearch({
+                return await exaSearch({
                     query: args.query,
                     numResults,
                     category: args.category as ExaCategory | undefined,
@@ -188,11 +95,10 @@ async function executeToolCall(name: string, args: Record<string, any>): Promise
                     type: currentSearchType,
                     extras: { imageLinks: 3 },
                 });
-                return searchResult;
             }
 
             case 'search_news': {
-                const newsResult = await exaSearch({
+                return await exaSearch({
                     query: args.query,
                     numResults,
                     category: 'news',
@@ -200,11 +106,10 @@ async function executeToolCall(name: string, args: Record<string, any>): Promise
                     type: currentSearchType,
                     extras: { imageLinks: 3 },
                 });
-                return newsResult;
             }
 
             case 'search_github': {
-                const githubResult = await exaSearch({
+                return await exaSearch({
                     query: args.query,
                     numResults,
                     category: 'github',
@@ -212,11 +117,10 @@ async function executeToolCall(name: string, args: Record<string, any>): Promise
                     type: currentSearchType,
                     extras: { imageLinks: 3 },
                 });
-                return githubResult;
             }
 
             case 'search_research_papers': {
-                const researchResult = await exaSearch({
+                return await exaSearch({
                     query: args.query,
                     numResults,
                     category: 'research paper',
@@ -224,11 +128,10 @@ async function executeToolCall(name: string, args: Record<string, any>): Promise
                     type: currentSearchType,
                     extras: { imageLinks: 2 },
                 });
-                return researchResult;
             }
 
             case 'search_people': {
-                const peopleResult = await exaSearch({
+                return await exaSearch({
                     query: args.query,
                     numResults,
                     category: 'people',
@@ -236,7 +139,6 @@ async function executeToolCall(name: string, args: Record<string, any>): Promise
                     type: currentSearchType,
                     extras: { imageLinks: 2 },
                 });
-                return peopleResult;
             }
 
             case 'crawl_website': {
@@ -244,7 +146,7 @@ async function executeToolCall(name: string, args: Record<string, any>): Promise
                 const searchQuery = args.query || url;
                 const subpages = Math.min(args.subpages || 3, 5);
 
-                const crawlResult = await exaSearch({
+                return await exaSearch({
                     query: searchQuery,
                     numResults: 1,
                     includeDomains: [url],
@@ -255,17 +157,16 @@ async function executeToolCall(name: string, args: Record<string, any>): Promise
                     livecrawlTimeout: 10000,
                     extras: { imageLinks: 3 },
                 });
-                return crawlResult;
             }
 
             case 'visit_urls': {
                 const urlsToVisit = (args.urls || []).slice(0, 4);
-                console.log('[OpenRouter] Visiting URLs:', urlsToVisit);
+                console.log('[Routeway] Visiting URLs:', urlsToVisit);
                 return await exaGetContents(urlsToVisit, 3000);
             }
 
             case 'quick_answer': {
-                console.log('[OpenRouter] Getting quick answer for:', args.query);
+                console.log('[Routeway] Getting quick answer for:', args.query);
                 return await exaAnswer({
                     query: args.query,
                     text: true,
@@ -277,29 +178,27 @@ async function executeToolCall(name: string, args: Record<string, any>): Promise
         }
     };
 
-    return withTimeout(executeWithTimeout(), TOOL_TIMEOUT_MS, name, toolAbortController);
+    return withTimeout(executeWithTimeout(), TOOL_TIMEOUT_MS, name);
 }
 
+
 /**
- * Streams a response from OpenRouter API with tool calling support
+ * Streams a response from Routeway API with tool calling support
+ * DeepSeek V3.2 supports both tools AND reasoning simultaneously
  */
-export async function* sendMessageToOpenRouterStreamWithTools(
+export async function* sendMessageToRoutewayStreamWithTools(
     prompt: string,
     history: ChatMessage[],
-    modelId: string = 'nex-agi/deepseek-v3.1-nex-n1:free',
+    modelId: string = 'minimax-m2:free',
     enableTools: boolean = false,
     searchType: ExaSearchType = 'auto',
     reasoningEnabled: boolean = false
-): AsyncGenerator<OpenRouterStreamEvent, void, unknown> {
+): AsyncGenerator<RoutewayStreamEvent, void, unknown> {
     // Set the search type for tool calls
     currentSearchType = searchType;
 
-    // Check if this is a DeepSeek R1 model (has native reasoning support)
-    // Only DeepSeek R1 models have native reasoning - V3 does not
-    const isDeepSeekR1 = modelId.toLowerCase().includes('deepseek-r1') || modelId.toLowerCase().includes('deepseek/r1');
-
-    // Convert history to OpenRouter's expected format
-    const formattedHistory: OpenRouterMessage[] = history
+    // Convert history to Routeway's expected format (OpenAI-compatible)
+    const formattedHistory: RoutewayMessage[] = history
         .filter(msg => msg.content && (msg.role === 'user' || msg.role === 'model' || msg.role === 'assistant'))
         .map(msg => {
             const role = msg.role === 'model' ? 'assistant' : msg.role as 'user' | 'assistant' | 'system';
@@ -341,18 +240,18 @@ export async function* sendMessageToOpenRouterStreamWithTools(
         });
 
     // Build system prompt based on mode
+    // DeepSeek V3.2 supports tools + reasoning together
     let systemPrompt: string;
 
     if (enableTools) {
         systemPrompt = getSearchPrompt(searchType);
-    } else if (reasoningEnabled && !isDeepSeekR1) {
-        // For non-DeepSeek-R1 models (including DeepSeek V3), use thinking tags
+    } else if (reasoningEnabled) {
         systemPrompt = getReasoningPrompt();
     } else {
         systemPrompt = getDefaultPrompt();
     }
 
-    const messages: OpenRouterMessage[] = [
+    const messages: RoutewayMessage[] = [
         { role: 'system', content: systemPrompt },
         ...formattedHistory,
         { role: 'user', content: prompt }
@@ -370,7 +269,7 @@ export async function* sendMessageToOpenRouterStreamWithTools(
                 model: modelId,
                 messages,
                 stream: true,
-                max_tokens: 4096,
+                max_tokens: 8192,
                 temperature: 0.7,
             };
 
@@ -379,32 +278,22 @@ export async function* sendMessageToOpenRouterStreamWithTools(
                 requestBody.tool_choice = 'auto';
             }
 
-            // Enable native reasoning for DeepSeek R1 models when reasoning is enabled
-            // OpenRouter uses 'reasoning' object with 'effort' parameter
-            if (isDeepSeekR1 && reasoningEnabled) {
-                requestBody.reasoning = {
-                    effort: 'medium'  // Can be 'low', 'medium', or 'high'
-                };
-            }
-
             // Log request size for debugging
             const requestSize = JSON.stringify(requestBody).length;
-            console.log(`[OpenRouter] Request size: ${(requestSize / 1024).toFixed(1)}KB, messages: ${messages.length}`);
+            console.log(`[Routeway] Request size: ${(requestSize / 1024).toFixed(1)}KB, model: ${modelId}`);
 
-            const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
+            const response = await fetch(`${ROUTEWAY_BASE_URL}/chat/completions`, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+                    'Authorization': `Bearer ${ROUTEWAY_API_KEY}`,
                     'Content-Type': 'application/json',
-                    'HTTP-Referer': window.location.origin,
-                    'X-Title': 'Zeta AI Assistant'
                 },
                 body: JSON.stringify(requestBody),
             });
 
             if (!response.ok) {
                 const error = await response.text();
-                throw new Error(`OpenRouter API error: ${response.status} - ${error}`);
+                throw new Error(`Routeway API error: ${response.status} - ${error}`);
             }
 
             const reader = response.body?.getReader();
@@ -419,10 +308,9 @@ export async function* sendMessageToOpenRouterStreamWithTools(
             // For reasoning mode - track thinking state
             let isInThinkingBlock = false;
             let hasEmittedThinkingDone = false;
-            // Buffer for accumulating content to handle split tags
             let pendingContent = '';
 
-            // For tools mode - track planning text (DeepSeek's "I'll search for..." text)
+            // For tools mode - track planning text
             let planningBuffer = '';
             let hasEmittedPlanning = false;
 
@@ -447,26 +335,18 @@ export async function* sendMessageToOpenRouterStreamWithTools(
 
                         if (!delta) continue;
 
-                        // Handle DeepSeek R1 native reasoning_content
-                        if (isDeepSeekR1 && reasoningEnabled && delta.reasoning_content) {
+                        // Handle reasoning_content from DeepSeek models
+                        if (delta.reasoning_content) {
                             if (!isInThinkingBlock) {
                                 isInThinkingBlock = true;
                             }
                             yield { type: 'thinking', content: delta.reasoning_content };
                         }
 
-                        // Also check for 'reasoning' field (alternative field name)
-                        if (isDeepSeekR1 && reasoningEnabled && delta.reasoning) {
-                            if (!isInThinkingBlock) {
-                                isInThinkingBlock = true;
-                            }
-                            yield { type: 'thinking', content: delta.reasoning };
-                        }
-
                         // Handle text content
                         if (delta.content) {
-                            // For DeepSeek R1 with reasoning, emit thinking_done when we get regular content
-                            if (isDeepSeekR1 && reasoningEnabled && isInThinkingBlock && !hasEmittedThinkingDone) {
+                            // Emit thinking_done when transitioning from reasoning to content
+                            if (isInThinkingBlock && !hasEmittedThinkingDone) {
                                 yield { type: 'thinking_done' };
                                 hasEmittedThinkingDone = true;
                                 isInThinkingBlock = false;
@@ -474,18 +354,14 @@ export async function* sendMessageToOpenRouterStreamWithTools(
 
                             fullContent += delta.content;
 
-                            // Parse thinking tags when reasoning is enabled (for non-DeepSeek-R1 models like DeepSeek V3)
-                            if (reasoningEnabled && !isDeepSeekR1) {
+                            // Parse thinking tags for tag-based reasoning
+                            if (reasoningEnabled && !hasEmittedThinkingDone) {
                                 pendingContent += delta.content;
 
-                                // Process the pending content for thinking tags
                                 while (true) {
                                     if (!isInThinkingBlock) {
-                                        // Look for opening tag
                                         const openIdx = pendingContent.indexOf('<thinking>');
                                         if (openIdx === -1) {
-                                            // No opening tag found, emit all content as text
-                                            // But keep last 10 chars in case tag is split
                                             if (pendingContent.length > 10) {
                                                 const toEmit = pendingContent.slice(0, -10);
                                                 pendingContent = pendingContent.slice(-10);
@@ -493,18 +369,14 @@ export async function* sendMessageToOpenRouterStreamWithTools(
                                             }
                                             break;
                                         } else {
-                                            // Found opening tag
                                             const beforeTag = pendingContent.slice(0, openIdx);
                                             if (beforeTag) yield { type: 'text', content: beforeTag };
-                                            pendingContent = pendingContent.slice(openIdx + 10); // Skip <thinking>
+                                            pendingContent = pendingContent.slice(openIdx + 10);
                                             isInThinkingBlock = true;
                                         }
                                     } else {
-                                        // Inside thinking block, look for closing tag
                                         const closeIdx = pendingContent.indexOf('</thinking>');
                                         if (closeIdx === -1) {
-                                            // No closing tag yet, emit as thinking
-                                            // But keep last 11 chars in case tag is split
                                             if (pendingContent.length > 11) {
                                                 const toEmit = pendingContent.slice(0, -11);
                                                 pendingContent = pendingContent.slice(-11);
@@ -512,23 +384,18 @@ export async function* sendMessageToOpenRouterStreamWithTools(
                                             }
                                             break;
                                         } else {
-                                            // Found closing tag
                                             const thinkingContent = pendingContent.slice(0, closeIdx);
                                             if (thinkingContent) yield { type: 'thinking', content: thinkingContent };
                                             yield { type: 'thinking_done' };
                                             hasEmittedThinkingDone = true;
-                                            pendingContent = pendingContent.slice(closeIdx + 11); // Skip </thinking>
+                                            pendingContent = pendingContent.slice(closeIdx + 11);
                                             isInThinkingBlock = false;
                                         }
                                     }
                                 }
-                            } else if (enableTools) {
-                                // When tools are enabled, buffer ALL pre-tool text as planning
-                                // This captures DeepSeek's "I'll search for..." planning text
-                                // The buffer will be emitted as planning when tool calls start,
-                                // or as regular text if no tool calls happen
+                            } else if (enableTools && !hasEmittedPlanning) {
+                                // Buffer planning text when tools are enabled
                                 planningBuffer += delta.content;
-                                // Don't emit anything yet - wait for tool calls or end of stream
                             } else {
                                 yield { type: 'text', content: delta.content };
                             }
@@ -536,7 +403,7 @@ export async function* sendMessageToOpenRouterStreamWithTools(
 
                         // Handle tool calls
                         if (delta.tool_calls) {
-                            // When we see the first tool call, emit any buffered planning text
+                            // Emit planning text when tool calls start
                             if (!hasEmittedPlanning && planningBuffer.trim()) {
                                 yield { type: 'planning', content: planningBuffer.trim() };
                                 hasEmittedPlanning = true;
@@ -568,8 +435,8 @@ export async function* sendMessageToOpenRouterStreamWithTools(
                 }
             }
 
-            // Flush any remaining pending content
-            if (reasoningEnabled && !isDeepSeekR1 && pendingContent) {
+            // Flush remaining pending content
+            if (reasoningEnabled && pendingContent) {
                 if (isInThinkingBlock) {
                     yield { type: 'thinking', content: pendingContent };
                     yield { type: 'thinking_done' };
@@ -578,14 +445,13 @@ export async function* sendMessageToOpenRouterStreamWithTools(
                 }
             }
 
-            // If tools were enabled but no tool calls happened, emit buffered text as regular content
+            // Emit buffered text if no tool calls
             if (enableTools && !hasEmittedPlanning && planningBuffer.trim()) {
                 yield { type: 'text', content: planningBuffer };
                 planningBuffer = '';
             }
 
-            // Emit thinking_done if reasoning was enabled but we never got thinking content
-            // This handles cases where the model doesn't output <thinking> tags
+            // Emit thinking_done if never emitted
             if (reasoningEnabled && !hasEmittedThinkingDone) {
                 yield { type: 'thinking_done' };
             }
@@ -669,12 +535,12 @@ export async function* sendMessageToOpenRouterStreamWithTools(
                     }
                 }
 
-                // Emit line breaks to separate pre-tool text from post-tool response
+                // Emit line breaks
                 if (fullContent && fullContent.trim()) {
                     yield { type: 'text', content: '\n\n' };
                 }
 
-                // Continue the loop to get the model's response
+                // Continue loop for model response
                 continueLoop = true;
             }
         } catch (error) {
@@ -683,13 +549,12 @@ export async function* sendMessageToOpenRouterStreamWithTools(
                 errorMessage.includes('HTTP2') ||
                 errorMessage.includes('fetch');
 
-            console.error('[OpenRouter] API Error:', error);
+            console.error('[Routeway] API Error:', error);
 
-            // Retry on network errors
             if (isNetworkError && retryCount < MAX_RETRIES) {
                 retryCount++;
-                console.log(`[OpenRouter] Retrying... (attempt ${retryCount}/${MAX_RETRIES})`);
-                await new Promise(resolve => setTimeout(resolve, 1000 * retryCount)); // Exponential backoff
+                console.log(`[Routeway] Retrying... (attempt ${retryCount}/${MAX_RETRIES})`);
+                await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
                 continueLoop = true;
                 continue;
             }
@@ -704,11 +569,11 @@ export async function* sendMessageToOpenRouterStreamWithTools(
 /**
  * Simple streaming without tools (for backward compatibility)
  */
-export async function* sendMessageToOpenRouter(
+export async function* sendMessageToRouteway(
     prompt: string,
     history: ChatMessage[]
 ): AsyncGenerator<string, void, unknown> {
-    for await (const event of sendMessageToOpenRouterStreamWithTools(prompt, history, 'openai/gpt-oss-20b:free', false)) {
+    for await (const event of sendMessageToRoutewayStreamWithTools(prompt, history, 'minimax-m2:free', false)) {
         if (event.type === 'text') {
             yield event.content;
         }

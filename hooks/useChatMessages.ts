@@ -11,6 +11,7 @@ import { AIModel, getEffectiveSettings } from '../services/modelConfig';
 import {
     sendMessageToOpenRouterStreamWithTools
 } from '../services/openRouterService';
+import { sendMessageToRoutewayStreamWithTools } from '../services/routewayService';
 import { Attachment, Message, ToolCall } from '../types';
 
 export type SearchType = 'auto' | 'fast' | 'deep';
@@ -303,6 +304,69 @@ export function useChatMessages(options: UseChatMessagesOptions) {
     };
 
     /**
+     * Process Routeway stream (DeepSeek V3.2)
+     */
+    const processRoutewayStream = async (
+        prompt: string,
+        history: any[],
+        messageId: string,
+        effectiveSearchType: SearchType,
+        effectiveWebSearch: boolean,
+        modelId: string,
+        useReasoning: boolean
+    ) => {
+        const stream = sendMessageToRoutewayStreamWithTools(
+            prompt, history, modelId, effectiveWebSearch, effectiveSearchType, useReasoning
+        );
+        let fullContent = '';
+        let fullThinking = '';
+        let currentToolCalls: ToolCall[] = [];
+
+        for await (const event of stream) {
+            switch (event.type) {
+                case 'thinking':
+                    fullThinking += event.content;
+                    updateStreamingMessage(messageId, { thinking: fullThinking, isThinking: true });
+                    break;
+
+                case 'thinking_done':
+                    updateStreamingMessage(messageId, { isThinking: false });
+                    break;
+
+                case 'planning':
+                    updateStreamingMessage(messageId, { planningText: event.content });
+                    break;
+
+                case 'text':
+                    fullContent += event.content;
+                    updateStreamingMessage(messageId, { content: fullContent, toolCalls: currentToolCalls, isThinking: false });
+                    break;
+
+                case 'tool_call_start':
+                    currentToolCalls = [...currentToolCalls, event.toolCall];
+                    updateStreamingMessage(messageId, { isThinking: false, toolCalls: currentToolCalls });
+                    break;
+
+                case 'tool_call_update':
+                    currentToolCalls = currentToolCalls.map(tc =>
+                        tc.id === event.id
+                            ? {
+                                ...tc,
+                                status: event.status,
+                                result: event.result,
+                                error: event.error,
+                                completedAt: event.status === 'completed' || event.status === 'error'
+                                    ? new Date() : tc.completedAt
+                            }
+                            : tc
+                    );
+                    updateStreamingMessage(messageId, { toolCalls: currentToolCalls });
+                    break;
+            }
+        }
+    };
+
+    /**
      * Enrich prompt with URL content if URLs are detected
      */
     const enrichPromptWithUrls = async (
@@ -412,6 +476,8 @@ export function useChatMessages(options: UseChatMessagesOptions) {
                 }
             } else if (currentModel.provider === 'groq') {
                 await processGroqStream(enrichedPrompt, history, newAiMessageId, effectiveSearchType, effective.webSearchEnabled, currentModel.id, effective.reasoningEnabled);
+            } else if (currentModel.provider === 'routeway') {
+                await processRoutewayStream(enrichedPrompt, history, newAiMessageId, effectiveSearchType, effective.webSearchEnabled, currentModel.id, effective.reasoningEnabled);
             } else {
                 await processGeminiStream(enrichedPrompt, history, newAiMessageId, effectiveSearchType, effective.webSearchEnabled, currentModel.id, effective.reasoningEnabled);
             }
@@ -495,6 +561,8 @@ export function useChatMessages(options: UseChatMessagesOptions) {
                 }
             } else if (currentModel.provider === 'groq') {
                 await processGroqStream(promptContent, historyForApi, newAiMessageId, currentSearchType, effective.webSearchEnabled, currentModel.id, effective.reasoningEnabled);
+            } else if (currentModel.provider === 'routeway') {
+                await processRoutewayStream(promptContent, historyForApi, newAiMessageId, currentSearchType, effective.webSearchEnabled, currentModel.id, effective.reasoningEnabled);
             } else {
                 await processGeminiStream(promptContent, historyForApi, newAiMessageId, currentSearchType, effective.webSearchEnabled, currentModel.id, effective.reasoningEnabled);
             }
@@ -609,6 +677,8 @@ export function useChatMessages(options: UseChatMessagesOptions) {
                 }
             } else if (currentModel.provider === 'groq') {
                 await processGroqStream(enrichedPrompt, historyForApi, newAiMessageId, currentSearchType, effective.webSearchEnabled, currentModel.id, effective.reasoningEnabled);
+            } else if (currentModel.provider === 'routeway') {
+                await processRoutewayStream(enrichedPrompt, historyForApi, newAiMessageId, currentSearchType, effective.webSearchEnabled, currentModel.id, effective.reasoningEnabled);
             } else {
                 await processGeminiStream(enrichedPrompt, historyForApi, newAiMessageId, currentSearchType, effective.webSearchEnabled, currentModel.id, effective.reasoningEnabled);
             }

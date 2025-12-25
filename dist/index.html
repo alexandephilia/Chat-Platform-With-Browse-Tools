@@ -378,6 +378,10 @@
         }
 
         .chat-message-ai blockquote p {
+            margin-bottom: 1em !important;
+        }
+
+        .chat-message-ai blockquote p:last-child {
             margin-bottom: 0 !important;
         }
 
@@ -734,7 +738,7 @@
 
         @keyframes ft-blurAndSharpen {
             from {
-                filter: blur(5px);
+                filter: blur(4px);
                 opacity: 0;
             }
 
@@ -742,6 +746,29 @@
                 filter: blur(0);
                 opacity: 1;
             }
+        }
+
+        /* Ensure animation final state persists */
+        [style*="animation"][style*="ft-blurAndSharpen"] {
+            animation-fill-mode: forwards !important;
+        }
+
+        /* Smooth text rendering during flowtoken animation */
+        .chat-message-ai span[style*="animation"] {
+            -webkit-font-smoothing: antialiased !important;
+            -moz-osx-font-smoothing: grayscale !important;
+            text-rendering: optimizeLegibility !important;
+            will-change: filter, opacity !important;
+        }
+
+        /* Ensure consistent rendering after flowtoken animation completes */
+        /* Exclude shimmer-text elements which use CSS transitions, not animations */
+        .chat-message-ai span:not([style*="animation"]):not([data-shimmer-container]):not([data-shimmer-char]) {
+            -webkit-font-smoothing: antialiased !important;
+            -moz-osx-font-smoothing: grayscale !important;
+            text-rendering: optimizeLegibility !important;
+            filter: none !important;
+            opacity: 1 !important;
         }
 
         @keyframes ft-dropIn {
@@ -796,10 +823,10 @@
 
         /* ===== TABLES - Clean Implementation ===== */
         /* ===== TABLES - Scrollable Implementation ===== */
-        /* Table scroll wrapper */
+        /* Table scroll wrapper - fit content, don't stretch */
         .chat-message-ai .table-wrapper {
-            display: block !important;
-            width: 100% !important;
+            display: inline-block !important;
+            width: auto !important;
             max-width: 100% !important;
             overflow-x: auto !important;
             overflow-y: hidden !important;
@@ -815,7 +842,7 @@
 
         /* Direct table children - make scrollable */
         .chat-message-ai>table {
-            width: 100% !important;
+            width: auto !important;
             max-width: 100% !important;
             overflow-x: auto !important;
             overflow-y: hidden !important;
@@ -834,7 +861,7 @@
         .chat-message-ai>table>thead,
         .chat-message-ai .table-wrapper table {
             display: table !important;
-            width: auto !important;
+            width: 100% !important;
             min-width: auto !important;
             border-collapse: separate !important;
             border-spacing: 0 !important;
@@ -873,7 +900,7 @@
 
         /* Table data cells */
         .chat-message-ai td {
-            padding: 5px 10px !important;
+            padding: 8px 14px !important;
             border: 1px solid rgba(226, 232, 240, 0.6) !important;
             color: var(--color-text-primary) !important;
             font-size: 13px !important;
@@ -881,13 +908,43 @@
             width: auto !important;
             white-space: normal !important;
             word-break: break-word !important;
-            min-width: 164px !important;
-            max-width: 600px !important;
+            min-width: 120px !important;
+            max-width: 400px !important;
         }
 
         /* Hover effect for rows */
         .chat-message-ai tr:hover td {
             background: rgba(241, 245, 249, 0.3) !important;
+        }
+
+        /* ===== TABLE STREAMING FIXES ===== */
+        /* Smooth transitions when table structure changes during streaming */
+        .chat-message-ai table,
+        .chat-message-ai .table-wrapper,
+        .chat-message-ai thead,
+        .chat-message-ai tbody,
+        .chat-message-ai tr,
+        .chat-message-ai th,
+        .chat-message-ai td {
+            transition: opacity 0.15s ease-out, transform 0.15s ease-out !important;
+        }
+
+        /* Ensure table elements maintain structure during streaming */
+        .chat-message-ai table:empty,
+        .chat-message-ai tbody:empty,
+        .chat-message-ai thead:empty {
+            display: none !important;
+        }
+
+        /* Fix for partial table rows during streaming */
+        .chat-message-ai tr:not(:has(td)):not(:has(th)) {
+            display: none !important;
+        }
+
+        /* Ensure cells don't collapse during content streaming */
+        .chat-message-ai td:empty,
+        .chat-message-ai th:empty {
+            min-height: 1.5em !important;
         }
 
         /* ===== CODE BLOCK OVERRIDES (Neutralize FT) ===== */
@@ -1571,7 +1628,7 @@
         }
       }
     </script>
-  <script type="module" crossorigin src="/assets/index-CVh0zgFk.js"></script>
+  <script type="module" crossorigin src="/assets/index-W5y-f3jp.js"></script>
   <link rel="stylesheet" crossorigin href="/assets/index-CChzf3nS.css">
 </head>
 
