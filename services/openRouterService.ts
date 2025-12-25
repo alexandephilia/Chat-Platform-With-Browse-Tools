@@ -5,7 +5,7 @@
  */
 
 import { Attachment, ToolCall, ToolCallStatus } from '../types';
-import { ExaCategory, exaGetContents, exaSearch } from './exaService';
+import { exaAnswer, ExaCategory, exaGetContents, exaSearch } from './exaService';
 import { getDefaultPrompt, getReasoningPrompt, getSearchPrompt } from './prompts';
 import { OPENAI_TOOLS } from './tools';
 const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
@@ -250,6 +250,14 @@ async function executeToolCall(name: string, args: Record<string, any>): Promise
                 const urlsToVisit = (args.urls || []).slice(0, 4);
                 console.log('[OpenRouter] Visiting URLs:', urlsToVisit);
                 return await exaGetContents(urlsToVisit, 3000);
+            }
+
+            case 'quick_answer': {
+                console.log('[OpenRouter] Getting quick answer for:', args.query);
+                return await exaAnswer({
+                    query: args.query,
+                    text: true,
+                });
             }
 
             default:

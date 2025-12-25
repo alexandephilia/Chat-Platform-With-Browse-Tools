@@ -271,6 +271,16 @@ export const SearchTimeline: React.FC<SearchTimelineProps> = ({ toolCalls, isStr
         const allResults: any[] = [];
         const allImages: string[] = [];
 
+        // Helper to check if URL is from LinkedIn (protected, won't load)
+        const isLinkedInUrl = (url: string): boolean => {
+            try {
+                const hostname = new URL(url).hostname;
+                return hostname.includes('licdn.com') || hostname.includes('linkedin.com');
+            } catch {
+                return false;
+            }
+        };
+
         toolCalls.forEach(tc => {
             if (tc.result?.results) {
                 tc.result.results.forEach((r: any) => {
@@ -278,20 +288,23 @@ export const SearchTimeline: React.FC<SearchTimelineProps> = ({ toolCalls, isStr
                     allResults.push(r);
                     // Prioritize imageLinks (actual content images) over image (og:image/preview)
                     // imageLinks are extracted from page content and more likely to be relevant
+                    // Filter out LinkedIn images as they're protected and won't load
                     if (r.imageLinks && r.imageLinks.length > 0) {
-                        allImages.push(...r.imageLinks);
-                    } else if (r.image) {
-                        // Fallback to og:image only if no imageLinks
+                        const validImages = r.imageLinks.filter((img: string) => !isLinkedInUrl(img));
+                        allImages.push(...validImages);
+                    } else if (r.image && !isLinkedInUrl(r.image)) {
+                        // Fallback to og:image only if no imageLinks and not LinkedIn
                         allImages.push(r.image);
                     }
                     if (r.subpages) {
                         totalSources += r.subpages.length;
                         r.subpages.forEach((sp: any) => {
                             allResults.push(sp);
-                            // Same priority for subpages
+                            // Same priority for subpages, filter LinkedIn
                             if (sp.imageLinks && sp.imageLinks.length > 0) {
-                                allImages.push(...sp.imageLinks);
-                            } else if (sp.image) {
+                                const validImages = sp.imageLinks.filter((img: string) => !isLinkedInUrl(img));
+                                allImages.push(...validImages);
+                            } else if (sp.image && !isLinkedInUrl(sp.image)) {
                                 allImages.push(sp.image);
                             }
                         });

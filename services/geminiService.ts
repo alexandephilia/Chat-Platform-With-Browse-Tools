@@ -148,6 +148,14 @@ async function executeToolCall(name: string, args: Record<string, any>): Promise
             console.log('[Gemini] Visiting URLs:', urlsToVisit);
             return await exaGetContents(urlsToVisit);
 
+        case 'quick_answer':
+            // Get a direct answer to a factual question
+            console.log('[Gemini] Getting quick answer for:', args.query);
+            return await exaAnswer({
+                query: args.query,
+                text: true,
+            });
+
         default:
             throw new Error(`Unknown tool: ${name}`);
     }

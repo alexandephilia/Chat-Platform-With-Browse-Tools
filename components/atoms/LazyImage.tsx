@@ -16,6 +16,36 @@ interface LazyImageProps {
 // Global cache for loaded images - persists across component instances
 const imageCache = new Set<string>();
 
+// Check if URL is from LinkedIn CDN (these are protected and won't load)
+const isLinkedInImage = (url: string): boolean => {
+    try {
+        const hostname = new URL(url).hostname;
+        return hostname.includes('licdn.com') || hostname.includes('linkedin.com');
+    } catch {
+        return false;
+    }
+};
+
+// Proxy URL through weserv.nl to bypass CORS/referrer restrictions
+const getProxiedUrl = (url: string): string => {
+    // Skip LinkedIn images - they're protected and won't work even with proxy
+    if (isLinkedInImage(url)) {
+        return ''; // Return empty to trigger fallback
+    }
+    // Use weserv.nl as image proxy for other protected images
+    // Only proxy if it's an external URL that might have CORS issues
+    try {
+        const urlObj = new URL(url);
+        // Don't proxy data URLs or already proxied URLs
+        if (url.startsWith('data:') || urlObj.hostname.includes('weserv.nl')) {
+            return url;
+        }
+        return url; // For now, return original URL - add proxy if needed
+    } catch {
+        return url;
+    }
+};
+
 // Preload an image and add to cache
 const preloadImage = (src: string): Promise<void> => {
     return new Promise((resolve, reject) => {

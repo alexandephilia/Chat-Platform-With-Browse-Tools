@@ -142,6 +142,23 @@ export const OPENAI_TOOLS = [
             },
         },
     },
+    {
+        type: 'function',
+        function: {
+            name: 'quick_answer',
+            description: 'Get a direct, one-line answer to a simple factual question. ONLY use for very simple lookups like "What year was X founded?" or "What is the capital of Y?". DO NOT use for questions requiring explanation, context, or multiple facts. For most questions, use web_search instead.',
+            parameters: {
+                type: 'object',
+                properties: {
+                    query: {
+                        type: 'string',
+                        description: 'A simple factual question with a short answer',
+                    },
+                },
+                required: ['query'],
+            },
+        },
+    },
 ];
 
 // =============================================================================
@@ -321,6 +338,20 @@ export const GEMINI_TOOLS = [
                         },
                     },
                     required: ['urls'],
+                },
+            },
+            {
+                name: 'quick_answer',
+                description: 'Get a direct, one-line answer to a simple factual question. ONLY use for very simple lookups like "What year was X founded?" or "What is the capital of Y?". DO NOT use for questions requiring explanation, context, or multiple facts. For most questions, use web_search instead.',
+                parameters: {
+                    type: Type.OBJECT,
+                    properties: {
+                        query: {
+                            type: Type.STRING,
+                            description: 'A simple factual question with a short answer',
+                        },
+                    },
+                    required: ['query'],
                 },
             },
         ],

@@ -28,6 +28,10 @@ function getContentsEndpoint(): string {
     return shouldUseProxy() ? '/api/exa-contents' : `${EXA_BASE_URL}/contents`;
 }
 
+function getAnswerEndpoint(): string {
+    return shouldUseProxy() ? '/api/exa-answer' : `${EXA_BASE_URL}/answer`;
+}
+
 /**
  * Exa Search Categories - specialized content types
  */
@@ -634,4 +638,117 @@ This allows users to click the link and see the exact quote highlighted on the p
 `;
 
     return instructions + formattedContents;
+}
+
+
+/**
+ * Exa Answer API Response
+ * Returns a direct answer with citations
+ */
+export interface ExaAnswerCitation {
+    id: string;
+    url: string;
+    title: string;
+    author?: string;
+    publishedDate?: string;
+    text?: string;
+    image?: string;
+    favicon?: string;
+}
+
+export interface ExaAnswerResponse {
+    answer: string;
+    citations: ExaAnswerCitation[];
+    costDollars?: {
+        total: number;
+    };
+}
+
+export interface ExaAnswerOptions {
+    query: string;
+    // Optional: filter by domains
+    includeDomains?: string[];
+    excludeDomains?: string[];
+    // Optional: date filters
+    startPublishedDate?: string;
+    endPublishedDate?: string;
+    // Optional: text content options
+    text?: boolean | { maxCharacters?: number };
+}
+
+/**
+ * Get a direct answer to a question using Exa Answer API
+ * Endpoint: POST https://api.exa.ai/answer
+ *
+ * This is useful for quick factual questions where you want a direct answer
+ * with citations rather than a list of search results.
+ *
+ * @param options - Answer options including the query
+ * @returns Answer with citations
+ */
+export async function exaAnswer(options: ExaAnswerOptions): Promise<ExaAnswerResponse> {
+    const {
+        query,
+        includeDomains,
+        excludeDomains,
+        startPublishedDate,
+        endPublishedDate,
+        text = true,
+    } = options;
+
+    const body: Record<string, any> = {
+        query,
+    };
+
+    // Add optional filters
+    if (includeDomains?.length) body.includeDomains = includeDomains;
+    if (excludeDomains?.length) body.excludeDomains = excludeDomains;
+    if (startPublishedDate) body.startPublishedDate = startPublishedDate;
+    if (endPublishedDate) body.endPublishedDate = endPublishedDate;
+
+    // Text content options
+    if (text === true) {
+        body.text = true;
+    } else if (typeof text === 'object') {
+        body.text = text;
+    }
+
+    console.log('[Exa] Answer request:', JSON.stringify(body, null, 2));
+
+    try {
+        const useProxy = shouldUseProxy();
+        const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+            'accept': 'application/json',
+        };
+
+        if (!useProxy) {
+            headers['x-api-key'] = EXA_API_KEY;
+        }
+
+        const response = await fetch(getAnswerEndpoint(), {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(body),
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('[Exa] Answer API error:', errorText);
+            throw new Error(`Exa Answer API error: ${response.status} - ${errorText}`);
+        }
+
+        const data = await response.json();
+
+        console.log('[Exa] Answer response:', {
+            answerLength: data.answer?.length,
+            citationCount: data.citations?.length,
+            cost: data.costDollars?.total,
+        });
+
+        return data;
+    } catch (error) {
+        console.error('[Exa] Answer error:', error);
+        throw error;
+    }
 }

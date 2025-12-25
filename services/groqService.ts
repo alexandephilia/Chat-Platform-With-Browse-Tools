@@ -8,7 +8,7 @@
  */
 
 import { Attachment, ToolCall, ToolCallStatus } from '../types';
-import { ExaCategory, exaGetContents, exaSearch } from './exaService';
+import { ExaCategory, exaAnswer, exaGetContents, exaSearch } from './exaService';
 import { getDefaultPrompt, getReasoningPrompt, getSearchPrompt } from './prompts';
 import { OPENAI_TOOLS } from './tools';
 
@@ -244,6 +244,14 @@ async function executeToolCall(name: string, args: Record<string, any>): Promise
                 const urlsToVisit = (args.urls || []).slice(0, 1);
                 console.log('[Groq] Visiting URL:', urlsToVisit);
                 return await exaGetContents(urlsToVisit, 1000);
+            }
+
+            case 'quick_answer': {
+                console.log('[Groq] Getting quick answer for:', args.query);
+                return await exaAnswer({
+                    query: args.query,
+                    text: true,
+                });
             }
 
             default:
