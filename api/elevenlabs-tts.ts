@@ -15,26 +15,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     try {
-        const { voiceId, text, modelId, voiceSettings, withTimestamps } = req.body;
+        const { voiceId, text, modelId, voiceSettings } = req.body;
 
         if (!voiceId || !text) {
             return res.status(400).json({ error: 'Missing required fields: voiceId, text' });
         }
 
         // Use mp3_44100_128 for best mobile compatibility
+        // This format is widely supported across all browsers and devices
         const outputFormat = 'mp3_44100_128';
 
-        // Use timestamps endpoint if requested
-        const endpoint = withTimestamps
-            ? `${ELEVENLABS_TTS_URL}/${voiceId}/with-timestamps?output_format=${outputFormat}`
-            : `${ELEVENLABS_TTS_URL}/${voiceId}?output_format=${outputFormat}`;
-
-        const response = await fetch(endpoint, {
+        const response = await fetch(`${ELEVENLABS_TTS_URL}/${voiceId}?output_format=${outputFormat}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'xi-api-key': ELEVENLABS_API_KEY,
-                'Accept': withTimestamps ? 'application/json' : 'audio/mpeg',
+                'Accept': 'audio/mpeg',
             },
             body: JSON.stringify({
                 text,
@@ -61,16 +57,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             return res.status(response.status).json({ error: errorText });
         }
 
-        // Handle timestamps response (JSON with base64 audio)
-        if (withTimestamps) {
-            const data = await response.json();
-            res.setHeader('Content-Type', 'application/json');
-            return res.status(200).json(data);
-        }
-
-        // Regular audio response
+        // Get audio as buffer and send with proper headers
         const audioBuffer = await response.arrayBuffer();
 
+        // Set comprehensive headers for mobile compatibility
         res.setHeader('Content-Type', 'audio/mpeg');
         res.setHeader('Content-Length', audioBuffer.byteLength);
         res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');

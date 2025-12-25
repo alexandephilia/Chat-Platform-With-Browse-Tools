@@ -183,25 +183,6 @@ export interface TTSOptions {
     similarityBoost?: number;  // 0-1, higher = closer to original voice
     style?: number;            // 0-1, style exaggeration (v2 models only)
     useSpeakerBoost?: boolean; // Boost similarity to speaker (NOT available for V3)
-    withTimestamps?: boolean;  // Get word-level timestamps for text highlighting
-}
-
-/**
- * Word timing information from ElevenLabs API
- */
-export interface WordTiming {
-    word: string;
-    start: number;  // Start time in seconds
-    end: number;    // End time in seconds
-}
-
-/**
- * TTS result with timestamps for karaoke-style highlighting
- */
-export interface TTSWithTimestamps {
-    audioBlob: Blob;
-    wordTimings: WordTiming[];
-    processedText: string;  // The text that was actually sent to TTS (after markdown stripping)
 }
 
 /**
@@ -216,8 +197,6 @@ export interface TTSWithTimestamps {
 // Current audio instance for stop functionality
 let currentAudio: HTMLAudioElement | null = null;
 let currentAudioUrl: string | null = null;
-let currentHighlightCallback: ((wordIndex: number) => void) | null = null;
-let highlightIntervalId: number | null = null;
 
 // Audio context for mobile - needed to unlock audio on iOS
 let audioContext: AudioContext | null = null;
@@ -270,11 +249,8 @@ export function isElevenLabsConfigured(): boolean {
 /**
  * Strip markdown formatting from text for cleaner TTS
  */
-/**
- * Strip markdown formatting and citations from text for cleaner TTS
- */
-function stripMarkdown(text: string, keepAudioTags: boolean = false): string {
-    let cleaned = text
+function stripMarkdown(text: string): string {
+    return text
         // Remove code blocks
         .replace(/```[\s\S]*?```/g, '')
         // Remove inline code
@@ -285,278 +261,21 @@ function stripMarkdown(text: string, keepAudioTags: boolean = false): string {
         .replace(/\*\*([^*]+)\*\*/g, '$1')
         .replace(/\*([^*]+)\*/g, '$1')
         .replace(/__([^_]+)__/g, '$1')
-        .replace(/_([^_]+)_/g, '$1');
-
-    // Handle audio tags (e.g., [laughs], [whispers])
-    // If we're keeping tags, we temporarily protect them
-    if (keepAudioTags) {
-        // Replace known emotional tags with placeholders to avoid being caught by citation stripper
-        // These are the tags documented by ElevenLabs V3:
-        // Voice-related: laughs, whispers, sighs, exhales, sarcastic, curious, excited, crying, snorts, mischievously
-        // Sound effects: gunshot, applause, clapping, explosion, swallows, gulps
-        // Special: sings, woo
-        const tags = [
-            // Voice-related (documented)
-            'laughs', 'laughs harder', 'starts laughing', 'wheezing',
-            'whispers', 'sighs', 'exhales',
-            'sarcastic', 'curious', 'excited', 'crying', 'snorts', 'mischievously',
-            // Sound effects (documented)
-            'gunshot', 'applause', 'clapping', 'explosion', 'swallows', 'gulps',
-            // Special (documented)
-            'sings', 'woo',
-            // Additional common ones that may work
-            'gasps', 'giggles', 'groaning', 'shouts'
-        ];
-        const tagRegex = new RegExp(`\\[(${tags.join('|')})\\]`, 'gi');
-        cleaned = cleaned.replace(tagRegex, '@@AUDIO_TAG_$1@@');
-    }
-
-    cleaned = cleaned
-        // Remove specific citation patterns commonly added by search models
-        // 1. Remove bracketed numbers: [1], [1, 2], [1-3]
-        .replace(/\s*\[\d+(?:[\s,-]+\d+)*\]/g, '')
-        // 2. Remove parenthetical sources: (source 1), (Source: NASA)
-        .replace(/\s*\((?:source|Source):?\s*[^)]+\)/g, '')
-        // 3. Remove citations following periods: ". [Source Title](url)" -> "."
-        // This targets the specific format enforced in prompts.ts
-        .replace(/\.\s*\[[^\]]+\]\(https?:\/\/[^\)]+\)/g, '.')
-
-        // Remove remaining images
+        .replace(/_([^_]+)_/g, '$1')
+        // Remove links, keep text
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+        // Remove images
         .replace(/!\[([^\]]*)\]\([^)]+\)/g, '')
-        // Remove remaining links but keep the descriptive text if it's NOT a citation
-        // If the link text is purely numeric or just "Source", we remove it
-        .replace(/\[([^\]]+)\]\([^)]+\)/g, (_, linkText) => {
-            const isCitationText = /^(?:\d+|Source\s*\d*|Citation\s*\d*)$/i.test(linkText.trim());
-            return isCitationText ? '' : linkText;
-        })
-
         // Remove blockquotes
         .replace(/^>\s+/gm, '')
         // Remove horizontal rules
         .replace(/^[-*_]{3,}$/gm, '')
         // Remove list markers
         .replace(/^[\s]*[-*+]\s+/gm, '')
-        .replace(/^[\s]*\d+\.\s+/gm, '');
-
-    // Restore audio tags or remove them if they weren't protected
-    if (keepAudioTags) {
-        cleaned = cleaned.replace(/@@AUDIO_TAG_(\w+)@@/g, '[$1]');
-    } else {
-        // Strip any remaining bracketed words that might be emotional tags
-        cleaned = cleaned.replace(/\s*\[[a-zA-Z]+\]/g, '');
-    }
-
-    return cleaned
-        // Clean up punctuation (remove redundant periods if we stripped too much)
-        .replace(/\.{2,}/g, '.')
+        .replace(/^[\s]*\d+\.\s+/gm, '')
         // Clean up extra whitespace
         .replace(/\n{3,}/g, '\n\n')
         .trim();
-}
-
-/**
- * Add natural pauses for ElevenLabs V3 using ellipses and punctuation
- * 
- * V3 does NOT support SSML <break> tags. Instead, use:
- * - Ellipses (…) for pauses and dramatic weight
- * - Standard punctuation for natural rhythm
- * - Line breaks for longer pauses
- * 
- * @see https://elevenlabs.io/docs/overview/capabilities/text-to-speech/best-practices#prompting-eleven-v3-alpha
- */
-function addNaturalPauses(text: string): string {
-    let result = text
-        // Add pause after transitional phrases
-        .replace(/\. (But|However|Nevertheless|Meanwhile|Anyway|Still|Yet|So|Then|Now|Actually|Basically|Essentially|Importantly|Interestingly)/g, '. … $1')
-        // Add pause after question marks when continuing (rhetorical/dramatic questions)
-        .replace(/\? (And|But|So|Well|Because)/g, '? … $1')
-        // Add emphasis pause before important words
-        .replace(/(most importantly|the key (is|point)|here's the thing|the truth is|in fact|to be honest|frankly)/gi, '… $1')
-        // Add pause after lists intro
-        .replace(/(:)\s*(First|1\.|Here)/gi, '$1 … $2')
-        // Add pause for dramatic reveals
-        .replace(/(turns out|it appears|surprisingly|unexpectedly|remarkably)/gi, '… $1')
-        // Add hesitation-style pause for thinking phrases
-        .replace(/(I think|I believe|In my opinion|From my perspective)/gi, '$1 …')
-        // Clean up any double ellipses that may have been created
-        .replace(/…\s*…/g, '…')
-        // Ensure ellipses are the proper character (not three dots)
-        .replace(/\.\.\.(?!\.)/g, '…')
-        // Add pause between major sections (double newlines)
-        .replace(/\n\n/g, '\n… \n');
-    
-    return result;
-}
-
-/**
- * Add emphasis through capitalization for key words
- * V3 responds to CAPITALIZATION for emphasis
- * 
- * @see https://elevenlabs.io/docs/overview/capabilities/text-to-speech/best-practices#punctuation
- */
-function addEmphasisCapitalization(text: string): string {
-    // List of emphasis words that should be capitalized for vocal emphasis
-    const emphasisPatterns = [
-        // Superlatives and intensifiers
-        { pattern: /\b(very|really|extremely|incredibly|absolutely|completely|totally)\b/gi, replacement: (m: string) => m.toUpperCase() },
-        // Important/key words when preceded by qualifiers
-        { pattern: /\b(most important|key point|crucial|critical|essential|vital)\b/gi, replacement: (m: string) => m.toUpperCase() },
-        // Strong negatives
-        { pattern: /\b(never|always|must|cannot|won't|definitely|certainly)\b/gi, replacement: (m: string) => m.toUpperCase() },
-        // Action words
-        { pattern: /\b(now|today|immediately|right now)\b/gi, replacement: (m: string) => m.toUpperCase() },
-    ];
-    
-    let result = text;
-    let emphasisCount = 0;
-    const maxEmphasis = 4; // Don't over-emphasize
-    
-    for (const { pattern, replacement } of emphasisPatterns) {
-        if (emphasisCount >= maxEmphasis) break;
-        result = result.replace(pattern, (match) => {
-            if (emphasisCount >= maxEmphasis) return match;
-            emphasisCount++;
-            return replacement(match);
-        });
-    }
-    
-    return result;
-}
-
-/**
- * Add expressive audio tags for ElevenLabs V3 model
- *
- * V3 supports tags like [laughs], [whispers], [sarcastic], [curious], [excited], etc.
- * These tags control vocal delivery and emotional expression.
- * Also supports compound tags like [frustrated sigh], [happy gasp], etc.
- *
- * Per ElevenLabs docs: "The voice you choose and its training samples will affect tag effectiveness"
- * Tags work best when matched to the voice's character and training data.
- *
- * @see https://elevenlabs.io/docs/overview/capabilities/text-to-speech/best-practices#audio-tags
- */
-function addExpressionTags(text: string): string {
-    // Split into sentences for analysis
-    const sentences = text.split(/(?<=[.!?])\s+/);
-    let tagCount = 0;
-    const maxTags = 8; // Increased limit for more natural expression
-
-    const result = sentences.map(sentence => {
-        const lowerSentence = sentence.toLowerCase();
-
-        // Skip very short sentences or if we've added enough tags
-        if (sentence.length < 15 || tagCount >= maxTags) return sentence;
-
-        // Detect questions - add curious tone (documented tag)
-        if (sentence.trim().endsWith('?')) {
-            if (lowerSentence.includes('how') || lowerSentence.includes('why') ||
-                lowerSentence.includes('what') || lowerSentence.includes('could') ||
-                lowerSentence.includes('would') || lowerSentence.includes('is it')) {
-                tagCount++;
-                return `[curious] ${sentence}`;
-            }
-        }
-
-        // Detect excitement - exclamation marks with positive words (documented tag)
-        if (sentence.includes('!')) {
-            if (lowerSentence.includes('great') || lowerSentence.includes('amazing') ||
-                lowerSentence.includes('awesome') || lowerSentence.includes('fantastic') ||
-                lowerSentence.includes('wonderful') || lowerSentence.includes('excellent') ||
-                lowerSentence.includes('love') || lowerSentence.includes('perfect') ||
-                lowerSentence.includes('incredible') || lowerSentence.includes('brilliant')) {
-                tagCount++;
-                return `[excited] ${sentence}`;
-            }
-        }
-
-        // Detect humor/amusement - use laughs tag (documented tag)
-        if (lowerSentence.includes('haha') || lowerSentence.includes('funny') ||
-            lowerSentence.includes('hilarious') || lowerSentence.includes('joke') ||
-            lowerSentence.includes('lol') || lowerSentence.includes('lmao') ||
-            lowerSentence.includes('amusing')) {
-            tagCount++;
-            return `[laughs] ${sentence}`;
-        }
-
-        // Detect sarcasm (documented tag)
-        if (lowerSentence.includes('obviously') || lowerSentence.includes('of course') ||
-            lowerSentence.includes('sure thing') || lowerSentence.includes('yeah right') ||
-            lowerSentence.includes('no kidding') || lowerSentence.includes('wow, really')) {
-            tagCount++;
-            return `[sarcastic] ${sentence}`;
-        }
-
-        // Detect sadness/empathy - use sighs (documented tag)
-        if (lowerSentence.includes('sorry to hear') || lowerSentence.includes('unfortunately') ||
-            lowerSentence.includes('sadly') || lowerSentence.includes('i understand') ||
-            lowerSentence.includes('that\'s tough') || lowerSentence.includes('my condolences')) {
-            tagCount++;
-            return `[sighs] ${sentence}`;
-        }
-        
-        // Detect frustration - compound tag (works with many voices)
-        if (lowerSentence.includes('frustrat') || lowerSentence.includes('annoying') ||
-            lowerSentence.includes('ugh') || lowerSentence.includes('argh') ||
-            lowerSentence.includes('come on') || lowerSentence.includes('seriously?')) {
-            tagCount++;
-            return `[exhales] ${sentence}`;
-        }
-
-        // Detect whisper-worthy content (documented tag)
-        if (lowerSentence.includes('secret') || lowerSentence.includes('between us') ||
-            lowerSentence.includes('quietly') || lowerSentence.includes('confidential') ||
-            lowerSentence.includes('don\'t tell') || lowerSentence.includes('private')) {
-            tagCount++;
-            return `[whispers] ${sentence}`;
-        }
-
-        // Detect mischief (documented tag)
-        if (lowerSentence.includes('trick') || lowerSentence.includes('sneaky') ||
-            lowerSentence.includes('clever') || lowerSentence.includes('hack') ||
-            lowerSentence.includes('cheat') || lowerSentence.includes('shortcut')) {
-            tagCount++;
-            return `[mischievously] ${sentence}`;
-        }
-        
-        // Detect surprise/realization (use gasps - common working tag)
-        if (lowerSentence.includes('oh!') || lowerSentence.includes('wow') ||
-            lowerSentence.includes('wait,') || lowerSentence.includes('holy') ||
-            lowerSentence.includes('oh my') || lowerSentence.includes('no way')) {
-            tagCount++;
-            return `[gasps] ${sentence}`;
-        }
-
-        return sentence;
-    }).join(' ');
-
-    // Debug: Log what we're sending to the API
-    if (tagCount > 0) {
-        console.log('[V3 Expression] Added', tagCount, 'audio tags to text');
-        console.log('[V3 Expression] Sample:', result.substring(0, 200) + '...');
-    }
-
-    return result;
-}
-
-/**
- * Full V3 text processing pipeline
- * Applies pauses, emphasis, and expression tags for natural-sounding speech
- */
-function processTextForV3(text: string): string {
-    let processed = text;
-    
-    // Step 1: Add natural pauses via ellipses
-    processed = addNaturalPauses(processed);
-    
-    // Step 2: Add emphasis via capitalization (limited to avoid shouting)
-    processed = addEmphasisCapitalization(processed);
-    
-    // Step 3: Add expression tags
-    processed = addExpressionTags(processed);
-    
-    console.log('[V3 Pipeline] Full processed text sample:', processed.substring(0, 400));
-    
-    return processed;
 }
 
 /**
@@ -572,9 +291,7 @@ export async function textToSpeech(
     const {
         voiceKey = getSelectedVoice(),
         modelKey = getSelectedTTSModel(),
-        // V3 uses lower stability for more expression ("Creative" mode)
-        // Per docs: "For maximum expressiveness with audio tags, use Creative or Natural settings"
-        stability: customStability,
+        stability = 0.5,
         similarityBoost = 0.75,
         style = 0,
         useSpeakerBoost = true,
@@ -586,29 +303,19 @@ export async function textToSpeech(
     const modelId = TTS_MODELS[modelKey].id;
 
     // Clean text for TTS
-    const isV3 = modelId === 'eleven_v3';
+    const cleanText = stripMarkdown(text);
 
-    // For V3, use lower stability (0.3 = Creative mode) for more expressive output
-    // For V2, use default 0.5 (Natural mode)
-    const stability = customStability ?? (isV3 ? 0.3 : 0.5);
-
-    // For V3, apply full processing pipeline (pauses, emphasis, expression tags)
-    let processedText = stripMarkdown(text, isV3);
-    if (isV3) {
-        processedText = processTextForV3(processedText);
-        console.log('[TTS V3] Using stability:', stability, '(Creative mode for expression)');
-    }
-
-    if (!processedText) {
+    if (!cleanText) {
         throw new Error('No speakable text content');
     }
 
     // ElevenLabs has a 5000 character limit per request
-    const truncatedText = processedText.length > 5000
-        ? processedText.slice(0, 4997) + '...'
-        : processedText;
+    const truncatedText = cleanText.length > 5000
+        ? cleanText.slice(0, 4997) + '...'
+        : cleanText;
 
     // Build voice settings - V3 does NOT support speaker boost
+    const isV3 = modelId === 'eleven_v3';
     const voiceSettings: Record<string, number | boolean> = {
         stability,
         similarity_boost: similarityBoost,
@@ -660,260 +367,6 @@ export async function textToSpeech(
 }
 
 /**
- * Convert text to speech with word-level timestamps for karaoke-style highlighting
- * @param text - Text to convert (markdown will be stripped)
- * @param options - TTS options
- * @returns Audio blob with word timings
- */
-export async function textToSpeechWithTimestamps(
-    text: string,
-    options: TTSOptions = {}
-): Promise<TTSWithTimestamps> {
-    const {
-        voiceKey = getSelectedVoice(),
-        modelKey = getSelectedTTSModel(),
-        stability = 0.5,
-        similarityBoost = 0.75,
-        style = 0,
-        useSpeakerBoost = true,
-    } = options;
-
-    // Get voice ID and model ID from keys
-    const voices = modelKey === 'zeta-v2' ? ELEVENLABS_VOICES_V2 : ELEVENLABS_VOICES_V1;
-    const voiceId = voices[voiceKey].id;
-    const modelId = TTS_MODELS[modelKey].id;
-
-    // Clean text for TTS - DON'T add expression tags for timestamps version
-    // as they would mess up the text alignment
-    const isV3 = modelId === 'eleven_v3';
-    const processedText = stripMarkdown(text, false); // Don't keep audio tags for highlighting
-
-    if (!processedText) {
-        throw new Error('No speakable text content');
-    }
-
-    // ElevenLabs has a 5000 character limit per request
-    const truncatedText = processedText.length > 5000
-        ? processedText.slice(0, 4997) + '...'
-        : processedText;
-
-    // Build voice settings
-    const voiceSettings: Record<string, number | boolean> = {
-        stability,
-        similarity_boost: similarityBoost,
-        style,
-    };
-
-    if (!isV3) {
-        voiceSettings.use_speaker_boost = useSpeakerBoost;
-    }
-
-    // Call server-side proxy with timestamps flag
-    const response = await fetch(TTS_PROXY_URL, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            voiceId,
-            text: truncatedText,
-            modelId,
-            voiceSettings,
-            withTimestamps: true,
-        }),
-    });
-
-    if (!response.ok) {
-        let errorMessage = `TTS failed: ${response.status}`;
-        try {
-            const errorData = await response.json();
-            errorMessage = errorData.error || errorMessage;
-        } catch {
-            // Response wasn't JSON
-        }
-        throw new Error(errorMessage);
-    }
-
-    const data = await response.json();
-
-    console.log('[TTS Timestamps] Response keys:', Object.keys(data));
-    console.log('[TTS Timestamps] Alignment:', data.alignment ? 'present' : 'missing');
-    if (data.alignment) {
-        console.log('[TTS Timestamps] Characters count:', data.alignment.characters?.length || 0);
-    }
-
-    // Convert base64 audio to blob
-    const audioBytes = atob(data.audio_base64);
-    const audioArray = new Uint8Array(audioBytes.length);
-    for (let i = 0; i < audioBytes.length; i++) {
-        audioArray[i] = audioBytes.charCodeAt(i);
-    }
-    const audioBlob = new Blob([audioArray], { type: 'audio/mpeg' });
-
-    // Parse character timings into word timings
-    const wordTimings = parseCharacterTimingsToWords(
-        data.alignment?.characters || [],
-        data.alignment?.character_start_times_seconds || [],
-        data.alignment?.character_end_times_seconds || []
-    );
-
-    console.log('[TTS Timestamps] Parsed word timings:', wordTimings.length);
-    if (wordTimings.length > 0) {
-        console.log('[TTS Timestamps] First 3 words:', wordTimings.slice(0, 3));
-    }
-
-    return {
-        audioBlob,
-        wordTimings,
-        processedText: truncatedText,
-    };
-}
-
-/**
- * Convert character-level timings to word-level timings
- */
-function parseCharacterTimingsToWords(
-    characters: string[],
-    startTimes: number[],
-    endTimes: number[]
-): WordTiming[] {
-    const words: WordTiming[] = [];
-    let currentWord = '';
-    let wordStart = 0;
-    let wordEnd = 0;
-
-    for (let i = 0; i < characters.length; i++) {
-        const char = characters[i];
-        const start = startTimes[i];
-        const end = endTimes[i];
-
-        // Check if this is a word boundary (space or punctuation)
-        if (char === ' ' || char === '\n' || char === '\t') {
-            if (currentWord.trim()) {
-                words.push({
-                    word: currentWord.trim(),
-                    start: wordStart,
-                    end: wordEnd,
-                });
-            }
-            currentWord = '';
-            wordStart = end; // Next word starts after the space
-        } else {
-            if (currentWord === '') {
-                wordStart = start;
-            }
-            currentWord += char;
-            wordEnd = end;
-        }
-    }
-
-    // Don't forget the last word
-    if (currentWord.trim()) {
-        words.push({
-            word: currentWord.trim(),
-            start: wordStart,
-            end: wordEnd,
-        });
-    }
-
-    return words;
-}
-
-/**
- * Play audio with synchronized text highlighting
- * @param audioBlob - The audio blob to play
- * @param wordTimings - Word timing information
- * @param onHighlight - Callback called with current word index during playback
- */
-export async function playAudioWithHighlighting(
-    audioBlob: Blob,
-    wordTimings: WordTiming[],
-    onHighlight: (wordIndex: number) => void
-): Promise<HTMLAudioElement> {
-    // Stop any currently playing audio
-    stopAudio();
-
-    const typedBlob = new Blob([audioBlob], { type: 'audio/mpeg' });
-    const url = URL.createObjectURL(typedBlob);
-    currentAudioUrl = url;
-
-    const audio = new Audio();
-    currentAudio = audio;
-    currentHighlightCallback = onHighlight;
-
-    // Set up event handlers
-    audio.onended = () => {
-        stopHighlighting();
-        cleanup();
-    };
-
-    audio.onerror = (e) => {
-        console.error('[Audio] Playback error:', e);
-        stopHighlighting();
-        cleanup();
-    };
-
-    // Mobile-specific attributes
-    audio.preload = 'auto';
-    audio.setAttribute('playsinline', 'true');
-    audio.setAttribute('webkit-playsinline', 'true');
-    audio.crossOrigin = 'anonymous';
-
-    audio.src = url;
-    audio.load();
-
-    // Start highlighting loop
-    let lastWordIndex = -1;
-    highlightIntervalId = window.setInterval(() => {
-        if (!audio || audio.paused) return;
-
-        const currentTime = audio.currentTime;
-
-        // Find the current word based on time
-        for (let i = 0; i < wordTimings.length; i++) {
-            const timing = wordTimings[i];
-            if (currentTime >= timing.start && currentTime < timing.end) {
-                if (i !== lastWordIndex) {
-                    lastWordIndex = i;
-                    onHighlight(i);
-                }
-                break;
-            }
-            // Handle gap between words - highlight next word slightly early
-            if (i < wordTimings.length - 1) {
-                const nextTiming = wordTimings[i + 1];
-                if (currentTime >= timing.end && currentTime < nextTiming.start) {
-                    // In the gap, keep current word highlighted
-                    break;
-                }
-            }
-        }
-    }, 50); // Check every 50ms for smooth highlighting
-
-    try {
-        await audio.play();
-    } catch (error) {
-        console.error('[Audio] Play failed:', error);
-        stopHighlighting();
-        cleanup();
-        throw error;
-    }
-
-    return audio;
-}
-
-/**
- * Stop the highlighting interval
- */
-function stopHighlighting(): void {
-    if (highlightIntervalId !== null) {
-        clearInterval(highlightIntervalId);
-        highlightIntervalId = null;
-    }
-    currentHighlightCallback = null;
-}
-
-/**
  * Play audio blob and return the audio element for control
  * Note: On mobile, call initAudioForMobile() first from the user gesture
  * @param audioBlob - The audio blob to play
@@ -923,9 +376,9 @@ export async function playAudio(audioBlob: Blob, existingAudio?: HTMLAudioElemen
     // Creating URL first to ensure it's ready
     const typedBlob = new Blob([audioBlob], { type: 'audio/mpeg' });
     const url = URL.createObjectURL(typedBlob);
-
+    
     const audio = existingAudio || new Audio();
-
+    
     // Stop any currently playing audio if we're creating a new one
     if (!existingAudio) {
         stopAudio();
@@ -933,7 +386,7 @@ export async function playAudio(audioBlob: Blob, existingAudio?: HTMLAudioElemen
         // If reusing, stop previous playback
         audio.pause();
     }
-
+    
     currentAudio = audio;
     currentAudioUrl = url;
 
@@ -973,7 +426,6 @@ export async function playAudio(audioBlob: Blob, existingAudio?: HTMLAudioElemen
  * Stop currently playing audio
  */
 export function stopAudio(): void {
-    stopHighlighting();
     if (currentAudio) {
         currentAudio.pause();
         currentAudio.currentTime = 0;

@@ -1,22 +1,10 @@
 /**
  * AIMessageBubble - Renders an AI message with thinking, tool calls, and actions
- *
- * TTS Highlighting Strategy:
- * - Keep the rendered markdown ALWAYS visible
- * - During TTS, apply CSS classes to dim already-spoken text
- * - Use a floating highlight indicator that follows the current word position
  */
 
 import { AnimatedMarkdown } from 'flowtoken';
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-    initAudioForMobile,
-    isAudioPlaying,
-    isElevenLabsConfigured,
-    playAudioWithHighlighting,
-    stopAudio,
-    textToSpeechWithTimestamps
-} from '../../services/elevenLabsService';
+import { initAudioForMobile, isAudioPlaying, isElevenLabsConfigured, playAudio, stopAudio, textToSpeech } from '../../services/elevenLabsService';
 import { ModelIcon } from '../../services/modelIcons';
 import { Message } from '../../types';
 import { CopyLinear, MoreDotsLinear, RefreshSquareLinear, StopCircleLinear, VolumeHighLinear } from '../atoms/Icons';
@@ -38,7 +26,7 @@ interface AIMessageBubbleProps {
     menuButtonRef: (el: HTMLButtonElement | null) => void;
 }
 
-// Memoized model indicator
+// Memoized model indicator to prevent re-renders - skeuomorphic inset style
 const ModelIndicator = memo(({ modelId }: { modelId: string }) => {
     const model = useMemo(() => AVAILABLE_MODELS.find(m => m.id === modelId), [modelId]);
     if (!model) return null;
@@ -52,7 +40,9 @@ const ModelIndicator = memo(({ modelId }: { modelId: string }) => {
         >
             <div
                 className="w-5 h-5 rounded-md flex items-center justify-center overflow-hidden bg-gradient-to-b from-white to-slate-50 border border-white/80"
-                style={{ boxShadow: '0 1px 1px rgba(0,0,0,0.12), 0 0.5px 0.5px rgba(0,0,0,0.08)' }}
+                style={{
+                    boxShadow: '0 1px 1px rgba(0,0,0,0.12), 0 0.5px 0.5px rgba(0,0,0,0.08)'
+                }}
             >
                 <ModelIcon iconKey={model.icon} size={18} />
             </div>
@@ -64,7 +54,10 @@ const ModelIndicator = memo(({ modelId }: { modelId: string }) => {
 });
 
 /**
- * Stable wrapper for AnimatedMarkdown
+ * Stable wrapper for AnimatedMarkdown that prevents remounting during streaming
+ * The key insight: flowtoken's diff mode uses useRef internally to track previous content.
+ * When animation prop changes, it recreates internal components causing refs to reset.
+ * This wrapper keeps animation stable and only disables it after streaming completes.
  */
 const StableAnimatedContent = memo(({
     content,
@@ -75,9 +68,12 @@ const StableAnimatedContent = memo(({
     messageId: string;
     isStreaming: boolean;
 }) => {
+    // Track if this message has ever been in streaming mode
     const hasStreamedRef = useRef(false);
+    // Track if streaming just ended (to disable animation after a delay)
     const [animationEnabled, setAnimationEnabled] = useState(isStreaming);
 
+    // When streaming starts, enable animation
     useEffect(() => {
         if (isStreaming) {
             hasStreamedRef.current = true;
@@ -85,27 +81,59 @@ const StableAnimatedContent = memo(({
         }
     }, [isStreaming]);
 
+    // When streaming ends, disable animation after content settles
+    // Use longer delay to ensure all animations complete (animation duration is 0.85s)
     useEffect(() => {
         if (!isStreaming && hasStreamedRef.current) {
-            const timer = setTimeout(() => setAnimationEnabled(false), 900);
+            // Wait for animation to fully complete before disabling
+            // This prevents visual "jump" when animation prop changes
+            const timer = setTimeout(() => {
+                setAnimationEnabled(false);
+            }, 900); // Slightly longer than animationDuration (0.85s = 850ms)
             return () => clearTimeout(timer);
         }
     }, [isStreaming]);
 
+    // Memoize customComponents to prevent recreation
+    // These override flowtoken's default components to ensure proper animation
     const customComponents = useMemo(() => ({
+        // Table wrapper for horizontal scrolling - fit content, don't stretch
         table: ({ children, animateText, ...props }: any) => (
-            <div className="table-wrapper" style={{ overflowX: 'auto', maxWidth: '100%', WebkitOverflowScrolling: 'touch' }}>
+            <div className="table-wrapper" style={{
+                overflowX: 'auto',
+                maxWidth: '100%',
+                WebkitOverflowScrolling: 'touch'
+            }}>
                 <table {...props}>{children}</table>
             </div>
         ),
+        // Blockquote - flowtoken doesn't have this by default!
         blockquote: ({ children, animateText, ...props }: any) => (
-            <blockquote {...props}>{animateText ? animateText(children) : children}</blockquote>
+            <blockquote {...props}>
+                {animateText ? animateText(children) : children}
+            </blockquote>
         ),
-        thead: ({ children, ...props }: any) => <thead {...props}>{children}</thead>,
-        tbody: ({ children, ...props }: any) => <tbody {...props}>{children}</tbody>,
-        tr: ({ children, ...props }: any) => <tr {...props}>{children}</tr>,
-        td: ({ children, animateText, ...props }: any) => <td {...props}>{animateText ? animateText(children) : children}</td>,
-        th: ({ children, animateText, ...props }: any) => <th {...props}>{animateText ? animateText(children) : children}</th>,
+        // Table structure elements - ensure proper rendering during streaming
+        thead: ({ children, animateText, ...props }: any) => (
+            <thead {...props}>{children}</thead>
+        ),
+        tbody: ({ children, animateText, ...props }: any) => (
+            <tbody {...props}>{children}</tbody>
+        ),
+        tr: ({ children, animateText, ...props }: any) => (
+            <tr {...props}>{children}</tr>
+        ),
+        // Table cells - ensure content is animated
+        td: ({ children, animateText, ...props }: any) => (
+            <td {...props}>
+                {animateText ? animateText(children) : children}
+            </td>
+        ),
+        th: ({ children, animateText, ...props }: any) => (
+            <th {...props}>
+                {animateText ? animateText(children) : children}
+            </th>
+        ),
     }), []);
 
     return (
@@ -118,95 +146,22 @@ const StableAnimatedContent = memo(({
             customComponents={customComponents}
         />
     );
-}, (prevProps, nextProps) => (
-    prevProps.content === nextProps.content &&
-    prevProps.messageId === nextProps.messageId &&
-    prevProps.isStreaming === nextProps.isStreaming
-));
-
-/**
- * Walk the DOM and wrap text nodes in spans for highlighting
- * Returns cleanup function to unwrap
- */
-function wrapTextNodesForHighlighting(element: HTMLElement): {
-    wordSpans: HTMLSpanElement[];
-    cleanup: () => void;
-} {
-    const wordSpans: HTMLSpanElement[] = [];
-    const originalNodes: Array<{ parent: Node; span: HTMLSpanElement; textNode: Text }> = [];
-
-    const walker = document.createTreeWalker(
-        element,
-        NodeFilter.SHOW_TEXT,
-        {
-            acceptNode: (node) => {
-                const parent = node.parentElement;
-                // Skip code blocks, pre, script, style
-                if (parent && ['PRE', 'CODE', 'SCRIPT', 'STYLE'].includes(parent.tagName)) {
-                    return NodeFilter.FILTER_REJECT;
-                }
-                // Skip empty/whitespace-only nodes
-                if (!node.textContent || !node.textContent.trim()) {
-                    return NodeFilter.FILTER_SKIP;
-                }
-                return NodeFilter.FILTER_ACCEPT;
-            }
-        }
+}, (prevProps, nextProps) => {
+    // Only re-render when content changes or streaming state changes
+    return (
+        prevProps.content === nextProps.content &&
+        prevProps.messageId === nextProps.messageId &&
+        prevProps.isStreaming === nextProps.isStreaming
     );
-
-    // Collect all text nodes first (can't modify while walking)
-    const textNodes: Text[] = [];
-    let node: Text | null;
-    while ((node = walker.nextNode() as Text | null)) {
-        textNodes.push(node);
-    }
-
-    // Now wrap each word in each text node
-    for (const textNode of textNodes) {
-        const text = textNode.textContent || '';
-        const parent = textNode.parentNode;
-        if (!parent) continue;
-
-        // Split into words while preserving whitespace
-        const parts = text.split(/(\s+)/);
-        const fragment = document.createDocumentFragment();
-
-        for (const part of parts) {
-            if (/^\s+$/.test(part)) {
-                // Whitespace - keep as text
-                fragment.appendChild(document.createTextNode(part));
-            } else if (part) {
-                // Word - wrap in span
-                const span = document.createElement('span');
-                span.className = 'tts-word';
-                span.textContent = part;
-                fragment.appendChild(span);
-                wordSpans.push(span);
-            }
-        }
-
-        // Replace the text node with our fragment
-        parent.replaceChild(fragment, textNode);
-
-        // Store for cleanup - we'll need to restore the original text node
-        // Actually, for cleanup we just remove the class and let it be
-    }
-
-    const cleanup = () => {
-        // Remove highlighting classes from all spans
-        wordSpans.forEach(span => {
-            span.classList.remove('tts-word', 'tts-word-active', 'tts-word-spoken');
-        });
-    };
-
-    return { wordSpans, cleanup };
-}
+});
 
 export const AIMessageBubble: React.FC<AIMessageBubbleProps> = memo(({
     message,
     isStreaming,
+    isLastMessage,
     onCopy,
     onRetry,
+    onDelete,
     isCopied,
     isMenuOpen,
     setOpenMenuId,
@@ -221,140 +176,53 @@ export const AIMessageBubble: React.FC<AIMessageBubbleProps> = memo(({
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [isLoadingTTS, setIsLoadingTTS] = useState(false);
     const ttsEnabledRef = useRef(isElevenLabsConfigured());
-    const touchHandledRef = useRef(false);
-    const contentRef = useRef<HTMLDivElement>(null);
-    const wordSpansRef = useRef<HTMLSpanElement[]>([]);
-    const cleanupRef = useRef<(() => void) | null>(null);
 
-    // Handle TTS playback with highlighting on the ACTUAL rendered markdown
+    // Track touch events to prevent double-firing on mobile
+    const touchHandledRef = useRef(false);
+
+    // Handle TTS playback
     const handleSpeak = useCallback(async () => {
         if (isLoadingTTS) return;
 
+        // If already speaking, stop
         if (isSpeaking) {
             stopAudio();
-            // Cleanup highlighting
-            if (cleanupRef.current) {
-                cleanupRef.current();
-                cleanupRef.current = null;
-            }
-            wordSpansRef.current = [];
             setIsSpeaking(false);
             return;
         }
 
+        // Check if another message is playing
         if (isAudioPlaying()) {
             stopAudio();
         }
 
-        await initAudioForMobile();
+        // CRITICAL: Initialize audio context and create the audio element IMMEDIATELY
+        // This MUST happen inside the direct user gesture (onClick/onTouchEnd)
+        // to unlock audio playback on mobile (especially iOS Safari).
+        const ctx = await initAudioForMobile();
+        
+        // Create an empty, silent audio element to "lock in" the user gesture
+        // We will reuse this element once the TTS data arrives
+        const gestureAudio = new Audio();
+        gestureAudio.play().catch(() => {
+            // It might fail if we can't play silenced audio yet, that's fine
+        });
+
         setIsLoadingTTS(true);
-
         try {
-            // Get audio with word-level timestamps from ElevenLabs
-            const { audioBlob, wordTimings, processedText } = await textToSpeechWithTimestamps(message.content);
-
-            console.log(`[TTS] Got ${wordTimings.length} words with timestamps`);
-
-            // Wrap text nodes in the rendered content for highlighting
-            if (contentRef.current) {
-                const { wordSpans, cleanup } = wrapTextNodesForHighlighting(contentRef.current);
-                wordSpansRef.current = wordSpans;
-                cleanupRef.current = cleanup;
-                console.log(`[TTS] Wrapped ${wordSpans.length} words in DOM`);
-            }
-
+            const audioBlob = await textToSpeech(message.content);
+            // Reuse the contextually unlocked audio element
+            const audio = await playAudio(audioBlob, gestureAudio);
             setIsSpeaking(true);
 
-            // Highlight function that updates DOM classes
-            const highlightWord = (wordIndex: number) => {
-                const spans = wordSpansRef.current;
-                for (let i = 0; i < spans.length; i++) {
-                    const span = spans[i];
-                    span.classList.remove('tts-word-active', 'tts-word-spoken');
-                    if (i === wordIndex) {
-                        span.classList.add('tts-word-active');
-                    } else if (i < wordIndex) {
-                        span.classList.add('tts-word-spoken');
-                    }
-                }
-            };
-
-            if (wordTimings.length > 0) {
-                // Use real timestamps
-                const audio = await playAudioWithHighlighting(
-                    audioBlob,
-                    wordTimings,
-                    highlightWord
-                );
-
-                audio.onended = () => {
-                    if (cleanupRef.current) {
-                        cleanupRef.current();
-                        cleanupRef.current = null;
-                    }
-                    wordSpansRef.current = [];
-                    setIsSpeaking(false);
-                };
-
-                audio.onerror = () => {
-                    if (cleanupRef.current) {
-                        cleanupRef.current();
-                        cleanupRef.current = null;
-                    }
-                    wordSpansRef.current = [];
-                    setIsSpeaking(false);
-                };
-            } else {
-                // Fallback: estimate timing
-                console.log('[TTS] No timestamps, using estimated timing');
-                const url = URL.createObjectURL(audioBlob);
-                const audio = new Audio(url);
-                audio.preload = 'auto';
-
-                const startHighlighting = () => {
-                    const duration = audio.duration;
-                    if (!duration) return;
-
-                    const totalWords = wordSpansRef.current.length;
-                    const wordsPerSecond = totalWords / duration;
-
-                    const interval = setInterval(() => {
-                        if (audio.paused || audio.ended) {
-                            clearInterval(interval);
-                            return;
-                        }
-                        const idx = Math.floor(audio.currentTime * wordsPerSecond);
-                        highlightWord(Math.min(idx, totalWords - 1));
-                    }, 50);
-
-                    audio.onended = () => {
-                        clearInterval(interval);
-                        URL.revokeObjectURL(url);
-                        if (cleanupRef.current) {
-                            cleanupRef.current();
-                            cleanupRef.current = null;
-                        }
-                        wordSpansRef.current = [];
-                        setIsSpeaking(false);
-                    };
-                };
-
-                if (audio.duration) {
-                    startHighlighting();
-                } else {
-                    audio.addEventListener('loadedmetadata', startHighlighting, { once: true });
-                }
-
-                await audio.play();
-            }
+            audio.onended = () => setIsSpeaking(false);
+            audio.onerror = () => setIsSpeaking(false);
         } catch (error) {
             console.error('[TTS] Error:', error);
-            if (cleanupRef.current) {
-                cleanupRef.current();
-                cleanupRef.current = null;
-            }
-            wordSpansRef.current = [];
             setIsSpeaking(false);
+            // Cleanup the gesture audio if it failed
+            gestureAudio.pause();
+            gestureAudio.src = "";
         } finally {
             setIsLoadingTTS(false);
         }
@@ -366,12 +234,10 @@ export const AIMessageBubble: React.FC<AIMessageBubbleProps> = memo(({
             if (isSpeaking) {
                 stopAudio();
             }
-            if (cleanupRef.current) {
-                cleanupRef.current();
-            }
         };
     }, [isSpeaking]);
 
+    // Create tap handler for mobile-friendly button interactions
     const createTapHandler = useCallback((handler: () => void, disabled?: boolean) => ({
         onClick: (e: React.MouseEvent) => {
             if (disabled) return;
@@ -394,6 +260,7 @@ export const AIMessageBubble: React.FC<AIMessageBubbleProps> = memo(({
 
     return (
         <div className="flex flex-col chat-message-ai-container">
+            {/* Thinking Block */}
             {hasThinking && (
                 <ThinkingBlock
                     thinking={message.thinking || ''}
@@ -402,6 +269,7 @@ export const AIMessageBubble: React.FC<AIMessageBubbleProps> = memo(({
                 />
             )}
 
+            {/* Tool Calls Display */}
             {hasToolCalls && (
                 <SearchTimeline
                     toolCalls={message.toolCalls!}
@@ -411,12 +279,8 @@ export const AIMessageBubble: React.FC<AIMessageBubbleProps> = memo(({
                 />
             )}
 
-            {/* Message Content - ALWAYS rendered, highlighting applied via CSS classes */}
-            <div
-                ref={contentRef}
-                className="chat-message-ai text-slate-700 relative"
-                data-message-id={message.id}
-            >
+            {/* Message Content - Only animate if streaming */}
+            <div className="chat-message-ai text-slate-700" data-message-id={message.id}>
                 <StableAnimatedContent
                     content={message.content}
                     messageId={message.id}
@@ -424,10 +288,12 @@ export const AIMessageBubble: React.FC<AIMessageBubbleProps> = memo(({
                 />
             </div>
 
-            {/* Action buttons */}
+            {/* Action buttons - show when not streaming AND (has content OR is error) */}
             {!isStreaming && (message.content || message.isError) && (
                 <div className="flex items-center justify-between mt-1.5">
+                    {/* Left side: Copy, Speak & Retry */}
                     <div className="flex items-center gap-0.5">
+                        {/* Only show copy if there's actual content */}
                         {message.content && !message.isError && (
                             <button
                                 {...createTapHandler(() => onCopy(message.id))}
@@ -437,6 +303,7 @@ export const AIMessageBubble: React.FC<AIMessageBubbleProps> = memo(({
                                 <CopyLinear className="w-4 h-4" />
                             </button>
                         )}
+                        {/* TTS button - only show if configured and has content */}
                         {ttsEnabledRef.current && message.content && !message.isError && (
                             <button
                                 {...createTapHandler(handleSpeak, isLoadingTTS)}
@@ -471,8 +338,11 @@ export const AIMessageBubble: React.FC<AIMessageBubbleProps> = memo(({
                         </button>
                     </div>
 
+                    {/* Right side: Model indicator + More menu */}
                     <div className="flex items-center gap-1">
                         {message.modelId && <ModelIndicator modelId={message.modelId} />}
+
+                        {/* More menu button */}
                         <div className="relative">
                             <button
                                 ref={menuButtonRef}
@@ -481,15 +351,19 @@ export const AIMessageBubble: React.FC<AIMessageBubbleProps> = memo(({
                                         setOpenMenuId(null);
                                         setMenuPosition(null);
                                     } else {
+                                        // Need to get rect in a different way for touch
                                         const btn = document.querySelector(`[data-message-id="${message.id}"]`)?.parentElement?.querySelector('[title="More options"]');
                                         if (btn) {
                                             const rect = btn.getBoundingClientRect();
                                             const viewportHeight = window.innerHeight;
-                                            const menuHeight = 40;
+                                            const menuHeight = 40; // Approximate menu height
+
+                                            // Adjust position if menu would go beyond viewport
                                             let adjustedY = rect.bottom + 4;
                                             if (adjustedY + menuHeight > viewportHeight) {
                                                 adjustedY = rect.top - menuHeight - 4;
                                             }
+
                                             setMenuPosition({ x: rect.right, y: adjustedY });
                                         }
                                         setOpenMenuId(message.id);
@@ -507,6 +381,9 @@ export const AIMessageBubble: React.FC<AIMessageBubbleProps> = memo(({
         </div>
     );
 }, (prevProps, nextProps) => {
+    // Custom comparison - only re-render when these change
+    // Don't compare callback references - they're stable from parent
+    // Compare toolCalls by length and status to avoid reference issues
     const prevToolCalls = prevProps.message.toolCalls;
     const nextToolCalls = nextProps.message.toolCalls;
     const toolCallsEqual =
