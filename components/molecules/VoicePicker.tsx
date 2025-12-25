@@ -286,33 +286,39 @@ const VoicePicker: React.FC<VoicePickerProps> = ({
         setActiveModel(null);
     }, []);
 
+    // Check if device uses touch (coarse pointer)
+    const isTouchDevice = useCallback(() => {
+        return window.matchMedia('(pointer: coarse)').matches;
+    }, []);
+
     const handleSubmenuMouseLeave = useCallback(() => {
-        // Don't auto-close on touch devices (causes accidental closure)
-        const isTouch = window.matchMedia('(pointer: coarse)').matches;
-        if (isTouch) return;
+        // Don't auto-close on touch devices - only close via backdrop tap
+        if (isTouchDevice()) return;
 
         closeTimeoutRef.current = setTimeout(() => {
             setActiveModel(null);
         }, 100);
-    }, []);
+    }, [isTouchDevice]);
 
     const handleSubmenuMouseEnter = useCallback(() => {
+        if (isTouchDevice()) return;
+
         if (closeTimeoutRef.current) {
             clearTimeout(closeTimeoutRef.current);
             closeTimeoutRef.current = null;
         }
-    }, []);
+    }, [isTouchDevice]);
 
     const handleModelMouseEnter = useCallback((modelKey: TTSModelKey) => {
-        const isTouch = window.matchMedia('(pointer: coarse)').matches;
-        if (isTouch) return; // Prevent hover side effects on mobile
+        // On touch devices, don't auto-open submenu on hover - require tap
+        if (isTouchDevice()) return;
 
         if (closeTimeoutRef.current) {
             clearTimeout(closeTimeoutRef.current);
             closeTimeoutRef.current = null;
         }
         setActiveModel(modelKey);
-    }, []);
+    }, [isTouchDevice]);
 
     // Sync with localStorage on mount
     useEffect(() => {
@@ -410,6 +416,9 @@ const VoicePicker: React.FC<VoicePickerProps> = ({
                                     background: 'rgb(250, 250, 250)'
                                 }}
                                 className="w-[160px] p-1 backdrop-blur-xl rounded-xl border border-slate-200/60 shadow-[0_8px_32px_rgba(0,0,0,0.12),0_4px_8px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.9)]"
+                                onTouchStart={(e) => e.stopPropagation()}
+                                onTouchMove={(e) => e.stopPropagation()}
+                                onTouchEnd={(e) => e.stopPropagation()}
                             >
                                 <div className="px-2 py-0.5 mb-0.5">
                                     <span className="text-[11px] font-bold text-slate-400 tracking-wider">
@@ -483,9 +492,12 @@ const VoicePicker: React.FC<VoicePickerProps> = ({
                                         willChange: 'transform, opacity',
                                         background: 'rgb(250, 250, 250)'
                                     }}
-                                    className="w-[200px] p-1.5 backdrop-blur-xl rounded-xl border border-slate-200/60 shadow-[0_8px_32px_rgba(0,0,0,0.12),0_4px_8px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] max-h-[320px] overflow-y-auto"
-                                    onMouseEnter={handleSubmenuMouseEnter}
-                                    onMouseLeave={handleSubmenuMouseLeave}
+                                    className="w-[200px] p-1.5 backdrop-blur-xl rounded-xl border border-slate-200/60 shadow-[0_8px_32px_rgba(0,0,0,0.12),0_4px_8px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] max-h-[320px] overflow-y-auto overscroll-contain"
+                                    onMouseEnter={!isTouchDevice() ? handleSubmenuMouseEnter : undefined}
+                                    onMouseLeave={!isTouchDevice() ? handleSubmenuMouseLeave : undefined}
+                                    onTouchStart={(e) => e.stopPropagation()}
+                                    onTouchMove={(e) => e.stopPropagation()}
+                                    onTouchEnd={(e) => e.stopPropagation()}
                                 >
                                     {(() => {
                                         const modelVoices = getVoicesByGender(activeModel);
@@ -566,8 +578,7 @@ const VoicePicker: React.FC<VoicePickerProps> = ({
     );
 };
 
-// Individual voice option component
-// Individual voice option component
+// Individual voice option component with scroll-aware touch handling
 const VoiceOption = memo(({
     voiceKey,
     info,
@@ -579,33 +590,64 @@ const VoiceOption = memo(({
     isSelected: boolean;
     onSelect: (key: VoiceKey) => void;
 }) => {
-    const touchHandledRef = useRef(false);
+    const touchStartRef = useRef<{ y: number; time: number } | null>(null);
+    const isScrollingRef = useRef(false);
     const colorFilter = VOICE_COLORS[voiceKey] || 'hue-rotate(0deg)';
 
-    const handleTap = useCallback(() => {
+    const SCROLL_THRESHOLD = 10; // pixels moved to consider it a scroll
+    const TAP_MAX_DURATION = 300; // max ms for a tap
+
+    const handleTouchStart = useCallback((e: React.TouchEvent) => {
+        const touch = e.touches[0];
+        touchStartRef.current = { y: touch.clientY, time: Date.now() };
+        isScrollingRef.current = false;
+    }, []);
+
+    const handleTouchMove = useCallback((e: React.TouchEvent) => {
+        if (!touchStartRef.current) return;
+
+        const touch = e.touches[0];
+        const deltaY = Math.abs(touch.clientY - touchStartRef.current.y);
+
+        // If moved more than threshold, it's a scroll not a tap
+        if (deltaY > SCROLL_THRESHOLD) {
+            isScrollingRef.current = true;
+        }
+    }, []);
+
+    const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+        // Don't prevent default - let scroll momentum continue
+        e.stopPropagation();
+
+        const wasScrolling = isScrollingRef.current;
+        const touchStart = touchStartRef.current;
+        const tapDuration = touchStart ? Date.now() - touchStart.time : Infinity;
+
+        // Reset refs
+        touchStartRef.current = null;
+        isScrollingRef.current = false;
+
+        // Only select if it was a genuine tap (not scrolling, short duration)
+        if (!wasScrolling && tapDuration < TAP_MAX_DURATION) {
+            onSelect(voiceKey);
+        }
+    }, [onSelect, voiceKey]);
+
+    const handleClick = useCallback((e: React.MouseEvent) => {
+        // For mouse/desktop clicks
+        e.preventDefault();
         onSelect(voiceKey);
     }, [onSelect, voiceKey]);
 
     return (
         <button
-            onClick={(e) => {
-                if (touchHandledRef.current) {
-                    touchHandledRef.current = false;
-                    return;
-                }
-                e.preventDefault();
-                handleTap();
-            }}
-            onTouchEnd={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                touchHandledRef.current = true;
-                handleTap();
-                setTimeout(() => { touchHandledRef.current = false; }, 300);
-            }}
+            onClick={handleClick}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
             className={`
                 w-full flex items-center gap-2 px-2 py-1.5 rounded-lg
-                transition-all duration-300 group/item touch-manipulation
+                transition-all duration-300 group/item touch-manipulation select-none
                 ${isSelected
                     ? 'bg-gradient-to-r from-blue-50 to-indigo-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_1px_2px_rgba(59,130,246,0.1),0_0_0_1px_rgba(59,130,246,0.05)]'
                     : 'text-slate-500 hover:bg-slate-50/80 shadow-[inset_0_1px_1px_rgba(255,255,255,1),0_1px_2px_rgba(0,0,0,0.03),0_0_0_1px_rgba(0,0,0,0.02)]'
@@ -618,6 +660,7 @@ const VoiceOption = memo(({
                     alt=""
                     className="w-full h-full object-cover"
                     style={{ filter: colorFilter }}
+                    draggable={false}
                 />
             </div>
 
