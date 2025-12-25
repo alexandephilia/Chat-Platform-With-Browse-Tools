@@ -4,9 +4,10 @@
 
 import { AnimatedMarkdown } from 'flowtoken';
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { isAudioPlaying, isElevenLabsConfigured, playAudio, stopAudio, textToSpeech } from '../../services/elevenLabsService';
 import { ModelIcon } from '../../services/modelIcons';
 import { Message } from '../../types';
-import { CopyLinear, MoreDotsLinear, RefreshSquareLinear } from '../atoms/Icons';
+import { CopyLinear, MoreDotsLinear, RefreshSquareLinear, StopCircleLinear, VolumeHighLinear } from '../atoms/Icons';
 import { SearchTimeline } from '../atoms/SearchTimeline';
 import { ThinkingBlock } from '../atoms/ThinkingBlock';
 import { AVAILABLE_MODELS } from '../molecules/ModelPicker';
@@ -163,8 +164,54 @@ export const AIMessageBubble: React.FC<AIMessageBubbleProps> = memo(({
     const hasToolCalls = message.toolCalls && message.toolCalls.length > 0;
     const hasRunningTools = message.toolCalls?.some(tc => tc.status === 'pending' || tc.status === 'running');
 
+    // TTS state
+    const [isSpeaking, setIsSpeaking] = useState(false);
+    const [isLoadingTTS, setIsLoadingTTS] = useState(false);
+    const ttsEnabledRef = useRef(isElevenLabsConfigured());
+
     // Track touch events to prevent double-firing on mobile
     const touchHandledRef = useRef(false);
+
+    // Handle TTS playback
+    const handleSpeak = useCallback(async () => {
+        if (isLoadingTTS) return;
+
+        // If already speaking, stop
+        if (isSpeaking) {
+            stopAudio();
+            setIsSpeaking(false);
+            return;
+        }
+
+        // Check if another message is playing
+        if (isAudioPlaying()) {
+            stopAudio();
+        }
+
+        setIsLoadingTTS(true);
+        try {
+            const audioBlob = await textToSpeech(message.content);
+            const audio = playAudio(audioBlob);
+            setIsSpeaking(true);
+
+            audio.onended = () => setIsSpeaking(false);
+            audio.onerror = () => setIsSpeaking(false);
+        } catch (error) {
+            console.error('[TTS] Error:', error);
+            setIsSpeaking(false);
+        } finally {
+            setIsLoadingTTS(false);
+        }
+    }, [message.content, isSpeaking, isLoadingTTS]);
+
+    // Cleanup on unmount
+    useEffect(() => {
+        return () => {
+            if (isSpeaking) {
+                stopAudio();
+            }
+        };
+    }, [isSpeaking]);
 
     // Create tap handler for mobile-friendly button interactions
     const createTapHandler = useCallback((handler: () => void) => ({
@@ -218,7 +265,7 @@ export const AIMessageBubble: React.FC<AIMessageBubbleProps> = memo(({
             {/* Action buttons - show when not streaming AND (has content OR is error) */}
             {!isStreaming && (message.content || message.isError) && (
                 <div className="flex items-center justify-between mt-1.5">
-                    {/* Left side: Copy & Retry */}
+                    {/* Left side: Copy, Speak & Retry */}
                     <div className="flex items-center gap-0.5">
                         {/* Only show copy if there's actual content */}
                         {message.content && !message.isError && (
@@ -228,6 +275,26 @@ export const AIMessageBubble: React.FC<AIMessageBubbleProps> = memo(({
                                 title={isCopied ? "Copied!" : "Copy message"}
                             >
                                 <CopyLinear className="w-4 h-4" />
+                            </button>
+                        )}
+                        {/* TTS button - only show if configured and has content */}
+                        {ttsEnabledRef.current && message.content && !message.isError && (
+                            <button
+                                {...createTapHandler(handleSpeak)}
+                                disabled={isLoadingTTS}
+                                className={`p-1.5 rounded-md transition-colors touch-manipulation ${isLoadingTTS
+                                    ? 'text-slate-300 cursor-wait'
+                                    : isSpeaking
+                                        ? 'text-blue-500 bg-blue-50'
+                                        : 'text-slate-400 hover:text-blue-500 hover:bg-blue-50'
+                                    }`}
+                                title={isSpeaking ? "Stop speaking" : "Read aloud"}
+                            >
+                                {isSpeaking ? (
+                                    <StopCircleLinear className="w-4 h-4" />
+                                ) : (
+                                    <VolumeHighLinear className="w-4 h-4" />
+                                )}
                             </button>
                         )}
                         <button

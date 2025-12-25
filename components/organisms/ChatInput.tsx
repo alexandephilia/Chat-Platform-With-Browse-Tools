@@ -7,10 +7,13 @@ import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
 import { useVoiceRecorder } from '../../hooks/useVoiceRecorder';
 import { extractTextFromDocument } from '../../services/documentService';
+import { isElevenLabsConfigured } from '../../services/elevenLabsService';
 import { Attachment } from '../../types';
 import { GlobalLinear, LightbulbLineDuotone } from '../atoms/Icons';
 import { LazyImage } from '../atoms/LazyImage';
+import { InfoPill } from '../atoms/InfoPill';
 import ModelPicker, { AIModel, AVAILABLE_MODELS } from '../molecules/ModelPicker';
+import VoicePicker from '../molecules/VoicePicker';
 
 interface ChatInputProps {
     onSend: (message: string, attachments?: Attachment[], webSearchEnabled?: boolean, searchType?: 'auto' | 'fast' | 'deep') => void;
@@ -367,8 +370,11 @@ const ChatInput: React.FC<ChatInputProps> = ({
                                 onSelectModel={(model) => onModelChange?.(model)}
                                 size='small'
                             />
+                            {isElevenLabsConfigured() && <VoicePicker size="small" />}
                         </div>
-                        <span className="text-[10px] text-slate-400 font-medium">Work with Gemini 3.0 and Groq</span>
+                        <div className="hidden md:block">
+                            <InfoPill variant="white" size="sm">Voice Update is here</InfoPill>
+                        </div>
                     </div>
                 )}
 
@@ -547,7 +553,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
                             <button
                                 {...createTapHandler(toggleMenu)}
                                 className={`
-                                    p-1.5 rounded-xl transition-colors duration-200 group touch-manipulation
+                                    w-9 h-9 flex items-center justify-center rounded-xl transition-colors duration-200 group touch-manipulation
                                     ${isMenuOpen
                                         ? 'bg-gradient-to-br from-white via-white to-slate-100 shadow-[0_4px_8px_-2px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,1)] border-slate-300/60 text-blue-600'
                                         : 'text-slate-400 hover:text-blue-600 bg-slate-50/50 shadow-[inset_0_2px_4px_rgba(0,0,0,0.06),inset_0_1px_1px_rgba(0,0,0,0.04),0_1px_0_rgba(255,255,255,0.8)] border-slate-200/40'
@@ -556,7 +562,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
                                 `}
                             >
                                 <Plus
-                                    size={16}
+                                    size={20}
                                     strokeWidth={2.5}
                                     className={`transition-transform duration-200 ${isMenuOpen ? 'rotate-45' : ''}`}
                                 />
@@ -574,10 +580,10 @@ const ChatInput: React.FC<ChatInputProps> = ({
                                 // Disabled state for models that don't support reasoning
                                 return (
                                     <div
-                                        className="p-1.5 rounded-xl flex items-center border touch-manipulation text-slate-400 bg-slate-100 shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)] border-slate-200/40 cursor-not-allowed"
+                                        className="w-9 h-9 flex items-center justify-center rounded-xl border touch-manipulation text-slate-400 bg-slate-100 shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)] border-slate-200/40 cursor-not-allowed"
                                         title="Reasoning not supported by this model"
                                     >
-                                        <LightbulbLineDuotone width={18} height={18} />
+                                        <LightbulbLineDuotone width={20} height={20} />
                                     </div>
                                 );
                             }
@@ -586,7 +592,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
                                 <button
                                     {...createTapHandler(() => onReasoningToggle?.(!reasoningEnabled))}
                                     className={`
-                                        p-1.5 rounded-xl transition-colors duration-200 flex items-center border touch-manipulation
+                                        w-9 h-9 flex items-center justify-center rounded-xl transition-colors duration-200 border touch-manipulation
                                         ${reasoningEnabled
                                             ? 'text-amber-500 bg-amber-50 shadow-[inset_0_2px_4px_rgba(245,158,11,0.15),0_0_8px_rgba(245,158,11,0.2)] border-amber-200/60'
                                             : 'text-slate-400 hover:text-amber-500 bg-slate-50/50 shadow-[inset_0_2px_4px_rgba(0,0,0,0.06),inset_0_1px_1px_rgba(0,0,0,0.04),0_1px_0_rgba(255,255,255,0.8)] border-slate-200/40 hover:bg-amber-50 hover:border-amber-200/40'
@@ -595,7 +601,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
                                     `}
                                     title={reasoningEnabled ? "Reasoning enabled" : "Enable reasoning mode"}
                                 >
-                                    <LightbulbLineDuotone width={18} height={18} />
+                                    <LightbulbLineDuotone width={20} height={20} />
                                 </button>
                             );
                         })()}
@@ -611,10 +617,10 @@ const ChatInput: React.FC<ChatInputProps> = ({
                                 if (!supportsTools) {
                                     return (
                                         <div
-                                            className="p-1.5 rounded-xl flex items-center gap-0.5 border touch-manipulation text-slate-400 bg-slate-100 shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)] border-slate-200/40 cursor-not-allowed"
+                                            className="w-9 h-9 flex items-center justify-center rounded-xl gap-0.5 border touch-manipulation text-slate-400 bg-slate-100 shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)] border-slate-200/40 cursor-not-allowed"
                                             title="Web search not supported by this model"
                                         >
-                                            <GlobalLinear width={18} height={18} />
+                                            <GlobalLinear width={20} height={20} />
                                         </div>
                                     );
                                 }
@@ -623,10 +629,10 @@ const ChatInput: React.FC<ChatInputProps> = ({
                                 if (hasBuiltInTools(selectedModel.id)) {
                                     return (
                                         <div
-                                            className="p-1.5 rounded-xl flex items-center gap-0.5 border touch-manipulation text-blue-600 bg-blue-50 shadow-[inset_0_2px_4px_rgba(59,130,246,0.15)] border-blue-200/40 cursor-default"
+                                            className="w-9 h-9 flex items-center justify-center rounded-xl gap-0.5 border touch-manipulation text-blue-600 bg-blue-50 shadow-[inset_0_2px_4px_rgba(59,130,246,0.15)] border-blue-200/40 cursor-default"
                                             title="Built-in tools always enabled"
                                         >
-                                            <GlobalLinear width={18} height={18} />
+                                            <GlobalLinear width={20} height={20} />
                                         </div>
                                     );
                                 }
@@ -637,7 +643,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
                                         ref={searchTypeButtonRef}
                                         {...createTapHandler(() => setIsSearchTypeMenuOpen(!isSearchTypeMenuOpen))}
                                         className={`
-                                            p-1.5 rounded-xl transition-colors duration-200 flex items-center gap-0.5 border touch-manipulation
+                                            w-9 h-9 flex items-center justify-center transition-colors duration-200 rounded-xl gap-0.5 border touch-manipulation
                                             ${isSearchTypeMenuOpen
                                                 ? 'bg-gradient-to-br from-white via-white to-slate-100 shadow-[0_4px_8px_-2px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,1)] border-slate-300/60'
                                                 : webSearchEnabled
@@ -649,8 +655,8 @@ const ChatInput: React.FC<ChatInputProps> = ({
                                         title="Web search options"
                                     >
                                         {webSearchEnabled
-                                            ? getSearchTypeIcon(searchType, 18, true)
-                                            : <GlobalLinear width={18} height={18} />
+                                            ? getSearchTypeIcon(searchType, 20, true)
+                                            : <GlobalLinear width={20} height={20} />
                                         }
                                     </button>
                                 );
@@ -831,7 +837,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
                     </div>
 
                     {/* Send Button Container - with shine border wrapper when loading */}
-                    <div className="relative flex items-center gap-2">
+                    <div className="flex items-center gap-2">
                         {/* Voice Recording Button */}
                         {isVoiceSupported && (
                             <div className="relative">
@@ -855,7 +861,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
                                             ? 'bg-red-500 text-white shadow-[0_4px_12px_rgba(239,68,68,0.4),inset_0_2px_4px_rgba(255,255,255,0.3),inset_0_-2px_4px_rgba(0,0,0,0.1),0_0_0_1px_rgba(239,68,68,1)] active:scale-[0.96]'
                                             : voiceState === 'processing'
                                                 ? 'bg-amber-500 text-white shadow-[0_4px_12px_rgba(245,158,11,0.3),inset_0_2px_4px_rgba(255,255,255,0.3)] cursor-wait'
-                                                : 'bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700 shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)] active:scale-[0.96]'
+                                                : 'bg-red-500 text-white shadow-[0_4px_12px_rgba(239,68,68,0.3),inset_0_2px_4px_rgba(255,255,255,0.3),inset_0_-2px_4px_rgba(0,0,0,0.1),0_0_0_1px_rgba(239,68,68,1)] hover:shadow-[0_6px_20px_rgba(239,68,68,0.4),inset_0_2px_4px_rgba(255,255,255,0.4),inset_0_-2px_4px_rgba(0,0,0,0.1),0_0_0_1px_rgba(239,68,68,1)] active:shadow-[inset_0_4px_8px_rgba(0,0,0,0.2),0_1px_2px_rgba(0,0,0,0.1)] active:scale-[0.96] active:translate-y-0.5'
                                         }
                                     `}
                                     title={
@@ -885,60 +891,65 @@ const ChatInput: React.FC<ChatInputProps> = ({
                         )}
 
                         {/* Separator between voice and send */}
-                        <div className="h-5 w-[1px] bg-gradient-to-b from-transparent via-slate-300 to-transparent" />
+                        {isVoiceSupported && (
+                            <div className="h-5 w-[1px] bg-gradient-to-b from-transparent via-slate-300 to-transparent mx-1" />
+                        )}
 
-                        {/* Animated Shine Border (only when loading) */}
-                        {disabled && (
-                            <>
-                                <div
-                                    className="absolute inset-[-2px] rounded-full overflow-hidden"
-                                >
+                        {/* Send Button Container - with shine border wrapper when loading */}
+                        <div className="relative">
+                            {/* Animated Shine Border (only when loading) */}
+                            {disabled && (
+                                <>
                                     <div
-                                        className="absolute inset-[-100%]"
+                                        className="absolute inset-[-2px] rounded-full overflow-hidden"
+                                    >
+                                        <div
+                                            className="absolute inset-[-100%]"
+                                            style={{
+                                                background: 'conic-gradient(from 0deg at 50% 50%, transparent 0deg, transparent 60deg, #598de0ff 120deg, #60A5FA 180deg, #3B82F6 240deg, transparent 300deg, transparent 360deg)',
+                                                animation: 'spin 2s linear infinite'
+                                            }}
+                                        />
+                                    </div>
+                                    {/* Glow effect behind */}
+                                    <div
+                                        className="absolute inset-[-4px] rounded-full blur-md opacity-50"
                                         style={{
                                             background: 'conic-gradient(from 0deg at 50% 50%, transparent 0deg, transparent 60deg, #598de0ff 120deg, #60A5FA 180deg, #3B82F6 240deg, transparent 300deg, transparent 360deg)',
                                             animation: 'spin 2s linear infinite'
                                         }}
                                     />
-                                </div>
-                                {/* Glow effect behind */}
-                                <div
-                                    className="absolute inset-[-4px] rounded-full blur-md opacity-50"
-                                    style={{
-                                        background: 'conic-gradient(from 0deg at 50% 50%, transparent 0deg, transparent 60deg, #598de0ff 120deg, #60A5FA 180deg, #3B82F6 240deg, transparent 300deg, transparent 360deg)',
-                                        animation: 'spin 2s linear infinite'
-                                    }}
+                                </>
+                            )}
+
+                            <button
+                                onClick={handleSubmit}
+                                disabled={(!input.trim() && attachments.length === 0) || disabled}
+                                className={`
+                                relative w-9 h-9 flex items-center justify-center rounded-full transition-all duration-300 overflow-hidden group/btn
+                                ${(input.trim() || attachments.length > 0) && !disabled
+                                        ? 'bg-blue-500 text-white shadow-[0_4px_12px_rgba(59,130,246,0.3),inset_0_2px_4px_rgba(255,255,255,0.3),inset_0_-2px_4px_rgba(0,0,0,0.1),0_0_0_1px_rgba(59,130,246,1)] hover:shadow-[0_6px_20px_rgba(59,130,246,0.4),inset_0_2px_4px_rgba(255,255,255,0.4),inset_0_-2px_4px_rgba(0,0,0,0.1),0_0_0_1px_rgba(59,130,246,1)] active:shadow-[inset_0_4px_8px_rgba(0,0,0,0.2),0_1px_2px_rgba(0,0,0,0.1)] active:scale-[0.96] active:translate-y-0.5'
+                                        : 'bg-slate-100 text-slate-400 shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)]'
+                                    }
+                            `}
+                            >
+                                {/* Reflection Shine Overlay - Adjusted to top */}
+                                {(input.trim() || attachments.length > 0) && !disabled && (
+                                    <div className="absolute inset-0 bg-gradient-to-b from-white/30 via-white/5 to-transparent opacity-100 pointer-events-none rounded-full -top-1" />
+                                )}
+
+                                {/* Top Edge Highlight (Rim Light) - Nudged to the absolute top */}
+                                {(input.trim() || attachments.length > 0) && !disabled && (
+                                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[80%] h-[1px] bg-white/50 blur-[0.4px] rounded-full pointer-events-none z-20" />
+                                )}
+
+                                <Send
+                                    size={14}
+                                    className={`relative z-10 transition-transform duration-300 ${(input.trim() || attachments.length > 0) && !disabled ? "ml-0.5 group-hover/btn:scale-110" : ""}`}
+                                    fill={(input.trim() || attachments.length > 0) && !disabled ? "currentColor" : "none"}
                                 />
-                            </>
-                        )}
-
-                        <button
-                            onClick={handleSubmit}
-                            disabled={(!input.trim() && attachments.length === 0) || disabled}
-                            className={`
-                            relative w-9 h-9 flex items-center justify-center rounded-full transition-all duration-300 overflow-hidden group/btn
-                            ${(input.trim() || attachments.length > 0) && !disabled
-                                    ? 'bg-blue-500 text-white shadow-[0_4px_12px_rgba(59,130,246,0.3),inset_0_2px_4px_rgba(255,255,255,0.3),inset_0_-2px_4px_rgba(0,0,0,0.1),0_0_0_1px_rgba(59,130,246,1)] hover:shadow-[0_6px_20px_rgba(59,130,246,0.4),inset_0_2px_4px_rgba(255,255,255,0.4),inset_0_-2px_4px_rgba(0,0,0,0.1),0_0_0_1px_rgba(59,130,246,1)] active:shadow-[inset_0_4px_8px_rgba(0,0,0,0.2),0_1px_2px_rgba(0,0,0,0.1)] active:scale-[0.96] active:translate-y-0.5'
-                                    : 'bg-slate-100 text-slate-400 shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)]'
-                                }
-                        `}
-                        >
-                            {/* Reflection Shine Overlay - Adjusted to top */}
-                            {(input.trim() || attachments.length > 0) && !disabled && (
-                                <div className="absolute inset-0 bg-gradient-to-b from-white/30 via-white/5 to-transparent opacity-100 pointer-events-none rounded-full -top-1" />
-                            )}
-
-                            {/* Top Edge Highlight (Rim Light) - Nudged to the absolute top */}
-                            {(input.trim() || attachments.length > 0) && !disabled && (
-                                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[80%] h-[1px] bg-white/50 blur-[0.4px] rounded-full pointer-events-none z-20" />
-                            )}
-
-                            <Send
-                                size={14}
-                                className={`relative z-10 transition-transform duration-300 ${(input.trim() || attachments.length > 0) && !disabled ? "ml-0.5 group-hover/btn:scale-110" : ""}`}
-                                fill={(input.trim() || attachments.length > 0) && !disabled ? "currentColor" : "none"}
-                            />
-                        </button>
+                            </button>
+                        </div>
                     </div>
                 </div>
                 {/* Close Inner Content Container */}

@@ -120,3 +120,30 @@ export const ExpressionlessSquareLinear: React.FC<React.SVGProps<SVGSVGElement>>
         </g>
     </svg>
 );
+
+export const VolumeHighLinear: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" {...props}>
+        <g fill="none" stroke="currentColor" strokeWidth="1.5">
+            <path d="M2 14.959V9.04C2 8.466 2.448 8 3 8h2.586a1 1 0 0 0 .707-.293l3-3C10.923 3.077 13 4.144 13 6.414v11.172c0 2.27-2.077 3.337-3.707 1.707l-3-3A1 1 0 0 0 5.586 16H3c-.552 0-1-.466-1-1.041Z"></path>
+            <path strokeLinecap="round" d="M16 9c.5.5 1 1.242 1 3s-.5 2.5-1 3m2.5-8c1 1 2 2.5 2 5s-1 4-2 5"></path>
+        </g>
+    </svg>
+);
+
+export const StopCircleLinear: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" {...props}>
+        <g fill="none" stroke="currentColor" strokeWidth="1.5">
+            <circle cx="12" cy="12" r="10"></circle>
+            <rect width="6" height="6" x="9" y="9" rx="1"></rect>
+        </g>
+    </svg>
+);
+
+export const Microphone3Linear: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" {...props}>
+        <g fill="none" stroke="currentColor" strokeWidth="1.5">
+            <path d="M7 8a5 5 0 0 1 10 0v3a5 5 0 0 1-10 0V8Z"></path>
+            <path strokeLinecap="round" d="M11 8h2m-3 3h4m6-1v1a8 8 0 1 1-16 0v-1m8 9v3"></path>
+        </g>
+    </svg>
+);

@@ -4,8 +4,8 @@ import React from "react";
 interface ClayPillProps {
     children: React.ReactNode;
     className?: string;
-    size?: "sm" | "md" | "lg";
-    variant?: "primary" | "secondary" | "accent";
+    size?: "xs" | "sm" | "md" | "lg";
+    variant?: "primary" | "secondary" | "accent" | "deepBlue";
 }
 
 export const ClayPill: React.FC<ClayPillProps> = ({
@@ -15,6 +15,7 @@ export const ClayPill: React.FC<ClayPillProps> = ({
     variant = "primary",
 }) => {
     const sizeClasses = {
+        xs: "px-1.5 py-0.5 text-[8px]",
         sm: "px-2 py-0.5 text-[10px]",
         md: "px-3 py-1 text-xs",
         lg: "px-4 py-1.5 text-sm",
@@ -24,6 +25,7 @@ export const ClayPill: React.FC<ClayPillProps> = ({
         primary: "from-blue-500 via-blue-400 to-blue-500",
         secondary: "from-slate-500 via-slate-400 to-slate-500",
         accent: "from-purple-500 via-pink-400 to-purple-500",
+        deepBlue: "from-blue-600 via-blue-500 to-indigo-600",
     };
 
     return (
