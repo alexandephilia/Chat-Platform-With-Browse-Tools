@@ -44,7 +44,7 @@ export const AuthModal: React.FC = () => {
     const [nameFieldHeight, setNameFieldHeight] = useState(60); // Approximate height: label (18px) + input (40px) + spacing (2px)
 
     const [formData, setFormData] = useState({
-        name: '',
+        firstName: '',
         email: '',
         password: ''
     });
@@ -65,7 +65,7 @@ export const AuthModal: React.FC = () => {
         if (authModalType === 'login') setIsLoginMode(true);
         if (authModalType === 'signup') setIsLoginMode(false);
         setError(null);
-        setFormData({ name: '', email: '', password: '' });
+        setFormData({ firstName: '', email: '', password: '' });
     }, [authModalType]);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -77,7 +77,7 @@ export const AuthModal: React.FC = () => {
                 await login({ email: formData.email, password: formData.password });
             } else {
                 await signup({
-                    name: formData.name,
+                    firstName: formData.firstName,
                     email: formData.email,
                     password: formData.password
                 });
@@ -182,17 +182,19 @@ export const AuthModal: React.FC = () => {
                                     }}
                                 >
                                     <label className="block text-xs font-medium text-slate-600 mb-1.5">
-                                        Name
+                                        First Name
                                     </label>
                                     <input
                                         type="text"
-                                        name="name"
-                                        value={formData.name}
+                                        name="firstName"
+                                        value={formData.firstName}
                                         onChange={handleInputChange}
-                                        placeholder="Your name"
+                                        placeholder="Your first name"
                                         className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-blue-300 focus:ring-2 focus:ring-blue-100 outline-none transition-all"
                                         required={!isLoginMode}
                                         tabIndex={isLoginMode ? -1 : 0}
+                                        pattern="[A-Za-z]+"
+                                        title="First name only, no spaces"
                                     />
                                 </motion.div>
 

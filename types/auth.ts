@@ -1,7 +1,7 @@
 export interface User {
     id: string;
     email: string;
-    name: string;
+    firstName: string;
     avatar?: string;
     createdAt: Date;
 }
@@ -18,7 +18,7 @@ export interface LoginCredentials {
 }
 
 export interface SignupCredentials {
-    name: string;
+    firstName: string;
     email: string;
     password: string;
 }

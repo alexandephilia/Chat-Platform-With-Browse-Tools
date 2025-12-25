@@ -168,9 +168,13 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
 }) => {
     const [suggestions, setSuggestions] = useState<SuggestionCard[]>(() => getRandomSuggestions(3));
     const [refreshKey, setRefreshKey] = useState(0);
+    const { user } = useAuth();
 
     // Memoize greeting to prevent recalculation on every render
     const greeting = useMemo(() => getTimeBasedGreeting(), []);
+
+    // Get user's first name for personalized greeting
+    const displayName = user?.firstName || 'there';
 
     const refreshSuggestions = () => {
         setRefreshKey(prev => prev + 1);
@@ -209,7 +213,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                             </motion.div>
                         </div>
                         <motion.h1 variants={titleVariants} className="text-[42px] text-slate-800 mb-1 tracking-tight font-display leading-[1.1] px-2">
-                            {greeting}, <span className="italic">Alex!</span>
+                            {greeting}, <span className="italic">{displayName}!</span>
                         </motion.h1>
                         <motion.p variants={descVariants} className="text-slate-600 text-[15px] max-w-xs font-medium leading-relaxed px-2">
                             We landed here — to transform your perspectives not just works.
@@ -367,7 +371,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                     </motion.div>
                 </div>
                 <motion.h1 variants={titleVariants} className="text-[72px] text-slate-800 mb-0 tracking-tight font-display leading-[1.1] px-4">
-                    {greeting}, <span className="italic">Alex!</span>
+                    {greeting}, <span className="italic">{displayName}!</span>
                 </motion.h1>
                 <motion.p variants={descVariants} className="text-slate-600 text-[16px] max-w-2xl font-medium leading-relaxed px-6">
                     We landed here — to transform your perspectives not just works.

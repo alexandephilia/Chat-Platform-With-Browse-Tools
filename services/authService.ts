@@ -16,11 +16,15 @@ export const authService = {
             throw new Error('Password must be at least 6 characters');
         }
 
+        // Check if user exists in storage (from previous signup)
+        const existingUsers = JSON.parse(localStorage.getItem('zeta_users') || '{}');
+        const existingUser = existingUsers[credentials.email];
+
         const user: User = {
-            id: crypto.randomUUID(),
+            id: existingUser?.id || crypto.randomUUID(),
             email: credentials.email,
-            name: credentials.email.split('@')[0],
-            createdAt: new Date(),
+            firstName: existingUser?.firstName || credentials.email.split('@')[0].split(/[._-]/)[0],
+            createdAt: existingUser?.createdAt ? new Date(existingUser.createdAt) : new Date(),
         };
 
         localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
@@ -37,16 +41,30 @@ export const authService = {
         if (credentials.password.length < 6) {
             throw new Error('Password must be at least 6 characters');
         }
-        if (credentials.name.length < 2) {
-            throw new Error('Name must be at least 2 characters');
+
+        // Validate first name - no spaces allowed, only letters
+        const trimmedFirstName = credentials.firstName.trim();
+        if (trimmedFirstName.length < 2) {
+            throw new Error('First name must be at least 2 characters');
+        }
+        if (/\s/.test(trimmedFirstName)) {
+            throw new Error('Please enter first name only (no spaces)');
+        }
+        if (!/^[a-zA-Z]+$/.test(trimmedFirstName)) {
+            throw new Error('First name should contain only letters');
         }
 
         const user: User = {
             id: crypto.randomUUID(),
             email: credentials.email,
-            name: credentials.name,
+            firstName: trimmedFirstName.charAt(0).toUpperCase() + trimmedFirstName.slice(1).toLowerCase(),
             createdAt: new Date(),
         };
+
+        // Store user for future logins
+        const existingUsers = JSON.parse(localStorage.getItem('zeta_users') || '{}');
+        existingUsers[credentials.email] = user;
+        localStorage.setItem('zeta_users', JSON.stringify(existingUsers));
 
         localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
         return user;
