@@ -4,7 +4,7 @@
 
 import { AnimatedMarkdown } from 'flowtoken';
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { initAudioForMobile, isAudioPlaying, isElevenLabsConfigured, playAudio, playAudioWithHighlighting, stopAudio, textToSpeech, textToSpeechWithTimestamps, WordTiming } from '../../services/elevenLabsService';
+import { initAudioForMobile, isAudioPlaying, isElevenLabsConfigured, playAudio, stopAudio, textToSpeech } from '../../services/elevenLabsService';
 import { ModelIcon } from '../../services/modelIcons';
 import { Message } from '../../types';
 import { CopyLinear, MoreDotsLinear, RefreshSquareLinear, StopCircleLinear, VolumeHighLinear } from '../atoms/Icons';
@@ -176,8 +176,9 @@ export const AIMessageBubble: React.FC<AIMessageBubbleProps> = memo(({
     const [isSpeaking, setIsSpeaking] = useState(false);
     const [isLoadingTTS, setIsLoadingTTS] = useState(false);
     const [highlightedWordIndex, setHighlightedWordIndex] = useState<number>(-1);
-    const [wordTimings, setWordTimings] = useState<WordTiming[]>([]);
+    const [displayWords, setDisplayWords] = useState<string[]>([]);
     const ttsEnabledRef = useRef(isElevenLabsConfigured());
+    const highlightIntervalRef = useRef<number | null>(null);
 
     // Track touch events to prevent double-firing on mobile
     const touchHandledRef = useRef(false);
@@ -189,9 +190,13 @@ export const AIMessageBubble: React.FC<AIMessageBubbleProps> = memo(({
         // If already speaking, stop
         if (isSpeaking) {
             stopAudio();
+            if (highlightIntervalRef.current) {
+                clearInterval(highlightIntervalRef.current);
+                highlightIntervalRef.current = null;
+            }
             setIsSpeaking(false);
             setHighlightedWordIndex(-1);
-            setWordTimings([]);
+            setDisplayWords([]);
             return;
         }
 
@@ -205,46 +210,79 @@ export const AIMessageBubble: React.FC<AIMessageBubbleProps> = memo(({
 
         setIsLoadingTTS(true);
         try {
-            // Try to get timestamps for highlighting
-            const result = await textToSpeechWithTimestamps(message.content);
+            // Get audio blob
+            const audioBlob = await textToSpeech(message.content);
 
-            setWordTimings(result.wordTimings);
+            // Parse words from the message content (strip markdown first)
+            const plainText = message.content
+                .replace(/```[\s\S]*?```/g, '') // Remove code blocks
+                .replace(/`[^`]+`/g, '') // Remove inline code
+                .replace(/\*\*([^*]+)\*\*/g, '$1') // Remove bold
+                .replace(/\*([^*]+)\*/g, '$1') // Remove italic
+                .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Remove links, keep text
+                .replace(/^#{1,6}\s+/gm, '') // Remove headers
+                .replace(/^[-*+]\s+/gm, '') // Remove list markers
+                .trim();
 
-            // Play with highlighting callback
-            const audio = await playAudioWithHighlighting(
-                result.audioBlob,
-                result.wordTimings,
-                (wordIndex) => {
-                    setHighlightedWordIndex(wordIndex);
-                }
-            );
+            const words = plainText.split(/\s+/).filter(w => w.length > 0);
+            setDisplayWords(words);
 
+            // Play audio
+            const audio = await playAudio(audioBlob);
             setIsSpeaking(true);
 
+            // Estimate word timing based on audio duration
+            const startHighlighting = () => {
+                const duration = audio.duration;
+                if (!duration || duration === 0) return;
+
+                const wordsPerSecond = words.length / duration;
+
+                highlightIntervalRef.current = window.setInterval(() => {
+                    if (audio.paused || audio.ended) {
+                        if (highlightIntervalRef.current) {
+                            clearInterval(highlightIntervalRef.current);
+                            highlightIntervalRef.current = null;
+                        }
+                        return;
+                    }
+
+                    const currentTime = audio.currentTime;
+                    const estimatedWordIndex = Math.floor(currentTime * wordsPerSecond);
+                    setHighlightedWordIndex(Math.min(estimatedWordIndex, words.length - 1));
+                }, 80); // Update every 80ms for smooth highlighting
+            };
+
+            // Wait for duration to be available
+            if (audio.duration && audio.duration > 0) {
+                startHighlighting();
+            } else {
+                audio.addEventListener('loadedmetadata', startHighlighting, { once: true });
+            }
+
             audio.onended = () => {
+                if (highlightIntervalRef.current) {
+                    clearInterval(highlightIntervalRef.current);
+                    highlightIntervalRef.current = null;
+                }
                 setIsSpeaking(false);
                 setHighlightedWordIndex(-1);
-                setWordTimings([]);
+                setDisplayWords([]);
             };
             audio.onerror = () => {
+                if (highlightIntervalRef.current) {
+                    clearInterval(highlightIntervalRef.current);
+                    highlightIntervalRef.current = null;
+                }
                 setIsSpeaking(false);
                 setHighlightedWordIndex(-1);
-                setWordTimings([]);
+                setDisplayWords([]);
             };
         } catch (error) {
-            console.error('[TTS] Error with timestamps, falling back:', error);
-
-            // Fallback to regular TTS without highlighting
-            try {
-                const audioBlob = await textToSpeech(message.content);
-                const audio = await playAudio(audioBlob);
-                setIsSpeaking(true);
-
-                audio.onended = () => setIsSpeaking(false);
-                audio.onerror = () => setIsSpeaking(false);
-            } catch (fallbackError) {
-                console.error('[TTS] Fallback failed:', fallbackError);
-            }
+            console.error('[TTS] Error:', error);
+            setIsSpeaking(false);
+            setHighlightedWordIndex(-1);
+            setDisplayWords([]);
         } finally {
             setIsLoadingTTS(false);
         }
@@ -303,20 +341,20 @@ export const AIMessageBubble: React.FC<AIMessageBubbleProps> = memo(({
 
             {/* Message Content - Only animate if streaming */}
             <div className="chat-message-ai text-slate-700 relative" data-message-id={message.id}>
-                {/* Show highlighted text overlay when speaking with timestamps */}
-                {isSpeaking && wordTimings.length > 0 ? (
-                    <div className="tts-highlighted-text">
-                        {wordTimings.map((timing, index) => (
+                {/* Show highlighted text overlay when speaking */}
+                {isSpeaking && displayWords.length > 0 ? (
+                    <div className="tts-highlighted-text leading-relaxed">
+                        {displayWords.map((word, index) => (
                             <span
                                 key={index}
-                                className={`transition-all duration-100 ${index === highlightedWordIndex
-                                    ? 'bg-blue-200 text-blue-900 rounded px-0.5 -mx-0.5'
-                                    : index < highlightedWordIndex
-                                        ? 'text-slate-400'
-                                        : ''
+                                className={`inline transition-colors duration-75 ${index === highlightedWordIndex
+                                        ? 'bg-blue-100 text-blue-700 rounded px-0.5'
+                                        : index < highlightedWordIndex
+                                            ? 'text-slate-400'
+                                            : 'text-slate-700'
                                     }`}
                             >
-                                {timing.word}{' '}
+                                {word}{' '}
                             </span>
                         ))}
                     </div>
