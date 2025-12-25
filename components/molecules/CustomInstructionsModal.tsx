@@ -1,31 +1,34 @@
 import { AnimatePresence, motion, PanInfo, useMotionValue, useTransform } from 'framer-motion';
 import { AlertCircle, Sparkles, X } from 'lucide-react';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 interface CustomInstructionsModalProps {
     isOpen: boolean;
     onClose: () => void;
 }
 
+// Check mobile once at module level to avoid re-renders
+const getIsMobile = () => typeof window !== 'undefined' && window.innerWidth < 640;
+
 export const CustomInstructionsModal: React.FC<CustomInstructionsModalProps> = ({ isOpen, onClose }) => {
     const [instructions, setInstructions] = useState('');
     const [isSaving, setIsSaving] = useState(false);
-    const [isMobile, setIsMobile] = useState(false);
     const dragY = useMotionValue(0);
     const sheetRef = useRef<HTMLDivElement>(null);
 
-    useEffect(() => {
-        const checkMobile = () => setIsMobile(window.innerWidth < 640);
-        checkMobile();
-        window.addEventListener('resize', checkMobile);
-        return () => window.removeEventListener('resize', checkMobile);
-    }, []);
+    // Capture isMobile at mount time and when modal opens to prevent re-render issues during animation
+    const isMobileRef = useRef(getIsMobile());
 
+    // Update ref only when modal opens (not during animation)
     useEffect(() => {
         if (isOpen) {
+            isMobileRef.current = getIsMobile();
             dragY.set(0);
         }
     }, [isOpen, dragY]);
+
+    // Use the ref value for animations - this won't cause re-renders
+    const isMobile = isMobileRef.current;
 
     useEffect(() => {
         if (isOpen) {
@@ -47,7 +50,7 @@ export const CustomInstructionsModal: React.FC<CustomInstructionsModalProps> = (
         e.stopPropagation();
     }, []);
 
-    const handleDragEnd = useCallback((event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    const handleDragEnd = useCallback((_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
         const shouldClose = info.velocity.y > 500 || (info.velocity.y >= 0 && info.offset.y > 150);
         if (shouldClose) {
             onClose();
@@ -56,35 +59,62 @@ export const CustomInstructionsModal: React.FC<CustomInstructionsModalProps> = (
         }
     }, [onClose, dragY]);
 
+    // Transform values for drag interaction
     const backdropOpacity = useTransform(dragY, [0, 300], [1, 0]);
+    const sheetBlurFilter = useTransform(dragY, [0, 300], ['blur(0px)', 'blur(8px)']);
+
+    // Memoize animation variants to prevent recalculation
+    const mobileVariants = useMemo(() => ({
+        initial: { y: '100%' },
+        animate: { y: 0 },
+        exit: { y: '100%' }
+    }), []);
+
+    const desktopVariants = useMemo(() => ({
+        initial: { opacity: 0, scale: 0.95, y: 20 },
+        animate: { opacity: 1, scale: 1, y: 0 },
+        exit: { opacity: 0, scale: 0.95, y: 20 }
+    }), []);
+
+    const mobileTransition = useMemo(() => ({
+        duration: 0.35,
+        ease: [0.32, 0.72, 0, 1]
+    }), []);
+
+    const desktopTransition = useMemo(() => ({
+        duration: 0.2,
+        ease: [0.4, 0, 0.2, 1]
+    }), []);
 
     return (
-        <AnimatePresence>
+        <AnimatePresence mode="wait">
             {isOpen && (
                 <div className="fixed inset-0 z-[10002] flex items-end sm:items-center justify-center">
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        style={{ opacity: isMobile ? backdropOpacity : 1 }}
+                        transition={{ duration: 0.2 }}
+                        style={isMobile ? { opacity: backdropOpacity } : undefined}
                         onClick={onClose}
                         className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
                     />
 
                     <motion.div
                         ref={sheetRef}
-                        initial={isMobile ? { y: '100%', filter: 'blur(8px)' } : { opacity: 0, scale: 0.95, y: 20 }}
-                        animate={isMobile ? { y: 0, filter: 'blur(0px)' } : { opacity: 1, scale: 1, y: 0 }}
-                        exit={isMobile ? { y: '100%', filter: 'blur(8px)' } : { opacity: 0, scale: 0.95, y: 20 }}
-                        transition={isMobile
-                            ? { duration: 0.3, ease: [0.32, 0.72, 0, 1] }
-                            : { duration: 0.2, ease: [0.4, 0, 0.2, 1] }
-                        }
+                        variants={isMobile ? mobileVariants : desktopVariants}
+                        initial="initial"
+                        animate="animate"
+                        exit="exit"
+                        transition={isMobile ? mobileTransition : desktopTransition}
                         drag={isMobile ? 'y' : false}
                         dragConstraints={{ top: 0, bottom: 0 }}
                         dragElastic={{ top: 0, bottom: 0.3 }}
                         onDragEnd={handleDragEnd}
-                        style={isMobile ? { y: dragY } : undefined}
+                        style={isMobile ? {
+                            y: dragY,
+                            filter: sheetBlurFilter
+                        } : undefined}
                         onClick={handleModalClick}
                         onTouchEnd={handleModalClick}
                         className="relative w-full sm:max-w-lg bg-[rgb(250,250,250)] rounded-t-[24px] sm:rounded-[24px] shadow-[0_-8px_32px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.9)] overflow-hidden border border-slate-200/60 max-h-[90vh] sm:max-h-[85vh] flex flex-col touch-none sm:touch-auto"
