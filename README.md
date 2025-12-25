@@ -101,6 +101,6 @@ cp .env.example .env
 ## 📜 Credits & License
 
 > [!NOTE] > **Copyright © 2024 Alexandephilia**. All rights reserved.
-> Created and maintained by Alexandephilia.
+> Created and maintained by Alexandephilia with coffee
 
 This project is licensed under the **MIT License**.
