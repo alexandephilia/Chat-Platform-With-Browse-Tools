@@ -20,13 +20,27 @@ export const authService = {
         const existingUsers = JSON.parse(localStorage.getItem('zeta_users') || '{}');
         const existingUser = existingUsers[credentials.email];
 
+        // Handle migration from old 'name' field
+        let firstName = existingUser?.firstName;
+        if (!firstName && existingUser?.name) {
+            firstName = existingUser.name.split(' ')[0];
+        }
+        if (!firstName) {
+            firstName = credentials.email.split('@')[0].split(/[._-]/)[0];
+        }
+        // Capitalize first letter
+        firstName = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
+
         const user: User = {
             id: existingUser?.id || crypto.randomUUID(),
             email: credentials.email,
-            firstName: existingUser?.firstName || credentials.email.split('@')[0].split(/[._-]/)[0],
+            firstName,
             createdAt: existingUser?.createdAt ? new Date(existingUser.createdAt) : new Date(),
         };
 
+        // Update stored user with migrated data
+        existingUsers[credentials.email] = user;
+        localStorage.setItem('zeta_users', JSON.stringify(existingUsers));
         localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
         return user;
     },
@@ -81,6 +95,12 @@ export const authService = {
         try {
             const user = JSON.parse(stored);
             user.createdAt = new Date(user.createdAt);
+            // Handle migration from old 'name' field to 'firstName'
+            if (!user.firstName && user.name) {
+                user.firstName = user.name.split(' ')[0];
+                delete user.name;
+                localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
+            }
             return user;
         } catch {
             return null;
