@@ -63,8 +63,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // Set comprehensive headers for mobile compatibility
         res.setHeader('Content-Type', 'audio/mpeg');
         res.setHeader('Content-Length', audioBuffer.byteLength);
-        res.setHeader('Accept-Ranges', 'bytes');
-        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
 
         return res.status(200).send(Buffer.from(audioBuffer));
     } catch (error) {

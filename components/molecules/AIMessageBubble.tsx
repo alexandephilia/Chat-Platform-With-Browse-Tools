@@ -196,14 +196,23 @@ export const AIMessageBubble: React.FC<AIMessageBubbleProps> = memo(({
             stopAudio();
         }
 
-        // CRITICAL: Initialize audio context IMMEDIATELY during user gesture
-        // This unlocks audio playback on iOS Safari
-        await initAudioForMobile();
+        // CRITICAL: Initialize audio context and create the audio element IMMEDIATELY
+        // This MUST happen inside the direct user gesture (onClick/onTouchEnd)
+        // to unlock audio playback on mobile (especially iOS Safari).
+        const ctx = await initAudioForMobile();
+        
+        // Create an empty, silent audio element to "lock in" the user gesture
+        // We will reuse this element once the TTS data arrives
+        const gestureAudio = new Audio();
+        gestureAudio.play().catch(() => {
+            // It might fail if we can't play silenced audio yet, that's fine
+        });
 
         setIsLoadingTTS(true);
         try {
             const audioBlob = await textToSpeech(message.content);
-            const audio = await playAudio(audioBlob);
+            // Reuse the contextually unlocked audio element
+            const audio = await playAudio(audioBlob, gestureAudio);
             setIsSpeaking(true);
 
             audio.onended = () => setIsSpeaking(false);
@@ -211,6 +220,9 @@ export const AIMessageBubble: React.FC<AIMessageBubbleProps> = memo(({
         } catch (error) {
             console.error('[TTS] Error:', error);
             setIsSpeaking(false);
+            // Cleanup the gesture audio if it failed
+            gestureAudio.pause();
+            gestureAudio.src = "";
         } finally {
             setIsLoadingTTS(false);
         }

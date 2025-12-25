@@ -204,13 +204,13 @@ let audioContext: AudioContext | null = null;
 /**
  * Initialize and unlock audio context for mobile
  * MUST be called directly from user gesture (click/touch handler)
- * Returns true if audio is ready to play
+ * Returns the audio context if successful
  */
-export async function initAudioForMobile(): Promise<boolean> {
+export async function initAudioForMobile(): Promise<AudioContext | null> {
     try {
         // Create AudioContext if needed (for unlocking on iOS)
         if (!audioContext) {
-            const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+            const AudioContextClass = (window as any).AudioContext || (window as any).webkitAudioContext;
             if (AudioContextClass) {
                 audioContext = new AudioContextClass();
             }
@@ -230,10 +230,10 @@ export async function initAudioForMobile(): Promise<boolean> {
             source.start(0);
         }
 
-        return true;
+        return audioContext;
     } catch (error) {
         console.warn('[Audio] Failed to init audio context:', error);
-        return false;
+        return null;
     }
 }
 
@@ -370,18 +370,25 @@ export async function textToSpeech(
  * Play audio blob and return the audio element for control
  * Note: On mobile, call initAudioForMobile() first from the user gesture
  * @param audioBlob - The audio blob to play
+ * @param existingAudio - Optional existing audio element to reuse (helps keep user gesture)
  */
-export async function playAudio(audioBlob: Blob): Promise<HTMLAudioElement> {
-    // Stop any currently playing audio
-    stopAudio();
-
-    // Create blob URL with explicit MIME type for better iOS compatibility
+export async function playAudio(audioBlob: Blob, existingAudio?: HTMLAudioElement): Promise<HTMLAudioElement> {
+    // Creating URL first to ensure it's ready
     const typedBlob = new Blob([audioBlob], { type: 'audio/mpeg' });
     const url = URL.createObjectURL(typedBlob);
-    currentAudioUrl = url;
-
-    const audio = new Audio();
+    
+    const audio = existingAudio || new Audio();
+    
+    // Stop any currently playing audio if we're creating a new one
+    if (!existingAudio) {
+        stopAudio();
+    } else {
+        // If reusing, stop previous playback
+        audio.pause();
+    }
+    
     currentAudio = audio;
+    currentAudioUrl = url;
 
     // Set up event handlers
     audio.onended = () => {
@@ -397,39 +404,11 @@ export async function playAudio(audioBlob: Blob): Promise<HTMLAudioElement> {
     audio.preload = 'auto';
     audio.setAttribute('playsinline', 'true');
     audio.setAttribute('webkit-playsinline', 'true');
-
-    // Set crossOrigin for better compatibility
     audio.crossOrigin = 'anonymous';
 
-    // Set source
+    // Set source and load
     audio.src = url;
-
-    // Wait for audio to be ready before playing
-    await new Promise<void>((resolve, reject) => {
-        const onCanPlay = () => {
-            audio.removeEventListener('canplaythrough', onCanPlay);
-            audio.removeEventListener('error', onError);
-            resolve();
-        };
-        const onError = (e: Event) => {
-            audio.removeEventListener('canplaythrough', onCanPlay);
-            audio.removeEventListener('error', onError);
-            reject(new Error('Audio failed to load'));
-        };
-
-        audio.addEventListener('canplaythrough', onCanPlay);
-        audio.addEventListener('error', onError);
-
-        // Trigger load
-        audio.load();
-
-        // Timeout fallback - if canplaythrough doesn't fire, try anyway
-        setTimeout(() => {
-            audio.removeEventListener('canplaythrough', onCanPlay);
-            audio.removeEventListener('error', onError);
-            resolve();
-        }, 3000);
-    });
+    audio.load();
 
     // Play with proper error handling
     try {
