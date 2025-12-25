@@ -1,17 +1,21 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { useCallback, useEffect, useState } from 'react';
 import { Toaster } from 'sonner';
+import { GlobalTheme } from './components/atoms/GlobalTheme';
 import { HamburgerMenuBroken } from './components/atoms/Icons';
 import { AuthModal } from './components/molecules/AuthModal';
+import { CustomInstructionsModal } from './components/molecules/CustomInstructionsModal';
+import { ProfilePortal } from './components/molecules/ProfilePortal';
 import GlobalHeader from './components/organisms/GlobalHeader';
 import Sidebar from './components/organisms/Sidebar';
 import ChatInterface from './components/templates/ChatInterface';
 import { AuthProvider } from './contexts/AuthContext';
 import { useChatHistory } from './hooks/useChatHistory';
 import { Message } from './types';
-import { GlobalTheme } from './components/atoms/GlobalTheme';
 
 function AppContent() {
+    const [isProfileOpen, setIsProfileOpen] = useState(false);
+    const [isInstructionsOpen, setIsInstructionsOpen] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isSidebarMinimized, setIsSidebarMinimized] = useState(false);
     const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -99,6 +103,8 @@ function AppContent() {
                         onToggleSidebar={() => setIsSidebarMinimized(!isSidebarMinimized)}
                         isDarkMode={isDarkMode}
                         onToggleTheme={toggleTheme}
+                        onOpenProfile={() => setIsProfileOpen(true)}
+                        isProfileOpen={isProfileOpen}
                     />
                 </div>
 
@@ -129,6 +135,10 @@ function AppContent() {
                         onDeleteChat={handleDeleteChat}
                         chatHistory={chatHistory}
                         activeChatId={activeChatId || undefined}
+                        onOpenProfile={() => {
+                            setIsProfileOpen(true);
+                            // Don't close sidebar - profile portal will appear on top
+                        }}
                     />
 
                     {/* Main Content */}
@@ -177,6 +187,20 @@ function AppContent() {
 
             {/* Auth Modal */}
             <AuthModal />
+
+            {/* Profile & Instructions */}
+            <ProfilePortal
+                isOpen={isProfileOpen}
+                onClose={() => setIsProfileOpen(false)}
+                isDarkMode={isDarkMode}
+                onToggleTheme={toggleTheme}
+                onOpenInstructions={() => setIsInstructionsOpen(true)}
+            />
+
+            <CustomInstructionsModal
+                isOpen={isInstructionsOpen}
+                onClose={() => setIsInstructionsOpen(false)}
+            />
         </>
     );
 }

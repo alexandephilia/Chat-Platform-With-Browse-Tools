@@ -183,6 +183,7 @@ interface SidebarProps {
     onDeleteChat?: (chatId: string) => void;
     chatHistory?: ChatHistoryItem[];
     activeChatId?: string;
+    onOpenProfile?: () => void;
 }
 
 const groupChatsByTimeline = (chats: ChatHistoryItem[]): Record<string, ChatHistoryItem[]> => {
@@ -451,12 +452,12 @@ const MobileChatHistoryItemComponent: React.FC<{
                 </div>
                 <span className={`truncate text-left flex-1 font-medium ${isNew ? "text-blue-600" : ""}`}>{chat.title}</span>
             </button>
-            <div className="absolute -right-1 -top-1 z-10 opacity-70">
+            <div className="absolute -right-1 -top-1 z-10">
                 <button
                     ref={menuButtonRef}
                     onClick={handleMenuClick}
                     onTouchEnd={handleMenuClick}
-                    className="p-1.5 rounded-lg bg-white/70 backdrop-blur-sm shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-slate-200/40 text-slate-400 active:scale-95 active:bg-white/90 transition-all duration-150"
+                    className="p-1.5 rounded-lg bg-white/20 backdrop-blur-md shadow-[0_2px_8px_rgba(0,0,0,0.06)] border border-slate-200/20 text-slate-400 active:scale-95 active:bg-white/40 transition-all duration-150"
                     style={{ transform: 'translateZ(0)' }}
                 >
                     <MoreHorizontal size={14} />
@@ -496,7 +497,7 @@ const MobileChatHistoryItemComponent: React.FC<{
     );
 });
 
-const Sidebar: React.FC<SidebarProps> = ({ isOpen, isMinimized = false, onClose, onNewChat, onSelectChat, onDeleteChat, chatHistory = [], activeChatId }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isOpen, isMinimized = false, onClose, onNewChat, onSelectChat, onDeleteChat, chatHistory = [], activeChatId, onOpenProfile }) => {
     const { isAuthenticated, user, logout, openLoginModal, openSignupModal } = useAuth();
     const navRef = useRef<HTMLDivElement>(null);
     const [canScrollUp, setCanScrollUp] = useState(false);
@@ -544,7 +545,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, isMinimized = false, onClose,
                         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
                             <div className="flex items-center gap-3">
                                 {isAuthenticated ? (
-                                    <div className="flex items-center gap-1 text-slate-500">
+                                    <div
+                                        onClick={onOpenProfile}
+                                        className="flex items-center gap-1 text-slate-500 cursor-pointer hover:text-slate-700 transition-colors"
+                                    >
                                         <UserAvatar initials={user?.firstName?.charAt(0).toUpperCase() || 'U'} size="sm" />
                                         <span className="text-sm font-medium">{user?.firstName || 'Personal'}</span>
                                         <ChevronDown size={14} className="flex-shrink-0" />
