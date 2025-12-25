@@ -199,7 +199,7 @@ export const AIMessageBubble: React.FC<AIMessageBubbleProps> = memo(({
         setIsLoadingTTS(true);
         try {
             const audioBlob = await textToSpeech(message.content);
-            const audio = playAudio(audioBlob);
+            const audio = await playAudio(audioBlob);
             setIsSpeaking(true);
 
             audio.onended = () => setIsSpeaking(false);

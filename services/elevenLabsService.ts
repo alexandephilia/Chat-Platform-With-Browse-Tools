@@ -329,28 +329,50 @@ export async function textToSpeech(
 
 /**
  * Play audio blob and return the audio element for control
+ * Note: On mobile, audio playback requires user interaction.
+ * This function should be called directly from a click/touch handler.
  */
-export function playAudio(audioBlob: Blob): HTMLAudioElement {
+export async function playAudio(audioBlob: Blob): Promise<HTMLAudioElement> {
     // Stop any currently playing audio
     stopAudio();
 
     const url = URL.createObjectURL(audioBlob);
     currentAudioUrl = url;
 
-    const audio = new Audio(url);
+    const audio = new Audio();
     currentAudio = audio;
 
+    // Set up event handlers before loading
     audio.onended = () => {
         cleanup();
     };
 
-    audio.onerror = () => {
+    audio.onerror = (e) => {
+        console.error('[Audio] Playback error:', e);
         cleanup();
     };
 
-    audio.play().catch(() => {
+    // For mobile compatibility:
+    // 1. Set attributes before setting src
+    audio.preload = 'auto';
+    audio.setAttribute('playsinline', 'true'); // iOS Safari
+    audio.setAttribute('webkit-playsinline', 'true'); // Older iOS
+
+    // 2. Set source
+    audio.src = url;
+
+    // 3. Load and play with proper error handling
+    try {
+        // Load the audio first
+        await audio.load();
+
+        // Then play - this must be in the same call stack as user interaction
+        await audio.play();
+    } catch (error) {
+        console.error('[Audio] Play failed:', error);
         cleanup();
-    });
+        throw error;
+    }
 
     return audio;
 }

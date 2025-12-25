@@ -9,10 +9,23 @@ import ChatInterface from './components/templates/ChatInterface';
 import { AuthProvider } from './contexts/AuthContext';
 import { useChatHistory } from './hooks/useChatHistory';
 import { Message } from './types';
+import { GlobalTheme } from './components/atoms/GlobalTheme';
 
 function AppContent() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isSidebarMinimized, setIsSidebarMinimized] = useState(false);
+    const [isDarkMode, setIsDarkMode] = useState(() => {
+        const saved = localStorage.getItem('zeta_theme');
+        return saved === 'dark';
+    });
+
+    const toggleTheme = useCallback(() => {
+        setIsDarkMode(prev => {
+            const next = !prev;
+            localStorage.setItem('zeta_theme', next ? 'dark' : 'light');
+            return next;
+        });
+    }, []);
 
     const {
         chatHistory,
@@ -60,6 +73,7 @@ function AppContent() {
 
     return (
         <>
+            <GlobalTheme isDarkMode={isDarkMode} />
             <Toaster
                 position="bottom-right"
                 expand={false}
@@ -83,6 +97,8 @@ function AppContent() {
                     <GlobalHeader
                         isSidebarMinimized={isSidebarMinimized}
                         onToggleSidebar={() => setIsSidebarMinimized(!isSidebarMinimized)}
+                        isDarkMode={isDarkMode}
+                        onToggleTheme={toggleTheme}
                     />
                 </div>
 

@@ -231,7 +231,7 @@ const ModelPicker: React.FC<ModelPickerProps> = ({
                 `}
             >
                 <div className={`
-                    flex items-center justify-center rounded overflow-hidden bg-slate-100
+                    flex items-center justify-center rounded-full overflow-hidden bg-slate-100
                     ${isSmall ? 'w-4 h-4' : 'w-6 h-6'}
                     shadow-[inset_0_1px_2px_rgba(0,0,0,0.06)]
                 `}>

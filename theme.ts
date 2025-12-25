@@ -22,25 +22,47 @@ export const theme = {
             800: '#1e40af',
             900: '#1e3a8a',
         },
-        // Background colors
-        background: {
-            page: '#F8F9FB',
-            sidebar: '#F8F9FB',
-            card: '#FFFFFF',
-            input: '#FFFFFF',
+        // Light mode colors
+        light: {
+            background: {
+                page: '#F8F9FB',
+                sidebar: '#F8F9FB',
+                card: '#FFFFFF',
+                input: '#FFFFFF',
+                portal: '#FFFFFF',
+            },
+            text: {
+                primary: '#1e293b',    // slate-800
+                secondary: '#64748b',  // slate-500
+                muted: '#94a3b8',      // slate-400
+                inverse: '#FFFFFF',
+            },
+            border: {
+                light: '#f1f5f9',      // slate-100
+                default: '#e2e8f0',    // slate-200
+                dark: '#cbd5e1',       // slate-300
+            },
         },
-        // Text colors
-        text: {
-            primary: '#1e293b',    // slate-800
-            secondary: '#64748b',  // slate-500
-            muted: '#94a3b8',      // slate-400
-            inverse: '#FFFFFF',
-        },
-        // Border colors
-        border: {
-            light: '#f1f5f9',      // slate-100
-            default: '#e2e8f0',    // slate-200
-            dark: '#cbd5e1',       // slate-300
+        // Dark mode colors
+        dark: {
+            background: {
+                page: '#0f172a',       // slate-900
+                sidebar: '#1e293b',    // slate-800
+                card: '#1e293b',
+                input: '#334155',      // slate-700
+                portal: '#1e293b',
+            },
+            text: {
+                primary: '#f8fafc',    // slate-50
+                secondary: '#94a3b8',  // slate-400
+                muted: '#64748b',      // slate-500
+                inverse: '#0f172a',
+            },
+            border: {
+                light: '#334155',      // slate-700
+                default: '#475569',    // slate-600
+                dark: '#94a3b8',       // slate-400
+            },
         },
         // Status colors
         status: {
@@ -94,9 +116,15 @@ export const cssVars = {
     fontDisplay: 'var(--font-display)',
     colorPrimary: 'var(--color-primary)',
     colorBackground: 'var(--color-background)',
+    colorSidebar: 'var(--color-sidebar)',
+    colorCard: 'var(--color-card)',
+    colorInput: 'var(--color-input)',
+    colorPortal: 'var(--color-portal)',
     colorText: 'var(--color-text)',
     colorTextSecondary: 'var(--color-text-secondary)',
+    colorTextMuted: 'var(--color-text-muted)',
     colorBorder: 'var(--color-border)',
+    colorBorderLight: 'var(--color-border-light)',
 } as const;
 
 export type Theme = typeof theme;
