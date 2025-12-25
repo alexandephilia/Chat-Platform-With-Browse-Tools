@@ -44,7 +44,7 @@ export const InfoPill: React.FC<InfoPillProps> = ({
             <div className="relative z-10">
                 {/* Layer 1: The Base */}
                 <div className={`
-                    absolute inset-0 
+                    absolute inset-0
                     rounded-[10px]
                     ${currentVariant.bg}
                     ${currentVariant.border ? `border ${currentVariant.border}` : ''}
@@ -56,25 +56,25 @@ export const InfoPill: React.FC<InfoPillProps> = ({
                     relative flex items-center gap-1.5 z-20 font-bold
                     ${size === 'xxs' ? 'px-1.5 py-[1px]' : size === 'xs' ? 'px-2 py-0.5' : 'px-2.5 py-1'}
                 `}>
-                    
+
                     {/* Text with Shimmer */}
-                    <motion.span 
+                    <motion.span
                         className={`
-                            ${size === 'xxs' ? 'text-[8px]' : size === 'xs' ? 'text-[9px]' : 'text-[10px]'} 
+                            ${size === 'xxs' ? 'text-[8px]' : size === 'xs' ? 'text-[9px]' : 'text-[10px]'}
                             tracking-wide uppercase
                             bg-clip-text text-transparent
                         `}
                         style={{
-                            backgroundImage: variant === 'white' 
-                                ? "linear-gradient(90deg, #64748b 0%, #cbd5e1 50%, #64748b 100%)" // Slate shimmer
-                                : `linear-gradient(90deg, ${variantClasses.blue.text.replace('text-', '')})`, // Fallback for blue (needs refinement if blue used again)
+                            backgroundImage: variant === 'white'
+                                ? "linear-gradient(110deg, #313b49ff 0%, #313b49ff 40%, #b3bcc8ff 50%, #313b49ff 60%, #313b49ff 100%)"
+                                : `linear-gradient(90deg, ${variantClasses.blue.text.replace('text-', '')})`,
                             backgroundSize: "200% auto",
                         }}
                         animate={{
-                            backgroundPosition: ["0% center", "200% center"],
+                            backgroundPosition: ["80% center", "-80% center"],
                         }}
                         transition={{
-                            duration: 3,
+                            duration: 2.5,
                             repeat: Infinity,
                             ease: "linear",
                         }}
