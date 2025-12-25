@@ -13,7 +13,7 @@ import { getDefaultPrompt, getReasoningPrompt, getSearchPrompt } from './prompts
 import { OPENAI_TOOLS } from './tools';
 
 const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY;
-const GROQ_BASE_URL = import.meta.env.VITE_GROQ_BASE_URL || 'https://api.groq.com/openai/v1';
+const GROQ_BASE_URL = 'https://api.groq.com/openai/v1';
 
 /**
  * Check if model is a Groq Compound model (has built-in tools)
