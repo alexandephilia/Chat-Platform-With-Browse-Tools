@@ -198,6 +198,45 @@ export interface TTSOptions {
 let currentAudio: HTMLAudioElement | null = null;
 let currentAudioUrl: string | null = null;
 
+// Pre-created audio element for mobile - must be created and "unlocked" during user gesture
+let unlockedAudio: HTMLAudioElement | null = null;
+
+/**
+ * Unlock audio for mobile playback - MUST be called directly from user gesture
+ * This creates an audio element and plays silence to unlock it for future use
+ */
+export function unlockAudioForMobile(): HTMLAudioElement {
+    // Reuse existing unlocked audio if available
+    if (unlockedAudio) {
+        return unlockedAudio;
+    }
+
+    const audio = new Audio();
+
+    // Mobile-specific attributes
+    audio.preload = 'auto';
+    audio.setAttribute('playsinline', 'true');
+    audio.setAttribute('webkit-playsinline', 'true');
+
+    // Play silence to unlock - this MUST happen in user gesture context
+    // Using a tiny silent audio data URI
+    audio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
+
+    // Play and immediately pause to "unlock" the audio element
+    const playPromise = audio.play();
+    if (playPromise) {
+        playPromise.then(() => {
+            audio.pause();
+            audio.currentTime = 0;
+        }).catch(() => {
+            // Ignore errors - this is just for unlocking
+        });
+    }
+
+    unlockedAudio = audio;
+    return audio;
+}
+
 /**
  * Check if ElevenLabs API is configured
  * Note: This now always returns true since the key is server-side.
@@ -329,20 +368,28 @@ export async function textToSpeech(
 
 /**
  * Play audio blob and return the audio element for control
- * Note: On mobile, audio playback requires user interaction.
- * This function should be called directly from a click/touch handler.
+ * Note: On mobile, you MUST call unlockAudioForMobile() first from the user gesture,
+ * then pass the returned audio element here.
+ * @param audioBlob - The audio blob to play
+ * @param preUnlockedAudio - Optional pre-unlocked audio element from unlockAudioForMobile()
  */
-export async function playAudio(audioBlob: Blob): Promise<HTMLAudioElement> {
+export async function playAudio(audioBlob: Blob, preUnlockedAudio?: HTMLAudioElement): Promise<HTMLAudioElement> {
     // Stop any currently playing audio
     stopAudio();
 
     const url = URL.createObjectURL(audioBlob);
     currentAudioUrl = url;
 
-    const audio = new Audio();
+    // Use pre-unlocked audio element if provided (for mobile), otherwise create new
+    const audio = preUnlockedAudio || new Audio();
     currentAudio = audio;
 
-    // Set up event handlers before loading
+    // Clear the unlocked audio reference since we're using it now
+    if (preUnlockedAudio && unlockedAudio === preUnlockedAudio) {
+        unlockedAudio = null;
+    }
+
+    // Set up event handlers
     audio.onended = () => {
         cleanup();
     };
@@ -352,21 +399,16 @@ export async function playAudio(audioBlob: Blob): Promise<HTMLAudioElement> {
         cleanup();
     };
 
-    // For mobile compatibility:
-    // 1. Set attributes before setting src
+    // For mobile compatibility
     audio.preload = 'auto';
-    audio.setAttribute('playsinline', 'true'); // iOS Safari
-    audio.setAttribute('webkit-playsinline', 'true'); // Older iOS
+    audio.setAttribute('playsinline', 'true');
+    audio.setAttribute('webkit-playsinline', 'true');
 
-    // 2. Set source
+    // Set source
     audio.src = url;
 
-    // 3. Load and play with proper error handling
+    // Play with proper error handling
     try {
-        // Load the audio first
-        await audio.load();
-
-        // Then play - this must be in the same call stack as user interaction
         await audio.play();
     } catch (error) {
         console.error('[Audio] Play failed:', error);
