@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import React from 'react';
 
 // Gift/Present icon for minimized promo card
@@ -141,12 +141,38 @@ export const ClayPromoCard: React.FC<ClayPromoCardProps> = ({
             className={`relative w-full ${className}`}
             style={{ contain: 'layout style paint' }}
         >
-            <div className="relative w-full rounded-[26px] p-[1.5px] overflow-hidden">
-                {isMinimized ? (
-                    <MinimizedCard />
-                ) : (
-                    <ExpandedCard title={title} description={description} icon={icon} action={action} />
-                )}
+            <div className="relative w-full rounded-[26px] p-[1.5px]">
+                <AnimatePresence mode="wait" initial={false}>
+                    {isMinimized ? (
+                        <motion.div
+                            key="minimized"
+                            initial={{ opacity: 0, filter: 'blur(10px)', scale: 0.9 }}
+                            animate={{ opacity: 1, filter: 'blur(0px)', scale: 1 }}
+                            exit={{ opacity: 0, filter: 'blur(10px)', scale: 0.9 }}
+                            transition={{ 
+                                duration: 0.4, 
+                                ease: [0.16, 1, 0.3, 1] // Matches sidebar easing
+                            }}
+                            className="w-full"
+                        >
+                            <MinimizedCard />
+                        </motion.div>
+                    ) : (
+                        <motion.div
+                            key="expanded"
+                            initial={{ opacity: 0, filter: 'blur(10px)', scale: 1.05 }}
+                            animate={{ opacity: 1, filter: 'blur(0px)', scale: 1 }}
+                            exit={{ opacity: 0, filter: 'blur(10px)', scale: 1.05 }}
+                            transition={{ 
+                                duration: 0.4, 
+                                ease: [0.16, 1, 0.3, 1] 
+                            }}
+                            className="w-full"
+                        >
+                            <ExpandedCard title={title} description={description} icon={icon} action={action} />
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
         </div>
     );
