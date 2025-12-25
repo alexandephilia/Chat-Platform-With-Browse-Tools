@@ -1,0 +1,5 @@
+{
+  "name": "Lumen AI Assistant",
+  "description": "A financial AI assistant dashboard featuring a clean, modern UI/UX with Gemini integration for smart budget advice and financial calculations.",
+  "requestFramePermissions": []
+}
