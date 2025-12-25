@@ -7,6 +7,27 @@
 const EXA_API_KEY = import.meta.env.VITE_EXA_API_KEY;
 const EXA_BASE_URL = 'https://api.exa.ai';
 
+// Determine if we should use the proxy (production/Vercel)
+function shouldUseProxy(): boolean {
+    // Vite's production flag
+    if (import.meta.env.PROD) return true;
+    // Fallback: check hostname
+    if (typeof window !== 'undefined' &&
+        (window.location.hostname.includes('vercel.app') ||
+            window.location.hostname !== 'localhost')) {
+        return true;
+    }
+    return false;
+}
+
+function getSearchEndpoint(): string {
+    return shouldUseProxy() ? '/api/exa-search' : `${EXA_BASE_URL}/search`;
+}
+
+function getContentsEndpoint(): string {
+    return shouldUseProxy() ? '/api/exa-contents' : `${EXA_BASE_URL}/contents`;
+}
+
 /**
  * Exa Search Categories - specialized content types
  */
@@ -284,13 +305,22 @@ export async function exaSearch(options: ExaSearchOptions): Promise<ExaSearchRes
     console.log('[Exa] Search request:', JSON.stringify(body, null, 2));
 
     try {
-        const response = await fetch(`${EXA_BASE_URL}/search`, {
+        const useProxy = shouldUseProxy();
+        const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+            'accept': 'application/json',
+        };
+
+        // Only include API key for direct API calls (local dev)
+        if (!useProxy) {
+            headers['x-api-key'] = EXA_API_KEY;
+        }
+
+        console.log('[Exa] Using proxy:', useProxy, 'Endpoint:', getSearchEndpoint());
+
+        const response = await fetch(getSearchEndpoint(), {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': EXA_API_KEY,
-                'accept': 'application/json',
-            },
+            headers,
             body: JSON.stringify(body),
         });
 
@@ -481,13 +511,20 @@ export async function exaGetContents(urls: string[], maxCharsPerUrl: number = 30
     console.log('[Exa] Contents request for URLs:', urls, 'maxChars:', maxCharsPerUrl);
 
     try {
-        const response = await fetch(`${EXA_BASE_URL}/contents`, {
+        const useProxy = shouldUseProxy();
+        const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+            'accept': 'application/json',
+        };
+
+        // Only include API key for direct API calls (local dev)
+        if (!useProxy) {
+            headers['x-api-key'] = EXA_API_KEY;
+        }
+
+        const response = await fetch(getContentsEndpoint(), {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': EXA_API_KEY,
-                'accept': 'application/json',
-            },
+            headers,
             body: JSON.stringify(body),
         });
 
