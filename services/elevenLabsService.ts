@@ -264,6 +264,7 @@ function stripMarkdown(text: string, preserveV3Expressions: boolean = false): st
     let result = text;
 
     // Step 1: If V3, temporarily protect expression tags from being stripped
+    // Use %%% delimiters that won't match any markdown patterns
     const expressionPlaceholders: string[] = [];
     if (preserveV3Expressions) {
         // Reset regex lastIndex since it's global
@@ -271,7 +272,7 @@ function stripMarkdown(text: string, preserveV3Expressions: boolean = false): st
         result = result.replace(V3_EXPRESSION_REGEX, (match) => {
             expressionPlaceholders.push(match);
             console.log('[TTS stripMarkdown] Preserving V3 expression:', match);
-            return `__V3EXPR_${expressionPlaceholders.length - 1}__`;
+            return `%%%V3EXPR${expressionPlaceholders.length - 1}%%%`;
         });
         if (expressionPlaceholders.length > 0) {
             console.log('[TTS stripMarkdown] Total expressions preserved:', expressionPlaceholders.length);
@@ -319,7 +320,7 @@ function stripMarkdown(text: string, preserveV3Expressions: boolean = false): st
     // Step 3: Restore V3 expression tags if preserved
     if (preserveV3Expressions && expressionPlaceholders.length > 0) {
         expressionPlaceholders.forEach((expr, i) => {
-            result = result.replace(`__V3EXPR_${i}__`, expr);
+            result = result.replace(`%%%V3EXPR${i}%%%`, expr);
         });
         console.log('[TTS stripMarkdown] Restored expressions. Final text preview:', result.substring(0, 200) + '...');
     }
