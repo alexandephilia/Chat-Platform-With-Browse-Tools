@@ -251,6 +251,19 @@ export function isElevenLabsConfigured(): boolean {
  */
 function stripMarkdown(text: string): string {
     return text
+        // 1. Remove citations and internal links first
+        // Remove markdown links specifically (often used for citations like [Source](url))
+        // We do this BEFORE general bracket stripping
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, (match, text) => {
+            // If the text inside brackets looks like a source name or number, strip the whole thing
+            if (/^(source|ref|link|[\d,\s\-]+)$/i.test(text)) return '';
+            // Otherwise keep just the text (standard markdown behavior)
+            return text;
+        })
+        // Remove standalone numbered citations like [1], [1, 2], [1-3]
+        .replace(/\[[\d,\s\-]+\]/g, '')
+
+        // 2. Standard Markdown stripping
         // Remove code blocks
         .replace(/```[\s\S]*?```/g, '')
         // Remove inline code
@@ -262,7 +275,7 @@ function stripMarkdown(text: string): string {
         .replace(/\*([^*]+)\*/g, '$1')
         .replace(/__([^_]+)__/g, '$1')
         .replace(/_([^_]+)_/g, '$1')
-        // Remove links, keep text
+        // Remove remaining links, keep text (for non-citation links)
         .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
         // Remove images
         .replace(/!\[([^\]]*)\]\([^)]+\)/g, '')

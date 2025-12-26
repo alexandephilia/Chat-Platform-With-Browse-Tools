@@ -167,7 +167,7 @@ export const AVAILABLE_MODELS: AIModel[] = [
         provider: "openrouter",
         providerLabel: "OpenRouter",
         providerIcon: "OpenRouter",
-        description: "Fast + Tools",
+        description: "Advanced Model + Tools",
         icon: "DeepSeek",
         isFree: true,
         capabilities: {
@@ -188,12 +188,12 @@ export const AVAILABLE_MODELS: AIModel[] = [
         provider: "openrouter",
         providerLabel: "OpenRouter",
         providerIcon: "OpenRouter",
-        description: "Fast + Tools + Agent",
+        description: "Good For Daily Use",
         icon: "GLM",
         isFree: true,
         capabilities: {
-            supportsTools: true,
-            toolProvider: "exa",
+            supportsTools: false,
+            toolProvider: "none",
             supportsThinking: true,
             hasNativeReasoning: false,
             supportsImages: false,
@@ -209,7 +209,7 @@ export const AVAILABLE_MODELS: AIModel[] = [
         provider: "openrouter",
         providerLabel: "OpenRouter",
         providerIcon: "OpenRouter",
-        description: "Large + Free",
+        description: "Chat + Creative Writing",
         icon: "NousResearch",
         isFree: true,
         capabilities: {

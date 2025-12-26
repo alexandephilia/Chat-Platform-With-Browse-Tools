@@ -33,20 +33,20 @@ const ModelIndicator = memo(({ modelId }: { modelId: string }) => {
 
     return (
         <div
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gradient-to-b from-white to-slate-100/50 border border-slate-300/50"
+            className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-gradient-to-b from-white to-slate-100/50 border border-slate-300/50"
             style={{
-                boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.12), inset 0 1px 1px rgba(0,0,0,0.08), 0 1px 0 rgba(255,255,255,0.7)'
+                boxShadow: 'inset 0 0.5px 1.5px rgba(0,0,0,0.08), inset 0 0.5px 0.5px rgba(0,0,0,0.05), 0 1px 0 rgba(255,255,255,0.7)'
             }}
         >
             <div
-                className="w-5 h-5 rounded-md flex items-center justify-center overflow-hidden bg-gradient-to-b from-white to-slate-50 border border-white/80"
+                className="w-4 h-4 rounded-md flex items-center justify-center overflow-hidden bg-gradient-to-b from-white to-slate-50 border border-white/80"
                 style={{
                     boxShadow: '0 1px 1px rgba(0,0,0,0.12), 0 0.5px 0.5px rgba(0,0,0,0.08)'
                 }}
             >
-                <ModelIcon iconKey={model.icon} size={18} />
+                <ModelIcon iconKey={model.icon} size={14} />
             </div>
-            <span className="text-[9px] text-slate-600 font-semibold tracking-tight drop-shadow-[0_2px_0_rgba(255,255,255,0.5)]">
+            <span className="text-[8px] text-slate-500 font-medium tracking-tight drop-shadow-[0_1px_0_rgba(255,255,255,0.5)]">
                 {model.name}
             </span>
         </div>
@@ -136,9 +136,16 @@ const StableAnimatedContent = memo(({
         ),
     }), []);
 
+    // ElevenLabs V3 Stealth Mode: Strip expression tags from UI display
+    // These tags are preserved in the raw content for TTS but hidden here
+    const displayContent = useMemo(() => {
+        const EXPRESSION_REGEX = /\[(whispers|laughs|sighs|whistles|crying|shouting|thinking|angry|happy|sad|excited|neutral)\]/gi;
+        return content.replace(EXPRESSION_REGEX, '');
+    }, [content]);
+
     return (
         <AnimatedMarkdown
-            content={content}
+            content={displayContent}
             sep="diff"
             animation={animationEnabled ? "blurAndSharpen" : null}
             animationDuration="1.8s"
@@ -200,7 +207,7 @@ export const AIMessageBubble: React.FC<AIMessageBubbleProps> = memo(({
         // This MUST happen inside the direct user gesture (onClick/onTouchEnd)
         // to unlock audio playback on mobile (especially iOS Safari).
         const ctx = await initAudioForMobile();
-        
+
         // Create an empty, silent audio element to "lock in" the user gesture
         // We will reuse this element once the TTS data arrives
         const gestureAudio = new Audio();

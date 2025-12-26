@@ -435,11 +435,11 @@ const MobileChatHistoryItemComponent: React.FC<{
                 onClick={onSelect}
                 onTouchStart={handleTouchStart}
                 onTouchEnd={handleTouchEnd}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors duration-150 ${isActive ? "bg-gradient-to-br from-white via-white to-slate-50 text-slate-800 shadow-[0_4px_12px_rgba(0,0,0,0.08)] border border-slate-200/60" : isNew ? "text-blue-600 active:bg-blue-50/80" : "text-slate-600 active:bg-white/80"}`}
+                className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-[13px] transition-colors duration-150 ${isActive ? "bg-gradient-to-br from-white via-white to-slate-50 text-slate-800 shadow-[0_2px_8px_rgba(0,0,0,0.06)] border border-slate-200/60" : isNew ? "text-blue-600 active:bg-blue-50/80" : "text-slate-600 active:bg-white/80"}`}
                 style={{ transform: 'translateZ(0)' }}
             >
                 <div className="relative flex-shrink-0">
-                    <ChatRoundLineLinear size={18} className={isNew ? "text-blue-500" : "text-slate-400"} />
+                    <ChatRoundLineLinear size={16} className={isNew ? "text-blue-500" : "text-slate-400"} />
                     {isNew && (
                         <span
                             className="absolute -top-1 -right-1 w-2 h-2 rounded-full"
@@ -457,10 +457,10 @@ const MobileChatHistoryItemComponent: React.FC<{
                     ref={menuButtonRef}
                     onClick={handleMenuClick}
                     onTouchEnd={handleMenuClick}
-                    className="p-1.5 rounded-lg bg-white/20 backdrop-blur-md shadow-[0_2px_8px_rgba(0,0,0,0.06)] border border-slate-200/20 text-slate-400 active:scale-95 active:bg-white/40 transition-all duration-150"
+                    className="p-1 rounded-lg bg-white/20 backdrop-blur-md shadow-[0_2px_8px_rgba(0,0,0,0.06)] border border-slate-200/20 text-slate-400 active:scale-95 active:bg-white/40 transition-all duration-150"
                     style={{ transform: 'translateZ(0)' }}
                 >
-                    <MoreHorizontal size={14} />
+                    <MoreHorizontal size={12} />
                 </button>
             </div>
             {showMenu && ReactDOM.createPortal(
@@ -573,8 +573,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, isMinimized = false, onClose,
                             <ClayInput icon={<Search size={16} />} placeholder="Search chats..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
                         </div>
                         <div className="px-4 pb-2">
-                            <button onClick={handleNewChat} className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-300 bg-gradient-to-br from-white via-white to-slate-50 shadow-[0_4px_3px_rgba(0,0,0,0.08),0_1px_0_rgba(255,255,255,1)] border border-slate-200/40 hover:border-slate-300/60 hover:bg-slate-50/50 hover:shadow-[inset_0_4px_3px_rgb(0_0_0_/_18%),_0_1px_0_rgba(255,255,255,0.8)] active:scale-[0.98] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.2)] ${isChatButtonPressed ? 'shadow-[inset_0_2px_4px_rgba(0,0,0,0.25)] bg-slate-50/50' : ''}`}>
-                                <UfoIcon size={18} className="text-slate-500" /><span>New Chat</span>
+                            <button onClick={handleNewChat} className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-xl text-[13px] font-medium transition-all duration-300 bg-gradient-to-br from-white via-white to-slate-50 shadow-[0_2px_3px_rgba(0,0,0,0.06),0_1px_0_rgba(255,255,255,1)] border border-slate-200/40 hover:border-slate-300/60 hover:bg-slate-50/50 hover:shadow-[inset_0_2px_3px_rgb(0_0_0_/_12%),_0_1px_0_rgba(255,255,255,0.8)] active:scale-[0.98] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.2)] ${isChatButtonPressed ? 'shadow-[inset_0_2px_4px_rgba(0,0,0,0.25)] bg-slate-50/50' : ''}`}>
+                                <UfoIcon size={16} className="text-slate-500" /><span>New Chat</span>
                             </button>
                         </div>
                         <div className="flex-1 overflow-y-auto px-4 py-2" style={{ contain: 'content' }}>
@@ -613,17 +613,17 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, isMinimized = false, onClose,
                         <div className="px-4 py-3">
                             <ClayPromoCard isMinimized={false} title="Zeta Trial" icon={<UfoIcon size={18} />} description={<span>There are <span className="text-slate-800 font-bold">12 days left</span> for you to enjoy the various features.</span>} action={<button className="w-full text-[10px] font-bold bg-slate-900 text-white py-1.5 px-3 rounded-lg shadow-md shadow-blue-500/20 hover:shadow-blue-500/30 hover:bg-slate-800 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-1.5"><span>Upgrade to Pro</span><TrendingUp size={10} className="text-blue-200" /></button>} />
                         </div>
-                        <div className="border-t border-slate-100 p-4 flex justify-center">
+                        <div className="border-t border-slate-100 px-4 py-3 flex justify-center">
                             {!isAuthenticated && (
                                 <button
                                     onClick={openSignupModal}
-                                    className="px-12 py-1.5 text-sm font-medium text-white bg-gradient-to-b from-slate-700 to-slate-900 rounded-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.15),inset_0_-1px_3px_rgba(0,0,0,0.2),0_2px_4px_rgba(0,0,0,0.1)] border border-slate-600/50 hover:from-slate-600 hover:to-slate-800 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_4px_8px_rgba(0,0,0,0.15)] transition-all duration-200 active:scale-[0.98]"
+                                    className="px-10 py-1.5 text-[13px] font-medium text-white bg-gradient-to-b from-slate-700 to-slate-900 rounded-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.15),inset_0_-1px_3px_rgba(0,0,0,0.2),0_2px_4px_rgba(0,0,0,0.1)] border border-slate-600/50 hover:from-slate-600 hover:to-slate-800 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_4px_8px_rgba(0,0,0,0.15)] transition-all duration-200 active:scale-[0.98]"
                                 >
                                     Sign up
                                 </button>
                             )}
                             {isAuthenticated && (
-                                <button onClick={logout} className="w-full flex items-center gap-3 px-3.5 py-2 text-slate-500 hover:text-slate-700 rounded-lg text-sm transition-colors hover:bg-white/60"><LogOut size={18} className="text-slate-500" /><span>Sign Out</span></button>
+                                <button onClick={logout} className="w-full flex items-center gap-2 px-2.5 py-2 text-slate-500 hover:text-slate-700 rounded-xl text-[13px] transition-colors hover:bg-white/60"><LogOut size={16} className="text-slate-500" /><span>Sign Out</span></button>
                             )}
                         </div>
                     </motion.div>

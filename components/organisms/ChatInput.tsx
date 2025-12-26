@@ -123,16 +123,25 @@ const ChatInput: React.FC<ChatInputProps> = ({
     } as const;
 
     // Get icon for search type with color
-    const getSearchTypeIcon = (type: 'auto' | 'fast' | 'deep', size: number = 16, inheritColor: boolean = false) => {
+    // When useResponsive is true, uses Tailwind classes for responsive sizing (w-4 h-4 md:w-5 md:h-5)
+    // When useResponsive is false, uses fixed pixel size
+    const getSearchTypeIcon = (type: 'auto' | 'fast' | 'deep', size: number = 16, inheritColor: boolean = false, useResponsive: boolean = false) => {
         const colorClass = inheritColor ? '' : type === 'fast' ? 'text-emerald-500' : type === 'deep' ? 'text-violet-500' : 'text-blue-500';
+        const responsiveClass = useResponsive ? 'w-4 h-4 md:w-5 md:h-5' : '';
 
         switch (type) {
             case 'fast':
-                return <IconWorldBolt size={size} stroke={2} className={colorClass} />;
+                return useResponsive
+                    ? <IconWorldBolt stroke={2} className={`${colorClass} ${responsiveClass}`} />
+                    : <IconWorldBolt size={size} stroke={2} className={colorClass} />;
             case 'deep':
-                return <IconWorldSearch size={size} stroke={2} className={colorClass} />;
+                return useResponsive
+                    ? <IconWorldSearch stroke={2} className={`${colorClass} ${responsiveClass}`} />
+                    : <IconWorldSearch size={size} stroke={2} className={colorClass} />;
             default:
-                return <GlobalLinear width={size} height={size} className={colorClass} />;
+                return useResponsive
+                    ? <GlobalLinear className={`${colorClass} ${responsiveClass}`} />
+                    : <GlobalLinear width={size} height={size} className={colorClass} />;
         }
     };
 
@@ -654,7 +663,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
                                         title="Web search options"
                                     >
                                         {webSearchEnabled
-                                            ? getSearchTypeIcon(searchType, 16, true)
+                                            ? getSearchTypeIcon(searchType, 16, true, true)
                                             : <GlobalLinear className="w-4 h-4 md:w-5 md:h-5" />
                                         }
                                     </button>
