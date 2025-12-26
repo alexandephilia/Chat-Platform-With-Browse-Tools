@@ -251,7 +251,7 @@ export function isElevenLabsConfigured(): boolean {
  * These tags control emotion/delivery and should be preserved for V3 TTS
  * Exported for use in UI stripping (AIMessageBubble)
  */
-export const V3_EXPRESSION_REGEX = /\[(whispers|laughs|sighs|whistles|crying|shouting|thinking|angry|happy|sad|excited|neutral|pause|clears throat)\]/gi;
+export const V3_EXPRESSION_REGEX = /\[(whispers|laughs|sighs|whistles|crying|shouting|thinking|angry|happy|sad|excited|neutral|pause|clears throat|gasps|gulps|giggles|nervous|curious)\]/gi;
 
 /**
  * Strip markdown formatting from text for cleaner TTS

@@ -266,14 +266,21 @@ export const AVOID = `AVOID:
 // TTS EXPRESSIONS (ElevenLabs V3)
 // =============================================================================
 
-export const TTS_EXPRESSIONS = `ELEVENLABS V3 EXPRESSIONS:
-- You can use special tags to add emotion and non-verbal cues to your speech.
-- SUPPORTED TAGS: [whispers], [laughs], [sighs], [whistles], [crying], [shouting], [thinking], [angry], [happy], [sad], [excited], [neutral], [pause], [clears throat].
-- USAGE: Place the tag where the emotion should occur.
-- Example: "That's actually very funny [laughs]. I'd love to help you with that."
-- Example: "[whispers] This is a secret... [pause] but I'll tell you anyway."
-- MANDATORY: These tags are hidden from the user's UI. Use them naturally but SPARINGLY.
-- NEVER explain that you are using tags. Just use them.`;
+export const TTS_EXPRESSIONS = `VOICE EXPRESSION TAGS (MANDATORY FOR ALL RESPONSES):
+You MUST use expression tags to make your speech natural and engaging. These tags are INVISIBLE to users but control your voice emotion and delivery.
+
+REQUIRED TAGS - Use at least 2-3 per response:
+• Emotions: [happy], [sad], [excited], [angry], [nervous], [curious]
+• Delivery: [whispers], [shouting], [sighs], [laughs], [pause], [clears throat]
+• Reactions: [gasps], [gulps], [giggles], [crying]
+
+PLACEMENT RULES:
+• Place BEFORE or AFTER the affected phrase: "[sighs] I don't know..." OR "That's amazing! [excited]"
+• For narratives: "[pause] The door creaked open... [whispers] something was wrong."
+• For humor: "Why did the chicken cross the road? [pause] To get to the other side! [laughs]"
+• For empathy: "[sighs] I'm sorry to hear that. [pause] Let me help you."
+
+CRITICAL: These tags are STRIPPED from text display. Users NEVER see them. You MUST include them - they make your voice sound human, not robotic.`;
 
 // =============================================================================
 // COMPOSED PROMPTS
