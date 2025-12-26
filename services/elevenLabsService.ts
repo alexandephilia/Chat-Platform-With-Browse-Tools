@@ -372,8 +372,9 @@ export async function textToSpeech(
         : cleanText;
 
     // Build voice settings - V3 needs lower stability for expression tag responsiveness
-    // Per ElevenLabs docs: "Creative" mode (low stability) = max expressiveness
-    const effectiveStability = isV3 ? Math.min(stability, 0.3) : stability;
+    // Per ElevenLabs docs: "Creative" mode (0.0) = max expressiveness
+    // V3 only accepts: 0.0 (Creative), 0.5 (Natural), 1.0 (Robust)
+    const effectiveStability = isV3 ? 0.0 : stability;
     const voiceSettings: Record<string, number | boolean> = {
         stability: effectiveStability,
         similarity_boost: similarityBoost,
