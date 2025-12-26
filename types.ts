@@ -28,6 +28,7 @@ export interface Message {
     urlsDetected?: string[]; // URLs detected in user message
     urlsFetching?: boolean; // Whether URL content is being fetched
     isError?: boolean; // Whether this message is an error response
+    isInterrupted?: boolean; // Whether this response was interrupted by user
 }
 
 export interface Attachment {

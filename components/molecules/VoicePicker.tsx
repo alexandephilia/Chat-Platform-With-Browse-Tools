@@ -67,8 +67,8 @@ const VoicePicker: React.FC<VoicePickerProps> = ({
     const [activeModel, setActiveModel] = useState<TTSModelKey | null>(null);
     const [selectedVoice, setSelectedVoiceState] = useState<VoiceKey>(getSelectedVoice());
     const [selectedModel, setSelectedModelState] = useState<TTSModelKey>(getSelectedTTSModel());
-    const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0, placement: 'bottom' as 'top' | 'bottom' });
-    const [submenuPosition, setSubmenuPosition] = useState({ x: 0, y: 0 });
+    const [menuPosition, setMenuPosition] = useState<{ x: number; y: number; placement: 'top' | 'bottom' } | null>(null);
+    const [submenuPosition, setSubmenuPosition] = useState<{ x: number; y: number } | null>(null);
     const triggerRef = useRef<HTMLButtonElement>(null);
     const mainMenuRef = useRef<HTMLDivElement>(null);
     const modelItemRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
@@ -174,7 +174,7 @@ const VoicePicker: React.FC<VoicePickerProps> = ({
 
     const calculateSubmenuPosition = useCallback((modelKey: TTSModelKey) => {
         const modelEl = modelItemRefs.current.get(modelKey);
-        if (!modelEl) return;
+        if (!modelEl || !menuPosition) return;
 
         const rect = modelEl.getBoundingClientRect();
         const submenuWidth = 200;
@@ -241,7 +241,7 @@ const VoicePicker: React.FC<VoicePickerProps> = ({
         }
 
         setSubmenuPosition({ x, y });
-    }, [menuPosition.y, menuPosition.placement]);
+    }, [menuPosition?.y, menuPosition?.placement]);
 
     // Recalculate position on resize only (not scroll - menus are fixed position)
     useEffect(() => {
@@ -284,6 +284,8 @@ const VoicePicker: React.FC<VoicePickerProps> = ({
     const handleClose = useCallback(() => {
         setIsOpen(false);
         setActiveModel(null);
+        setMenuPosition(null);
+        setSubmenuPosition(null);
     }, []);
 
     // Check if device uses touch (coarse pointer)
@@ -297,6 +299,7 @@ const VoicePicker: React.FC<VoicePickerProps> = ({
 
         closeTimeoutRef.current = setTimeout(() => {
             setActiveModel(null);
+            setSubmenuPosition(null);
         }, 100);
     }, [isTouchDevice]);
 
@@ -382,7 +385,7 @@ const VoicePicker: React.FC<VoicePickerProps> = ({
             {/* Dropdown Menu - Portal */}
             {createPortal(
                 <AnimatePresence mode="sync">
-                    {isOpen && (
+                    {isOpen && menuPosition && (
                         <>
                             {/* Backdrop */}
                             <motion.div
@@ -399,9 +402,9 @@ const VoicePicker: React.FC<VoicePickerProps> = ({
                             <motion.div
                                 ref={mainMenuRef}
                                 key="voice-picker-menu"
-                                initial={{ opacity: 0, scale: 0.95, y: menuPosition.placement === 'bottom' ? -6 : 6 }}
-                                animate={{ opacity: 1, scale: 1, y: 0 }}
-                                exit={{ opacity: 0, scale: 0.95, y: menuPosition.placement === 'bottom' ? -6 : 6 }}
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.95 }}
                                 transition={{ duration: 0.15 }}
                                 style={{
                                     position: 'fixed',
@@ -476,7 +479,7 @@ const VoicePicker: React.FC<VoicePickerProps> = ({
                             </motion.div>
 
                             {/* Voice Submenu (Second Level) */}
-                            {activeModel && (
+                            {activeModel && submenuPosition && (
                                 <motion.div
                                     key="voice-submenu"
                                     initial={{ opacity: 0, x: -8 }}

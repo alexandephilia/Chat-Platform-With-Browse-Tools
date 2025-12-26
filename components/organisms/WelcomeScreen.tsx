@@ -18,6 +18,7 @@ interface WelcomeScreenProps {
     selectedModel: AIModel;
     onSelectModel: (model: AIModel) => void;
     onSendMessage: (text: string, attachments?: Attachment[], webSearchEnabled?: boolean, searchType?: 'auto' | 'fast' | 'deep') => void;
+    onStopStreaming?: () => void;
     isLoading: boolean;
     webSearchEnabled: boolean;
     onWebSearchToggle: (enabled: boolean) => void;
@@ -157,6 +158,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
     selectedModel,
     onSelectModel,
     onSendMessage,
+    onStopStreaming,
     isLoading,
     webSearchEnabled,
     onWebSearchToggle,
@@ -267,6 +269,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                                         style={{ boxShadow: "rgb(71 144 202 / 16%) 0px 10px 10px, rgba(255, 255, 255, 0.4) 0px 1px 0px inset" }}>
                                         <ChatInput
                                             onSend={onSendMessage}
+                                            onStop={onStopStreaming}
                                             disabled={isLoading}
                                             variant="embedded"
                                             selectedModel={selectedModel}

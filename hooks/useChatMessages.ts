@@ -30,6 +30,9 @@ export function useChatMessages(options: UseChatMessagesOptions) {
     const [isLoading, setIsLoading] = useState(false);
     const [hasConversationStarted, setHasConversationStarted] = useState(false);
 
+    // Abort controller for stream interruption
+    const abortControllerRef = useRef<AbortController | null>(null);
+
     // Use refs to always get the latest values in callbacks (fixes stale closure issues)
     const selectedModelRef = useRef(selectedModel);
     const webSearchEnabledRef = useRef(webSearchEnabled);
@@ -73,6 +76,33 @@ export function useChatMessages(options: UseChatMessagesOptions) {
     }, []);
 
     /**
+     * Stop the current streaming response
+     */
+    const stopStreaming = useCallback(() => {
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+            abortControllerRef.current = null;
+        }
+        // Flush any pending updates
+        flushPendingUpdates();
+        setIsLoading(false);
+
+        // Mark the last AI message as interrupted
+        setMessages(prev => {
+            const lastMsg = prev[prev.length - 1];
+            if (lastMsg?.role === 'model') {
+                // Mark as interrupted
+                return prev.map((msg, i) =>
+                    i === prev.length - 1
+                        ? { ...msg, isInterrupted: true }
+                        : msg
+                );
+            }
+            return prev;
+        });
+    }, [flushPendingUpdates]);
+
+    /**
      * Optimized message update - batches rapid updates to prevent infinite loops
      * Uses requestAnimationFrame to coalesce updates
      */
@@ -96,7 +126,8 @@ export function useChatMessages(options: UseChatMessagesOptions) {
         messageId: string,
         effectiveSearchType: SearchType,
         modelId: string,
-        useReasoning: boolean
+        useReasoning: boolean,
+        signal?: AbortSignal
     ) => {
         const stream = sendMessageToOpenRouterStreamWithTools(
             prompt, history, modelId, true, effectiveSearchType, useReasoning
@@ -106,6 +137,11 @@ export function useChatMessages(options: UseChatMessagesOptions) {
         let currentToolCalls: ToolCall[] = [];
 
         for await (const event of stream) {
+            // Check if aborted
+            if (signal?.aborted) {
+                throw new DOMException('Aborted', 'AbortError');
+            }
+
             switch (event.type) {
                 case 'thinking':
                     thinkingText += event.content;
@@ -157,7 +193,8 @@ export function useChatMessages(options: UseChatMessagesOptions) {
         history: any[],
         messageId: string,
         modelId: string,
-        useReasoning: boolean
+        useReasoning: boolean,
+        signal?: AbortSignal
     ) => {
         // Use the stream with tools function but with tools disabled - it handles reasoning
         const stream = sendMessageToOpenRouterStreamWithTools(
@@ -167,6 +204,11 @@ export function useChatMessages(options: UseChatMessagesOptions) {
         let thinkingText = '';
 
         for await (const event of stream) {
+            // Check if aborted
+            if (signal?.aborted) {
+                throw new DOMException('Aborted', 'AbortError');
+            }
+
             switch (event.type) {
                 case 'thinking':
                     thinkingText += event.content;
@@ -195,7 +237,8 @@ export function useChatMessages(options: UseChatMessagesOptions) {
         effectiveSearchType: SearchType,
         effectiveWebSearch: boolean,
         modelId: string,
-        useReasoning: boolean
+        useReasoning: boolean,
+        signal?: AbortSignal
     ) => {
         const stream = sendMessageToGroqStreamWithTools(
             prompt, history, modelId, effectiveWebSearch, effectiveSearchType, useReasoning
@@ -205,6 +248,11 @@ export function useChatMessages(options: UseChatMessagesOptions) {
         let currentToolCalls: ToolCall[] = [];
 
         for await (const event of stream) {
+            // Check if aborted
+            if (signal?.aborted) {
+                throw new DOMException('Aborted', 'AbortError');
+            }
+
             switch (event.type) {
                 case 'thinking':
                     thinkingText += event.content;
@@ -254,7 +302,8 @@ export function useChatMessages(options: UseChatMessagesOptions) {
         effectiveSearchType: SearchType,
         effectiveWebSearch: boolean,
         modelId: string,
-        useReasoning: boolean
+        useReasoning: boolean,
+        signal?: AbortSignal
     ) => {
         const stream = sendMessageToGeminiStreamWithTools(
             prompt, history, modelId, effectiveWebSearch, effectiveSearchType, useReasoning
@@ -264,6 +313,11 @@ export function useChatMessages(options: UseChatMessagesOptions) {
         let currentToolCalls: ToolCall[] = [];
 
         for await (const event of stream) {
+            // Check if aborted
+            if (signal?.aborted) {
+                throw new DOMException('Aborted', 'AbortError');
+            }
+
             switch (event.type) {
                 case 'thinking':
                     fullThinking += event.content;
@@ -313,7 +367,8 @@ export function useChatMessages(options: UseChatMessagesOptions) {
         effectiveSearchType: SearchType,
         effectiveWebSearch: boolean,
         modelId: string,
-        useReasoning: boolean
+        useReasoning: boolean,
+        signal?: AbortSignal
     ) => {
         const stream = sendMessageToRoutewayStreamWithTools(
             prompt, history, modelId, effectiveWebSearch, effectiveSearchType, useReasoning
@@ -323,6 +378,11 @@ export function useChatMessages(options: UseChatMessagesOptions) {
         let currentToolCalls: ToolCall[] = [];
 
         for await (const event of stream) {
+            // Check if aborted
+            if (signal?.aborted) {
+                throw new DOMException('Aborted', 'AbortError');
+            }
+
             switch (event.type) {
                 case 'thinking':
                     fullThinking += event.content;
@@ -459,6 +519,10 @@ export function useChatMessages(options: UseChatMessagesOptions) {
 
         setMessages(prev => [...prev, newAiMessage]);
 
+        // Create abort controller for this request
+        abortControllerRef.current = new AbortController();
+        const signal = abortControllerRef.current.signal;
+
         try {
             const enrichedPrompt = await enrichPromptWithUrls(text, newUserMessage.id);
             // Include attachments in history for multimodal support
@@ -470,18 +534,23 @@ export function useChatMessages(options: UseChatMessagesOptions) {
 
             if (currentModel.provider === 'openrouter') {
                 if (effective.webSearchEnabled) {
-                    await processOpenRouterWithTools(enrichedPrompt, history, newAiMessageId, effectiveSearchType, currentModel.id, effective.reasoningEnabled);
+                    await processOpenRouterWithTools(enrichedPrompt, history, newAiMessageId, effectiveSearchType, currentModel.id, effective.reasoningEnabled, signal);
                 } else {
-                    await processOpenRouterSimple(enrichedPrompt, history, newAiMessageId, currentModel.id, effective.reasoningEnabled);
+                    await processOpenRouterSimple(enrichedPrompt, history, newAiMessageId, currentModel.id, effective.reasoningEnabled, signal);
                 }
             } else if (currentModel.provider === 'groq') {
-                await processGroqStream(enrichedPrompt, history, newAiMessageId, effectiveSearchType, effective.webSearchEnabled, currentModel.id, effective.reasoningEnabled);
+                await processGroqStream(enrichedPrompt, history, newAiMessageId, effectiveSearchType, effective.webSearchEnabled, currentModel.id, effective.reasoningEnabled, signal);
             } else if (currentModel.provider === 'routeway') {
-                await processRoutewayStream(enrichedPrompt, history, newAiMessageId, effectiveSearchType, effective.webSearchEnabled, currentModel.id, effective.reasoningEnabled);
+                await processRoutewayStream(enrichedPrompt, history, newAiMessageId, effectiveSearchType, effective.webSearchEnabled, currentModel.id, effective.reasoningEnabled, signal);
             } else {
-                await processGeminiStream(enrichedPrompt, history, newAiMessageId, effectiveSearchType, effective.webSearchEnabled, currentModel.id, effective.reasoningEnabled);
+                await processGeminiStream(enrichedPrompt, history, newAiMessageId, effectiveSearchType, effective.webSearchEnabled, currentModel.id, effective.reasoningEnabled, signal);
             }
         } catch (error) {
+            // Check if this was an abort
+            if (error instanceof Error && error.name === 'AbortError') {
+                console.log('[Chat] Stream was interrupted by user');
+                return;
+            }
             console.error(error);
             setMessages(prev => prev.map(msg =>
                 msg.id === newAiMessageId
@@ -489,6 +558,8 @@ export function useChatMessages(options: UseChatMessagesOptions) {
                     : msg
             ));
         } finally {
+            // Clear abort controller
+            abortControllerRef.current = null;
             // Flush any pending streaming updates before marking as done
             flushPendingUpdates();
             setIsLoading(false);
@@ -541,6 +612,10 @@ export function useChatMessages(options: UseChatMessagesOptions) {
 
         setMessages(prev => [...prev, newAiMessage]);
 
+        // Create abort controller for this request
+        abortControllerRef.current = new AbortController();
+        const signal = abortControllerRef.current.signal;
+
         try {
             // Include attachments in history for multimodal support
             // messagesUpToRetry includes the user message, so we use all of them
@@ -555,18 +630,23 @@ export function useChatMessages(options: UseChatMessagesOptions) {
 
             if (currentModel.provider === 'openrouter') {
                 if (effective.webSearchEnabled) {
-                    await processOpenRouterWithTools(promptContent, historyForApi, newAiMessageId, currentSearchType, currentModel.id, effective.reasoningEnabled);
+                    await processOpenRouterWithTools(promptContent, historyForApi, newAiMessageId, currentSearchType, currentModel.id, effective.reasoningEnabled, signal);
                 } else {
-                    await processOpenRouterSimple(promptContent, historyForApi, newAiMessageId, currentModel.id, effective.reasoningEnabled);
+                    await processOpenRouterSimple(promptContent, historyForApi, newAiMessageId, currentModel.id, effective.reasoningEnabled, signal);
                 }
             } else if (currentModel.provider === 'groq') {
-                await processGroqStream(promptContent, historyForApi, newAiMessageId, currentSearchType, effective.webSearchEnabled, currentModel.id, effective.reasoningEnabled);
+                await processGroqStream(promptContent, historyForApi, newAiMessageId, currentSearchType, effective.webSearchEnabled, currentModel.id, effective.reasoningEnabled, signal);
             } else if (currentModel.provider === 'routeway') {
-                await processRoutewayStream(promptContent, historyForApi, newAiMessageId, currentSearchType, effective.webSearchEnabled, currentModel.id, effective.reasoningEnabled);
+                await processRoutewayStream(promptContent, historyForApi, newAiMessageId, currentSearchType, effective.webSearchEnabled, currentModel.id, effective.reasoningEnabled, signal);
             } else {
-                await processGeminiStream(promptContent, historyForApi, newAiMessageId, currentSearchType, effective.webSearchEnabled, currentModel.id, effective.reasoningEnabled);
+                await processGeminiStream(promptContent, historyForApi, newAiMessageId, currentSearchType, effective.webSearchEnabled, currentModel.id, effective.reasoningEnabled, signal);
             }
         } catch (error) {
+            // Check if this was an abort
+            if (error instanceof Error && error.name === 'AbortError') {
+                console.log('[Chat] Stream was interrupted by user');
+                return;
+            }
             console.error(error);
             setMessages(prev => prev.map(msg =>
                 msg.id === newAiMessageId
@@ -574,6 +654,8 @@ export function useChatMessages(options: UseChatMessagesOptions) {
                     : msg
             ));
         } finally {
+            // Clear abort controller
+            abortControllerRef.current = null;
             // Flush any pending streaming updates before marking as done
             flushPendingUpdates();
             setIsLoading(false);
@@ -595,7 +677,7 @@ export function useChatMessages(options: UseChatMessagesOptions) {
 
     /**
      * Edit and resend a message
-     */
+    */
     const editAndResend = useCallback(async (
         messageId: string,
         newContent: string
@@ -659,6 +741,10 @@ export function useChatMessages(options: UseChatMessagesOptions) {
 
         setMessages(prev => [...prev, newAiMessage]);
 
+        // Create abort controller for this request
+        abortControllerRef.current = new AbortController();
+        const signal = abortControllerRef.current.signal;
+
         try {
             const enrichedPrompt = await enrichPromptWithUrls(newContent.trim(), updatedUserMessage.id);
 
@@ -671,18 +757,23 @@ export function useChatMessages(options: UseChatMessagesOptions) {
 
             if (currentModel.provider === 'openrouter') {
                 if (effective.webSearchEnabled) {
-                    await processOpenRouterWithTools(enrichedPrompt, historyForApi, newAiMessageId, currentSearchType, currentModel.id, effective.reasoningEnabled);
+                    await processOpenRouterWithTools(enrichedPrompt, historyForApi, newAiMessageId, currentSearchType, currentModel.id, effective.reasoningEnabled, signal);
                 } else {
-                    await processOpenRouterSimple(enrichedPrompt, historyForApi, newAiMessageId, currentModel.id, effective.reasoningEnabled);
+                    await processOpenRouterSimple(enrichedPrompt, historyForApi, newAiMessageId, currentModel.id, effective.reasoningEnabled, signal);
                 }
             } else if (currentModel.provider === 'groq') {
-                await processGroqStream(enrichedPrompt, historyForApi, newAiMessageId, currentSearchType, effective.webSearchEnabled, currentModel.id, effective.reasoningEnabled);
+                await processGroqStream(enrichedPrompt, historyForApi, newAiMessageId, currentSearchType, effective.webSearchEnabled, currentModel.id, effective.reasoningEnabled, signal);
             } else if (currentModel.provider === 'routeway') {
-                await processRoutewayStream(enrichedPrompt, historyForApi, newAiMessageId, currentSearchType, effective.webSearchEnabled, currentModel.id, effective.reasoningEnabled);
+                await processRoutewayStream(enrichedPrompt, historyForApi, newAiMessageId, currentSearchType, effective.webSearchEnabled, currentModel.id, effective.reasoningEnabled, signal);
             } else {
-                await processGeminiStream(enrichedPrompt, historyForApi, newAiMessageId, currentSearchType, effective.webSearchEnabled, currentModel.id, effective.reasoningEnabled);
+                await processGeminiStream(enrichedPrompt, historyForApi, newAiMessageId, currentSearchType, effective.webSearchEnabled, currentModel.id, effective.reasoningEnabled, signal);
             }
         } catch (error) {
+            // Check if this was an abort
+            if (error instanceof Error && error.name === 'AbortError') {
+                console.log('[Chat] Stream was interrupted by user');
+                return;
+            }
             console.error(error);
             setMessages(prev => prev.map(msg =>
                 msg.id === newAiMessageId
@@ -690,6 +781,8 @@ export function useChatMessages(options: UseChatMessagesOptions) {
                     : msg
             ));
         } finally {
+            // Clear abort controller
+            abortControllerRef.current = null;
             // Flush any pending streaming updates before marking as done
             flushPendingUpdates();
             setIsLoading(false);
@@ -706,6 +799,7 @@ export function useChatMessages(options: UseChatMessagesOptions) {
         retryMessage,
         deleteMessage,
         editAndResend,
+        stopStreaming,
     };
 }
 

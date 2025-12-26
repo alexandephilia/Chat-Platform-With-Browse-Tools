@@ -202,6 +202,10 @@ export const MessageList: React.FC<MessageListProps> = ({
     useEffect(() => {
         if (messages.length > 0) {
             const lastMessage = messages[messages.length - 1];
+            
+            // If we are editing, don't trigger auto-scroll to bottom on content changes
+            if (editingMessageId) return;
+
             if (lastMessage.role === 'user') {
                 scrollToBottom('smooth');
             } else if (messagesContainerRef.current) {
@@ -217,7 +221,7 @@ export const MessageList: React.FC<MessageListProps> = ({
                 }
             }
         }
-    }, [messages.length, messages[messages.length - 1]?.content.length, scrollToBottom]);
+    }, [messages.length, messages[messages.length - 1]?.content.length, scrollToBottom, editingMessageId]);
 
     // KaTeX rendering
     useEffect(() => {

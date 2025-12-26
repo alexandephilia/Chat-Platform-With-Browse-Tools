@@ -4,10 +4,10 @@
 
 import { AnimatedMarkdown } from 'flowtoken';
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ExpressionPill } from '../atoms/ExpressionPill';
 import { V3_EXPRESSION_REGEX, initAudioForMobile, isAudioPlaying, isElevenLabsConfigured, playAudio, stopAudio, textToSpeech } from '../../services/elevenLabsService';
 import { ModelIcon } from '../../services/modelIcons';
 import { Message } from '../../types';
+import { ExpressionPill } from '../atoms/ExpressionPill';
 import { CopyLinear, MoreDotsLinear, RefreshSquareLinear, StopCircleLinear, VolumeHighLinear } from '../atoms/Icons';
 import { SearchTimeline } from '../atoms/SearchTimeline';
 import { ThinkingBlock } from '../atoms/ThinkingBlock';
@@ -103,9 +103,9 @@ const StableAnimatedContent = memo(({
             // Filter to keep only text parts (even indices)
             const parts = children.split(V3_EXPRESSION_REGEX).filter((_, i) => i % 2 === 0);
             const matches = children.match(V3_EXPRESSION_REGEX);
-            
+
             if (!matches) return children;
-            
+
             return parts.map((part, i) => (
                 <React.Fragment key={i}>
                     {part}
@@ -113,7 +113,7 @@ const StableAnimatedContent = memo(({
                 </React.Fragment>
             ));
         }
-        
+
         if (Array.isArray(children)) {
             return children.map((child, i) => (
                 <React.Fragment key={i}>
@@ -121,7 +121,7 @@ const StableAnimatedContent = memo(({
                 </React.Fragment>
             ));
         }
-        
+
         if (React.isValidElement(children)) {
             // Traverse deeper if it's a React element with children
             const props = (children.props as any) || {};
@@ -132,7 +132,7 @@ const StableAnimatedContent = memo(({
                 });
             }
         }
-        
+
         return children;
     }, []);
 
@@ -375,8 +375,20 @@ export const AIMessageBubble: React.FC<AIMessageBubbleProps> = memo(({
                 />
             </div>
 
-            {/* Action buttons - show when not streaming AND (has content OR is error) */}
-            {!isStreaming && (message.content || message.isError) && (
+            {/* Interrupted indicator */}
+            {message.isInterrupted && !isStreaming && (
+                <div className="flex justify-start mt-3">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium text-red-600 bg-red-50/100 border border-red-100 rounded-full opacity-75">
+                        <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                            <path d="M18 6L6 18M6 6l12 12" />
+                        </svg>
+                        Response interrupted
+                    </span>
+                </div>
+            )}
+
+            {/* Action buttons - show when not streaming AND (has content OR is error OR interrupted) */}
+            {!isStreaming && (message.content || message.isError || message.isInterrupted) && (
                 <div className="flex items-center justify-between mt-1.5">
                     {/* Left side: Copy, Speak & Retry */}
                     <div className="flex items-center gap-0.5">
@@ -486,6 +498,7 @@ export const AIMessageBubble: React.FC<AIMessageBubbleProps> = memo(({
         prevProps.message.thinking === nextProps.message.thinking &&
         prevProps.message.isThinking === nextProps.message.isThinking &&
         prevProps.message.isError === nextProps.message.isError &&
+        prevProps.message.isInterrupted === nextProps.message.isInterrupted &&
         prevProps.message.planningText === nextProps.message.planningText &&
         toolCallsEqual &&
         prevProps.isStreaming === nextProps.isStreaming &&

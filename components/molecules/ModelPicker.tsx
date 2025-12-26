@@ -32,8 +32,8 @@ const ModelPicker: React.FC<ModelPickerProps> = ({
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [activeProvider, setActiveProvider] = useState<string | null>(null);
-    const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0, placement: 'bottom' as 'top' | 'bottom' });
-    const [submenuPosition, setSubmenuPosition] = useState({ x: 0, y: 0 });
+    const [menuPosition, setMenuPosition] = useState<{ x: number; y: number; placement: 'top' | 'bottom' } | null>(null);
+    const [submenuPosition, setSubmenuPosition] = useState<{ x: number; y: number } | null>(null);
     const triggerRef = useRef<HTMLButtonElement>(null);
     const providerItemRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
     const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -184,12 +184,15 @@ const ModelPicker: React.FC<ModelPickerProps> = ({
     const handleClose = useCallback(() => {
         setIsOpen(false);
         setActiveProvider(null);
+        setMenuPosition(null);
+        setSubmenuPosition(null);
     }, []);
 
     // Delayed close for submenu - allows moving between provider and submenu
     const handleSubmenuMouseLeave = useCallback(() => {
         closeTimeoutRef.current = setTimeout(() => {
             setActiveProvider(null);
+            setSubmenuPosition(null);
         }, 100);
     }, []);
 
@@ -254,7 +257,7 @@ const ModelPicker: React.FC<ModelPickerProps> = ({
             {/* Dropdown Menu - Portal */}
             {createPortal(
                 <AnimatePresence mode="sync">
-                    {isOpen && (
+                    {isOpen && menuPosition && (
                         <>
                             {/* Backdrop */}
                             <motion.div
@@ -270,9 +273,9 @@ const ModelPicker: React.FC<ModelPickerProps> = ({
                             {/* Provider Menu */}
                             <motion.div
                                 key="model-picker-menu"
-                                initial={{ opacity: 0, scale: 0.95, y: menuPosition.placement === 'bottom' ? -6 : 6 }}
-                                animate={{ opacity: 1, scale: 1, y: 0 }}
-                                exit={{ opacity: 0, scale: 0.95, y: menuPosition.placement === 'bottom' ? -6 : 6 }}
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.95 }}
                                 transition={{ duration: 0.15 }}
                                 style={{
                                     position: 'fixed',
@@ -342,7 +345,7 @@ const ModelPicker: React.FC<ModelPickerProps> = ({
                             </motion.div>
 
                             {/* Model Submenu */}
-                            {activeProvider && (
+                            {activeProvider && submenuPosition && (
                                 <motion.div
                                     key={`model-submenu-${activeProvider}`}
                                     initial={{ opacity: 0, x: -8 }}

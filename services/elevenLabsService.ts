@@ -105,6 +105,7 @@ const DEFAULT_MODEL: TTSModelKey = 'zeta-v1';
 const VOICE_STORAGE_KEY = 'elevenlabs_voice';
 const MODEL_STORAGE_KEY = 'elevenlabs_model';
 
+
 /**
  * Get the currently selected voice
  */
@@ -247,80 +248,41 @@ export function isElevenLabsConfigured(): boolean {
 }
 
 /**
- * ElevenLabs V3 Audio Tags - Full Reference
- * These tags control emotion, delivery, reactions, and more
+ * ElevenLabs V3 Audio Tags - Dynamic Expression System
+ *
+ * V3 supports natural language audio tags that control emotion, delivery,
+ * reactions, pacing, and more. Unlike previous models, V3 interprets tags
+ * contextually - it doesn't require a fixed list of supported tags.
+ *
+ * The AI can use ANY natural expression in brackets, such as:
+ * - Emotions: [happy], [melancholy], [bittersweet], [nostalgic]
+ * - Delivery: [whispers], [dramatic tone], [rushed], [tenderly]
+ * - Reactions: [laughs softly], [sighs deeply], [gasps in surprise]
+ * - Pacing: [pause], [long pause], [beat], [trailing off]
+ * - Sounds: [applause], [thunder], [footsteps approaching]
+ * - Accents: [British accent], [Southern drawl], [French accent]
+ *
  * Docs: https://elevenlabs.io/blog/v3-audiotags
  */
 
-// Emotion tags - set the emotional tone
-export const V3_EMOTION_TAGS = [
-    'happy', 'sad', 'angry', 'excited', 'nervous', 'curious',
-    'sorrowful', 'tired', 'awe', 'fearful', 'disgusted',
-    'surprised', 'calm', 'confident', 'worried', 'hopeful',
-    'frustrated', 'relieved', 'proud', 'embarrassed', 'grateful',
-] as const;
-
-// Delivery tags - control tone and performance style
-export const V3_DELIVERY_TAGS = [
-    'whispers', 'shouts', 'shouting', 'yelling',
-    'dramatic tone', 'rushed', 'drawn out', 'slowly',
-    'softly', 'loudly', 'monotone', 'sarcastic',
-    'cheerfully', 'sadly', 'angrily', 'excitedly',
-] as const;
-
-// Human reaction tags - natural unscripted moments
-export const V3_REACTION_TAGS = [
-    'laughs', 'laughs softly', 'chuckles', 'giggles',
-    'sighs', 'sigh', 'gasps', 'gulps',
-    'clears throat', 'coughs', 'sniffs', 'yawns',
-    'crying', 'sobbing', 'sniffles', 'groans', 'moans',
-    'hums', 'whistles', 'inhales', 'exhales',
-] as const;
-
-// Pacing and narrative control tags
-export const V3_PACING_TAGS = [
-    'pause', 'long pause', 'short pause', 'beat',
-    'interrupting', 'overlapping', 'trailing off',
-    'emphasis', 'stressed',
-] as const;
-
-// Sound effect tags (v3 can generate some sounds)
-export const V3_SOUND_TAGS = [
-    'gunshot', 'explosion', 'clapping', 'applause',
-    'thunder', 'rain', 'wind', 'footsteps',
-    'door creaking', 'glass breaking', 'phone ringing',
-] as const;
-
-// Accent and voice character tags
-export const V3_ACCENT_TAGS = [
-    'American accent', 'British accent', 'Australian accent',
-    'French accent', 'German accent', 'Spanish accent',
-    'Italian accent', 'Russian accent', 'Japanese accent',
-    'Southern US accent', 'New York accent', 'Irish accent',
-    'Scottish accent', 'Indian accent',
-    'pirate voice', 'robot voice', 'old voice', 'young voice',
-    'deep voice', 'high voice', 'raspy voice', 'smooth voice',
-] as const;
-
-// Build comprehensive regex from all tag categories
-const ALL_V3_TAGS = [
-    ...V3_EMOTION_TAGS,
-    ...V3_DELIVERY_TAGS,
-    ...V3_REACTION_TAGS,
-    ...V3_PACING_TAGS,
-    ...V3_SOUND_TAGS,
-    ...V3_ACCENT_TAGS,
-].map(tag => tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')); // Escape regex special chars
-
 /**
- * ElevenLabs V3 expression tags regex
- * These tags control emotion/delivery and should be preserved for V3 TTS
- * Exported for use in UI stripping (AIMessageBubble)
+ * Dynamic V3 expression regex - matches ANY bracketed expression
+ *
+ * This regex captures natural language expressions that V3 can interpret.
+ * Instead of a hardcoded list, we match any reasonable expression pattern:
+ * - Single words: [happy], [whispers], [pause]
+ * - Multi-word phrases: [laughs softly], [dramatic tone], [long pause]
+ * - Descriptive expressions: [sighs deeply], [speaks nervously]
+ *
+ * Pattern breakdown:
+ * - \[ - Opening bracket
+ * - ([a-zA-Z][a-zA-Z\s'-]{0,30}) - Expression: starts with letter, allows letters/spaces/hyphens/apostrophes, max 32 chars
+ * - \] - Closing bracket
+ *
+ * The 32 char limit prevents matching overly long bracketed content that's likely not an expression tag.
  */
-export const V3_EXPRESSION_REGEX = new RegExp(
-    `\\[(${ALL_V3_TAGS.join('|')})\\]`,
-    'gi'
-);
+export const V3_EXPRESSION_REGEX = /\[([a-zA-Z][a-zA-Z\s'-]{0,30})\]/gi;
+
 
 /**
  * Strip markdown formatting from text for cleaner TTS
@@ -512,6 +474,7 @@ export async function textToSpeech(
 
     return response.blob();
 }
+
 
 /**
  * Play audio blob and return the audio element for control

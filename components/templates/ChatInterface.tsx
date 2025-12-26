@@ -91,6 +91,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         retryMessage,
         deleteMessage,
         editAndResend,
+        stopStreaming,
     } = useChatMessages({
         selectedModel,
         webSearchEnabled,
@@ -281,6 +282,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                             selectedModel={selectedModel}
                             onSelectModel={setSelectedModel}
                             onSendMessage={sendMessage}
+                            onStopStreaming={stopStreaming}
                             isLoading={isLoading}
                             webSearchEnabled={webSearchEnabled}
                             onWebSearchToggle={setWebSearchEnabled}
@@ -411,6 +413,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                                     >
                                         <ChatInput
                                             onSend={sendMessage}
+                                            onStop={stopStreaming}
                                             disabled={isLoading}
                                             variant={isWelcomeMode ? "embedded" : "default"}
                                             selectedModel={selectedModel}

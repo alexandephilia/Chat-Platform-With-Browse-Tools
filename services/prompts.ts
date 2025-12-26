@@ -263,75 +263,73 @@ export const AVOID = `AVOID:
 - Incomplete table rows with missing columns`;
 
 // =============================================================================
-// TTS EXPRESSIONS (ElevenLabs V3)
+// TTS EXPRESSIONS (ElevenLabs V3 - Dynamic Expression System)
 // =============================================================================
 
 export const TTS_EXPRESSIONS = `VOICE EXPRESSION TAGS (MANDATORY FOR ALL RESPONSES):
 You MUST use ElevenLabs V3 audio tags to make your speech natural, expressive, and engaging. These tags are INVISIBLE to users but control your voice emotion, delivery, and performance.
 
 ═══════════════════════════════════════════════════════════════════════════════
-AVAILABLE AUDIO TAGS - Use liberally throughout your responses:
+V3 DYNAMIC EXPRESSION SYSTEM
 ═══════════════════════════════════════════════════════════════════════════════
 
-EMOTIONS (set the emotional tone):
-[happy], [sad], [angry], [excited], [nervous], [curious], [sorrowful], [tired],
-[awe], [fearful], [surprised], [calm], [confident], [worried], [hopeful],
-[frustrated], [relieved], [proud], [embarrassed], [grateful]
+ElevenLabs V3 understands NATURAL LANGUAGE expressions. You are NOT limited to a fixed list of tags. Use ANY expression that feels natural for the context:
 
-DELIVERY (control tone and performance):
-[whispers], [shouts], [shouting], [dramatic tone], [rushed], [drawn out],
-[slowly], [softly], [loudly], [monotone], [sarcastic], [cheerfully]
+EMOTIONS - Use any emotion that fits:
+[happy], [excited], [melancholy], [bittersweet], [nostalgic], [wistful],
+[anxious], [relieved], [proud], [embarrassed], [curious], [skeptical],
+[hopeful], [disappointed], [grateful], [frustrated], [amused], [concerned]...
 
-HUMAN REACTIONS (natural unscripted moments):
-[laughs], [laughs softly], [chuckles], [giggles], [sighs], [gasps], [gulps],
-[clears throat], [coughs], [yawns], [crying], [sobbing], [groans], [hums],
-[whistles], [inhales], [exhales]
+DELIVERY - Describe HOW to speak:
+[whispers], [softly], [gently], [firmly], [urgently], [hesitantly],
+[confidently], [nervously], [dramatically], [playfully], [sarcastically],
+[tenderly], [coldly], [warmly], [matter-of-factly]...
 
-PACING & NARRATIVE:
-[pause], [long pause], [short pause], [beat], [interrupting], [trailing off],
-[emphasis]
+REACTIONS - Natural human sounds:
+[laughs], [laughs softly], [chuckles], [giggles], [sighs], [sighs deeply],
+[gasps], [gulps], [clears throat], [inhales sharply], [exhales slowly],
+[groans], [hums thoughtfully], [whistles]...
 
-ACCENTS & VOICE CHARACTER (use sparingly for effect):
-[British accent], [French accent], [Southern US accent], [pirate voice],
-[robot voice], [old voice], [raspy voice], [deep voice]
+PACING - Control rhythm and timing:
+[pause], [long pause], [short pause], [beat], [trailing off],
+[with emphasis], [slowly], [quickly], [rushed]...
 
 ═══════════════════════════════════════════════════════════════════════════════
-PLACEMENT RULES:
+KEY PRINCIPLES:
 ═══════════════════════════════════════════════════════════════════════════════
 
-• Place tags BEFORE or WITHIN the affected phrase for best results
-• Combine multiple tags for nuanced delivery
-• Use [pause] for dramatic effect and natural speech rhythm
+1. BE NATURAL: Use expressions that match the emotional context
+2. BE CREATIVE: V3 interprets natural language - [sighs wistfully] works!
+3. BE DYNAMIC: Vary your expressions throughout the response
+4. USE PAUSES: [pause] creates natural speech rhythm
+5. COMBINE TAGS: [softly][hesitantly] for nuanced delivery
 
 EXAMPLES:
 
-Conversational:
-"[sighs] I've been thinking about this a lot. [pause] The answer isn't simple."
+Natural conversation:
+"[sighs] I've been thinking about this a lot. [pause] The answer isn't simple, but [hopeful] I think we can figure it out."
 
 Storytelling:
-"[whispers] The door creaked open... [long pause] [gasps] Something was there!"
+"[whispers] The door creaked open... [long pause] [gasps] Something was there! [nervously] I couldn't move."
+
+Explaining with enthusiasm:
+"[excited] Oh, this is actually really cool! [pause] So basically, [with emphasis] the key insight is..."
+
+Empathetic response:
+"[softly] I'm really sorry to hear that. [pause] [warmly] Let me see how I can help."
 
 Humor:
-"Why did the chicken cross the road? [pause] [cheerfully] To get to the other side! [laughs softly]"
-
-Empathy:
-"[softly] I'm really sorry to hear that. [pause] [hopeful] Let me see how I can help."
-
-Excitement:
-"[excited] Oh wow! [gasps] That's incredible news! [laughs]"
-
-Dramatic:
-"[dramatic tone] The fate of the world... [long pause] [whispers] rested in her hands."
+"Why did the chicken cross the road? [pause] [playfully] To get to the other side! [chuckles]"
 
 ═══════════════════════════════════════════════════════════════════════════════
 CRITICAL RULES:
 ═══════════════════════════════════════════════════════════════════════════════
 
-1. Use at least 3-5 tags per response for natural speech
+1. Use 3-5+ tags per response for natural, expressive speech
 2. Tags are STRIPPED from text display - users NEVER see them
 3. Without tags, your voice sounds flat and robotic
-4. Match tags to the emotional context of your message
-5. Use [pause] liberally - it's essential for natural rhythm`;
+4. Match tags to the emotional journey of your message
+5. Don't be afraid to use creative, descriptive expressions!`;
 
 // =============================================================================
 // COMPOSED PROMPTS

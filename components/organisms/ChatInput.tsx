@@ -17,6 +17,7 @@ import VoicePicker from '../molecules/VoicePicker';
 
 interface ChatInputProps {
     onSend: (message: string, attachments?: Attachment[], webSearchEnabled?: boolean, searchType?: 'auto' | 'fast' | 'deep') => void;
+    onStop?: () => void;
     disabled?: boolean;
     className?: string;
     variant?: 'default' | 'embedded';
@@ -42,6 +43,7 @@ export const Ufo3Outline = (props: React.SVGProps<SVGSVGElement>) => (
 
 const ChatInput: React.FC<ChatInputProps> = ({
     onSend,
+    onStop,
     disabled,
     className = "",
     variant = 'default',
@@ -726,22 +728,38 @@ const ChatInput: React.FC<ChatInputProps> = ({
                                                     : 'text-slate-500 hover:bg-slate-50/80'
                                                     }`}
                                             >
-                                                <div className={`w-8 h-5 rounded-full transition-all duration-300 relative flex items-center shrink-0 ${webSearchEnabled
-                                                    ? 'bg-blue-300 shadow-[inset_0_1px_2px_rgba(0,0,0,0.1)]'
-                                                    : 'bg-slate-200/50 shadow-[inset_0_1px_1px_rgba(0,0,0,0.05)]'
-                                                    }`}>
-                                                    <div className={`absolute w-3.5 h-3.5 rounded-full transition-all duration-300 transform flex items-center justify-center ${webSearchEnabled
-                                                        ? 'translate-x-4 shadow-[0_2px_5px_rgba(0,0,0,0.2),0_1px_2px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,1)]'
-                                                        : 'translate-x-0.5 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_1px_rgba(0,0,0,0.05),inset_0_1px_0_rgba(255,255,255,1)]'
-                                                        }`}
+                                                <motion.div 
+                                                    layout
+                                                    className="w-8 h-5 rounded-full relative flex items-center shrink-0 overflow-hidden"
+                                                    animate={{
+                                                        backgroundColor: webSearchEnabled ? 'rgb(147, 197, 253)' : 'rgb(226, 232, 240)',
+                                                    }}
+                                                    transition={{ duration: 0.3 }}
+                                                >
+                                                    <motion.div 
+                                                        layout
+                                                        className="absolute w-3.5 h-3.5 rounded-full flex items-center justify-center z-10"
+                                                        initial={false}
+                                                        animate={{
+                                                            x: webSearchEnabled ? 16 : 2,
+                                                        }}
+                                                        transition={{
+                                                            type: "spring",
+                                                            stiffness: 500,
+                                                            damping: 30
+                                                        }}
                                                         style={{
-                                                            background: 'linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%)'
+                                                            background: 'linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%)',
+                                                            boxShadow: '0 2px 4px rgba(0,0,0,0.1), 0 1px 1px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,1)'
                                                         }}
                                                     >
-                                                        {/* Rim light highlight */}
+                                                        {/* Inner highlight */}
                                                         <div className="absolute inset-0 rounded-full border border-white/40 pointer-events-none" />
-                                                    </div>
-                                                </div>
+                                                    </motion.div>
+                                                    
+                                                    {/* Track Inner Shadow */}
+                                                    <div className="absolute inset-0 shadow-[inset_0_1px_2px_rgba(0,0,0,0.1)] pointer-events-none" />
+                                                </motion.div>
                                                 <div className="flex flex-col min-w-0">
                                                     <span className={`text-[11px] font-bold leading-none mb-0.5 ${webSearchEnabled ? 'text-blue-500' : 'text-slate-400'}`}>{webSearchEnabled ? 'Deep Search Enabled' : 'Search Disabled'}</span>
                                                     <span className="text-[9px] text-slate-400 leading-none">Toggle live web access</span>
@@ -934,15 +952,24 @@ const ChatInput: React.FC<ChatInputProps> = ({
                             )}
 
                             <button
-                                onClick={handleSubmit}
-                                disabled={(!input.trim() && attachments.length === 0) || disabled}
+                                onClick={() => {
+                                    if (disabled && onStop) {
+                                        onStop();
+                                    } else {
+                                        handleSubmit();
+                                    }
+                                }}
+                                disabled={(!input.trim() && attachments.length === 0) && !disabled}
                                 className={`
                                 relative w-7 h-7 md:w-9 md:h-9 flex items-center justify-center rounded-full transition-all duration-300 overflow-hidden group/btn
-                                ${(input.trim() || attachments.length > 0) && !disabled
-                                        ? 'bg-blue-500 text-white shadow-[0_4px_12px_rgba(59,130,246,0.3),inset_0_2px_4px_rgba(255,255,255,0.3),inset_0_-2px_4px_rgba(0,0,0,0.1),0_0_0_1px_rgba(59,130,246,1)] hover:shadow-[0_6px_20px_rgba(59,130,246,0.4),inset_0_2px_4px_rgba(255,255,255,0.4),inset_0_-2px_4px_rgba(0,0,0,0.1),0_0_0_1px_rgba(59,130,246,1)] active:shadow-[inset_0_4px_8px_rgba(0,0,0,0.2),0_1px_2px_rgba(0,0,0,0.1)] active:scale-[0.96] active:translate-y-0.5'
-                                        : 'bg-slate-100 text-slate-400 shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)]'
+                                ${disabled
+                                        ? 'bg-slate-200 text-slate-600 shadow-[inset_0_2px_4px_rgba(0,0,0,0.08),0_1px_0_rgba(255,255,255,0.8)] hover:bg-slate-300 active:scale-[0.96] cursor-pointer'
+                                        : (input.trim() || attachments.length > 0)
+                                            ? 'bg-blue-500 text-white shadow-[0_4px_12px_rgba(59,130,246,0.3),inset_0_2px_4px_rgba(255,255,255,0.3),inset_0_-2px_4px_rgba(0,0,0,0.1),0_0_0_1px_rgba(59,130,246,1)] hover:shadow-[0_6px_20px_rgba(59,130,246,0.4),inset_0_2px_4px_rgba(255,255,255,0.4),inset_0_-2px_4px_rgba(0,0,0,0.1),0_0_0_1px_rgba(59,130,246,1)] active:shadow-[inset_0_4px_8px_rgba(0,0,0,0.2),0_1px_2px_rgba(0,0,0,0.1)] active:scale-[0.96] active:translate-y-0.5'
+                                            : 'bg-slate-100 text-slate-400 shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)]'
                                     }
                             `}
+                                title={disabled ? "Stop generating" : "Send message"}
                             >
                                 {/* Reflection Shine Overlay - Adjusted to top */}
                                 {(input.trim() || attachments.length > 0) && !disabled && (
@@ -954,10 +981,17 @@ const ChatInput: React.FC<ChatInputProps> = ({
                                     <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[80%] h-[1px] bg-white/50 blur-[0.4px] rounded-full pointer-events-none z-20" />
                                 )}
 
-                                <Send
-                                    className={`w-3 h-3 md:w-3.5 md:h-3.5 relative z-10 transition-transform duration-300 ${(input.trim() || attachments.length > 0) && !disabled ? "ml-0.5 group-hover/btn:scale-110" : ""}`}
-                                    fill={(input.trim() || attachments.length > 0) && !disabled ? "currentColor" : "none"}
-                                />
+                                {disabled ? (
+                                    <Square
+                                        className="w-3 h-3 md:w-3.5 md:h-3.5 relative z-10"
+                                        fill="currentColor"
+                                    />
+                                ) : (
+                                    <Send
+                                        className={`w-3 h-3 md:w-3.5 md:h-3.5 relative z-10 transition-transform duration-300 ${(input.trim() || attachments.length > 0) ? "ml-0.5 group-hover/btn:scale-110" : ""}`}
+                                        fill={(input.trim() || attachments.length > 0) ? "currentColor" : "none"}
+                                    />
+                                )}
                             </button>
                         </div>
                     </div>

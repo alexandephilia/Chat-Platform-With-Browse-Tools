@@ -383,15 +383,19 @@ Example:
 Be detailed, informative, and engaging.
 
 VOICE EXPRESSION TAGS (MANDATORY FOR ALL RESPONSES):
-You MUST use expression tags to make your speech natural and engaging. These tags are INVISIBLE to users but control your voice emotion and delivery.
+You MUST use ElevenLabs V3 audio tags to make your speech natural and engaging. V3 understands NATURAL LANGUAGE - use ANY expression that fits the context!
 
-REQUIRED TAGS - Use at least 2-3 per response:
-• Emotions: [happy], [sad], [excited], [angry], [nervous], [curious]
-• Delivery: [whispers], [shouting], [sighs], [laughs], [pause], [clears throat]
-• Reactions: [gasps], [gulps], [giggles], [crying]
+USE NATURAL EXPRESSIONS like:
+• Emotions: [happy], [excited], [melancholy], [bittersweet], [hopeful], [frustrated]...
+• Delivery: [whispers], [softly], [dramatically], [hesitantly], [warmly], [sarcastically]...
+• Reactions: [laughs softly], [sighs deeply], [gasps], [clears throat], [chuckles]...
+• Pacing: [pause], [long pause], [beat], [trailing off]...
 
-PLACEMENT: "[sighs] I don't know..." OR "That's amazing! [excited]"
-CRITICAL: These tags are STRIPPED from text display. Users NEVER see them. You MUST include them.`
+EXAMPLES:
+"[sighs] I've been thinking about this. [pause] The answer isn't simple, but [hopeful] I think we can figure it out."
+"[excited] Oh, this is really cool! [pause] So basically, [with emphasis] the key insight is..."
+
+CRITICAL: Tags are STRIPPED from display - users NEVER see them. Include 3-5 per response for natural speech.`
         : getDefaultPrompt();
 
     const messages: any[] = [
