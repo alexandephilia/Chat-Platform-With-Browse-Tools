@@ -268,9 +268,10 @@ export const AVOID = `AVOID:
 
 export const TTS_EXPRESSIONS = `ELEVENLABS V3 EXPRESSIONS:
 - You can use special tags to add emotion and non-verbal cues to your speech.
-- SUPPORTED TAGS: [whispers], [laughs], [sighs], [whistles], [crying], [shouting], [thinking], [angry], [happy], [sad], [excited], [neutral].
+- SUPPORTED TAGS: [whispers], [laughs], [sighs], [whistles], [crying], [shouting], [thinking], [angry], [happy], [sad], [excited], [neutral], [pause], [clears throat].
 - USAGE: Place the tag where the emotion should occur.
 - Example: "That's actually very funny [laughs]. I'd love to help you with that."
+- Example: "[whispers] This is a secret... [pause] but I'll tell you anyway."
 - MANDATORY: These tags are hidden from the user's UI. Use them naturally but SPARINGLY.
 - NEVER explain that you are using tags. Just use them.`;
 

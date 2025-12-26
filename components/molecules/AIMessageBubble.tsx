@@ -4,7 +4,7 @@
 
 import { AnimatedMarkdown } from 'flowtoken';
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { initAudioForMobile, isAudioPlaying, isElevenLabsConfigured, playAudio, stopAudio, textToSpeech } from '../../services/elevenLabsService';
+import { V3_EXPRESSION_REGEX, initAudioForMobile, isAudioPlaying, isElevenLabsConfigured, playAudio, stopAudio, textToSpeech } from '../../services/elevenLabsService';
 import { ModelIcon } from '../../services/modelIcons';
 import { Message } from '../../types';
 import { CopyLinear, MoreDotsLinear, RefreshSquareLinear, StopCircleLinear, VolumeHighLinear } from '../atoms/Icons';
@@ -138,9 +138,20 @@ const StableAnimatedContent = memo(({
 
     // ElevenLabs V3 Stealth Mode: Strip expression tags from UI display
     // These tags are preserved in the raw content for TTS but hidden here
+    // Uses shared regex from elevenLabsService for consistency
     const displayContent = useMemo(() => {
-        const EXPRESSION_REGEX = /\[(whispers|laughs|sighs|whistles|crying|shouting|thinking|angry|happy|sad|excited|neutral)\]/gi;
-        return content.replace(EXPRESSION_REGEX, '');
+        // Reset regex lastIndex since it's global
+        V3_EXPRESSION_REGEX.lastIndex = 0;
+        const stripped = content.replace(V3_EXPRESSION_REGEX, '');
+
+        // Log if expressions were found and stripped
+        V3_EXPRESSION_REGEX.lastIndex = 0;
+        const matches = content.match(V3_EXPRESSION_REGEX);
+        if (matches && matches.length > 0) {
+            console.log('[AIMessageBubble] Stripped V3 expressions from UI:', matches);
+        }
+
+        return stripped;
     }, [content]);
 
     return (
@@ -201,6 +212,18 @@ export const AIMessageBubble: React.FC<AIMessageBubbleProps> = memo(({
         // Check if another message is playing
         if (isAudioPlaying()) {
             stopAudio();
+        }
+
+        console.log('[AIMessageBubble handleSpeak] Starting TTS for message:', message.id);
+        console.log('[AIMessageBubble handleSpeak] Raw content length:', message.content.length);
+
+        // Check for V3 expressions in raw content
+        V3_EXPRESSION_REGEX.lastIndex = 0;
+        const expressionsInContent = message.content.match(V3_EXPRESSION_REGEX);
+        if (expressionsInContent) {
+            console.log('[AIMessageBubble handleSpeak] V3 expressions in raw content:', expressionsInContent);
+        } else {
+            console.log('[AIMessageBubble handleSpeak] No V3 expressions found in raw content');
         }
 
         // CRITICAL: Initialize audio context and create the audio element IMMEDIATELY

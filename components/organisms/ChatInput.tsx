@@ -846,6 +846,9 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
                     {/* Send Button Container - with shine border wrapper when loading */}
                     <div className="flex items-center gap-2">
+                        {/* Voice Picker for embedded variant (welcome screen) */}
+                        {variant === 'embedded' && isElevenLabsConfigured() && <VoicePicker size="small" />}
+
                         {/* Voice Recording Button */}
                         {isVoiceSupported && (
                             <div className="relative">

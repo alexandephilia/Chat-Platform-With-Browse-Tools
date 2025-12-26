@@ -247,23 +247,49 @@ export function isElevenLabsConfigured(): boolean {
 }
 
 /**
- * Strip markdown formatting from text for cleaner TTS
+ * ElevenLabs V3 expression tags regex
+ * These tags control emotion/delivery and should be preserved for V3 TTS
+ * Exported for use in UI stripping (AIMessageBubble)
  */
-function stripMarkdown(text: string): string {
-    return text
-        // 1. Remove citations and internal links first
+export const V3_EXPRESSION_REGEX = /\[(whispers|laughs|sighs|whistles|crying|shouting|thinking|angry|happy|sad|excited|neutral|pause|clears throat)\]/gi;
+
+/**
+ * Strip markdown formatting from text for cleaner TTS
+ * @param text - Raw text with markdown
+ * @param preserveV3Expressions - If true, preserve [expression] tags for ElevenLabs V3
+ */
+function stripMarkdown(text: string, preserveV3Expressions: boolean = false): string {
+    console.log('[TTS stripMarkdown] Input length:', text.length, '| preserveV3Expressions:', preserveV3Expressions);
+
+    let result = text;
+
+    // Step 1: If V3, temporarily protect expression tags from being stripped
+    const expressionPlaceholders: string[] = [];
+    if (preserveV3Expressions) {
+        // Reset regex lastIndex since it's global
+        V3_EXPRESSION_REGEX.lastIndex = 0;
+        result = result.replace(V3_EXPRESSION_REGEX, (match) => {
+            expressionPlaceholders.push(match);
+            console.log('[TTS stripMarkdown] Preserving V3 expression:', match);
+            return `__V3EXPR_${expressionPlaceholders.length - 1}__`;
+        });
+        if (expressionPlaceholders.length > 0) {
+            console.log('[TTS stripMarkdown] Total expressions preserved:', expressionPlaceholders.length);
+        }
+    }
+
+    // Step 2: Strip markdown and citations
+    result = result
+        // Remove citations and internal links first
         // Remove markdown links specifically (often used for citations like [Source](url))
-        // We do this BEFORE general bracket stripping
-        .replace(/\[([^\]]+)\]\([^)]+\)/g, (match, text) => {
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, (_, linkText) => {
             // If the text inside brackets looks like a source name or number, strip the whole thing
-            if (/^(source|ref|link|[\d,\s\-]+)$/i.test(text)) return '';
+            if (/^(source|ref|link|[\d,\s\-]+)$/i.test(linkText)) return '';
             // Otherwise keep just the text (standard markdown behavior)
-            return text;
+            return linkText;
         })
         // Remove standalone numbered citations like [1], [1, 2], [1-3]
         .replace(/\[[\d,\s\-]+\]/g, '')
-
-        // 2. Standard Markdown stripping
         // Remove code blocks
         .replace(/```[\s\S]*?```/g, '')
         // Remove inline code
@@ -289,6 +315,18 @@ function stripMarkdown(text: string): string {
         // Clean up extra whitespace
         .replace(/\n{3,}/g, '\n\n')
         .trim();
+
+    // Step 3: Restore V3 expression tags if preserved
+    if (preserveV3Expressions && expressionPlaceholders.length > 0) {
+        expressionPlaceholders.forEach((expr, i) => {
+            result = result.replace(`__V3EXPR_${i}__`, expr);
+        });
+        console.log('[TTS stripMarkdown] Restored expressions. Final text preview:', result.substring(0, 200) + '...');
+    }
+
+    console.log('[TTS stripMarkdown] Output length:', result.length);
+
+    return result;
 }
 
 /**
@@ -310,13 +348,19 @@ export async function textToSpeech(
         useSpeakerBoost = true,
     } = options;
 
+    console.log('[TTS textToSpeech] Starting TTS conversion');
+    console.log('[TTS textToSpeech] Model:', modelKey, '| Voice:', voiceKey);
+
     // Get voice ID and model ID from keys
     const voices = modelKey === 'zeta-v2' ? ELEVENLABS_VOICES_V2 : ELEVENLABS_VOICES_V1;
     const voiceId = voices[voiceKey].id;
     const modelId = TTS_MODELS[modelKey].id;
+    const isV3 = modelId === 'eleven_v3';
 
-    // Clean text for TTS
-    const cleanText = stripMarkdown(text);
+    console.log('[TTS textToSpeech] ElevenLabs model ID:', modelId, '| isV3:', isV3);
+
+    // Clean text for TTS - preserve V3 expression tags only for eleven_v3
+    const cleanText = stripMarkdown(text, isV3);
 
     if (!cleanText) {
         throw new Error('No speakable text content');
@@ -328,7 +372,6 @@ export async function textToSpeech(
         : cleanText;
 
     // Build voice settings - V3 does NOT support speaker boost
-    const isV3 = modelId === 'eleven_v3';
     const voiceSettings: Record<string, number | boolean> = {
         stability,
         similarity_boost: similarityBoost,
@@ -339,6 +382,24 @@ export async function textToSpeech(
     if (!isV3) {
         voiceSettings.use_speaker_boost = useSpeakerBoost;
     }
+
+    // Log for debugging V3 expressions
+    // Reset regex lastIndex since it's global
+    V3_EXPRESSION_REGEX.lastIndex = 0;
+    const expressionMatches = truncatedText.match(V3_EXPRESSION_REGEX);
+    if (isV3) {
+        if (expressionMatches && expressionMatches.length > 0) {
+            console.log('[TTS textToSpeech] ✅ V3 expressions found in final text:', expressionMatches);
+        } else {
+            console.log('[TTS textToSpeech] ⚠️ No V3 expressions found in text (AI may not have included any)');
+        }
+    } else {
+        if (expressionMatches && expressionMatches.length > 0) {
+            console.log('[TTS textToSpeech] V1 mode - expressions will be spoken literally (not interpreted):', expressionMatches);
+        }
+    }
+
+    console.log('[TTS textToSpeech] Final text to send (first 300 chars):', truncatedText.substring(0, 300));
 
     // Call server-side proxy instead of ElevenLabs directly
     const response = await fetch(TTS_PROXY_URL, {
@@ -389,9 +450,9 @@ export async function playAudio(audioBlob: Blob, existingAudio?: HTMLAudioElemen
     // Creating URL first to ensure it's ready
     const typedBlob = new Blob([audioBlob], { type: 'audio/mpeg' });
     const url = URL.createObjectURL(typedBlob);
-    
+
     const audio = existingAudio || new Audio();
-    
+
     // Stop any currently playing audio if we're creating a new one
     if (!existingAudio) {
         stopAudio();
@@ -399,7 +460,7 @@ export async function playAudio(audioBlob: Blob, existingAudio?: HTMLAudioElemen
         // If reusing, stop previous playback
         audio.pause();
     }
-    
+
     currentAudio = audio;
     currentAudioUrl = url;
 
