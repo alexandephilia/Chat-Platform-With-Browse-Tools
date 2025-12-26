@@ -6,6 +6,7 @@ interface ClayPillProps {
     className?: string;
     size?: "xs" | "sm" | "md" | "lg";
     variant?: "primary" | "secondary" | "accent" | "deepBlue";
+    onClick?: () => void;
 }
 
 export const ClayPill: React.FC<ClayPillProps> = ({
@@ -13,6 +14,7 @@ export const ClayPill: React.FC<ClayPillProps> = ({
     className = "",
     size = "md",
     variant = "primary",
+    onClick,
 }) => {
     const sizeClasses = {
         xs: "px-1.5 py-0.5 text-[8px]",
@@ -32,8 +34,10 @@ export const ClayPill: React.FC<ClayPillProps> = ({
         <motion.span
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
+            onClick={onClick}
             className={`
                 relative inline-flex items-center font-semibold rounded-full p-[2px]
+                ${onClick ? 'cursor-pointer' : ''}
                 ${className}
             `}
         >

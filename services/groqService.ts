@@ -8,8 +8,9 @@
  */
 
 import { Attachment, ToolCall, ToolCallStatus } from '../types';
+import { getUserEnvironmentContext } from '../utils/context';
 import { ExaCategory, exaAnswer, exaGetContents, exaSearch } from './exaService';
-import { getDefaultPrompt, getReasoningPrompt, getSearchPrompt } from './prompts';
+import { getDefaultPrompt, getReasoningPrompt, getSearchPrompt, getTTSInstructions } from './prompts';
 import { OPENAI_TOOLS } from './tools';
 
 const GROQ_API_KEYS = [
@@ -382,20 +383,9 @@ Example:
 
 Be detailed, informative, and engaging.
 
-VOICE EXPRESSION TAGS (MANDATORY FOR ALL RESPONSES):
-You MUST use ElevenLabs V3 audio tags to make your speech natural and engaging. V3 understands NATURAL LANGUAGE - use ANY expression that fits the context!
+${getTTSInstructions()}
 
-USE NATURAL EXPRESSIONS like:
-• Emotions: [happy], [excited], [melancholy], [bittersweet], [hopeful], [frustrated]...
-• Delivery: [whispers], [softly], [dramatically], [hesitantly], [warmly], [sarcastically]...
-• Reactions: [laughs softly], [sighs deeply], [gasps], [clears throat], [chuckles]...
-• Pacing: [pause], [long pause], [beat], [trailing off]...
-
-EXAMPLES:
-"[sighs] I've been thinking about this. [pause] The answer isn't simple, but [hopeful] I think we can figure it out."
-"[excited] Oh, this is really cool! [pause] So basically, [with emphasis] the key insight is..."
-
-CRITICAL: Tags are STRIPPED from display - users NEVER see them. Include 3-5 per response for natural speech.`
+${getUserEnvironmentContext()}`
         : getDefaultPrompt();
 
     const messages: any[] = [

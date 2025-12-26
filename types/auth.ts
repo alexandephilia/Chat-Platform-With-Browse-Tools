@@ -27,6 +27,7 @@ export interface AuthContextType extends AuthState {
     login: (credentials: LoginCredentials) => Promise<void>;
     signup: (credentials: SignupCredentials) => Promise<void>;
     logout: () => void;
+    updateUser: (updates: Partial<Pick<User, 'firstName' | 'avatar'>>) => void;
     openLoginModal: () => void;
     openSignupModal: () => void;
     closeAuthModal: () => void;

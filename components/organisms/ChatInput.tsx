@@ -728,7 +728,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
                                                     : 'text-slate-500 hover:bg-slate-50/80'
                                                     }`}
                                             >
-                                                <motion.div 
+                                                <motion.div
                                                     layout
                                                     className="w-8 h-5 rounded-full relative flex items-center shrink-0 overflow-hidden"
                                                     animate={{
@@ -736,7 +736,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
                                                     }}
                                                     transition={{ duration: 0.3 }}
                                                 >
-                                                    <motion.div 
+                                                    <motion.div
                                                         layout
                                                         className="absolute w-3.5 h-3.5 rounded-full flex items-center justify-center z-10"
                                                         initial={false}
@@ -756,7 +756,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
                                                         {/* Inner highlight */}
                                                         <div className="absolute inset-0 rounded-full border border-white/40 pointer-events-none" />
                                                     </motion.div>
-                                                    
+
                                                     {/* Track Inner Shadow */}
                                                     <div className="absolute inset-0 shadow-[inset_0_1px_2px_rgba(0,0,0,0.1)] pointer-events-none" />
                                                 </motion.div>

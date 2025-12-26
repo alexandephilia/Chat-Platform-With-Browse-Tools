@@ -2,7 +2,7 @@ import { motion } from 'framer-motion';
 import { ChevronDown } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { ClayPill } from '../atoms/ClayPill';
-import { BellBingLinear, SettingsLinear } from '../atoms/Icons';
+import { BellBingLinear } from '../atoms/Icons';
 import { UserAvatar } from '../atoms/UserAvatar';
 
 // Custom sidebar icon
@@ -28,13 +28,15 @@ interface GlobalHeaderProps {
     onToggleTheme: () => void;
     onOpenProfile: () => void;
     isProfileOpen: boolean;
+    onOpenHelp?: () => void;
 }
 
-const GlobalHeader: React.FC<GlobalHeaderProps> = ({ 
-    isSidebarMinimized, 
+const GlobalHeader: React.FC<GlobalHeaderProps> = ({
+    isSidebarMinimized,
     onToggleSidebar,
     onOpenProfile,
-    isProfileOpen
+    isProfileOpen,
+    onOpenHelp,
 }) => {
     const { isAuthenticated, user, openLoginModal } = useAuth();
 
@@ -58,6 +60,7 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({
                 >
                     <UserAvatar
                         initials={isAuthenticated ? (user?.firstName?.charAt(0).toUpperCase() || 'U') : '?'}
+                        src={isAuthenticated ? user?.avatar : undefined}
                         size="sm"
                     />
                     <motion.span
@@ -95,10 +98,7 @@ const GlobalHeader: React.FC<GlobalHeaderProps> = ({
 
             {/* Right side */}
             <div className="flex items-center gap-4">
-                <ClayPill size="sm">Need Help?</ClayPill>
-                <button className="text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors">
-                    <SettingsLinear width={18} height={18} />
-                </button>
+                <ClayPill size="sm" onClick={onOpenHelp}>Need Help?</ClayPill>
             </div>
         </motion.div>
     );

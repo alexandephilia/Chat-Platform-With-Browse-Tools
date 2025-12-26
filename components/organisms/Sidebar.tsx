@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import ReactDOM from "react-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { ClayInput } from "../atoms/ClayInput";
+import { ClayPill } from "../atoms/ClayPill";
 import { BellBingLinear, ExpressionlessSquareLinear } from "../atoms/Icons";
 import { UserAvatar } from "../atoms/UserAvatar";
 import { ClayPromoCard } from "../molecules/ClayPromoCard";
@@ -174,6 +175,26 @@ const itemTextVariants: Variants = {
     exit: { opacity: 0, x: -50, filter: 'blur(6px)', transition: { duration: 0.01 } }
 };
 
+const logoutBtnVariants: Variants = {
+    minimized: {
+        scale: 1,
+        transition: {
+            duration: 0.1,
+            ease: "easeOut"
+        }
+    },
+    expanded: {
+        scale: [0.5, 1.5, 1], // Start small, overshoot (pop), then settle
+        transition: {
+            type: "spring",
+            stiffness: 120, // High stiffness = fast snap
+            damping: 5,    // Low damping = nice wobble
+            mass: 0.2,      // Low mass = lightweight/fast
+            delay: 0.07     // Sync with sidebar end (0.4s) - 0.7s was too late
+        }
+    }
+};
+
 interface SidebarProps {
     isOpen: boolean;
     isMinimized?: boolean;
@@ -184,6 +205,7 @@ interface SidebarProps {
     chatHistory?: ChatHistoryItem[];
     activeChatId?: string;
     onOpenProfile?: () => void;
+    onOpenHelp?: () => void;
 }
 
 const groupChatsByTimeline = (chats: ChatHistoryItem[]): Record<string, ChatHistoryItem[]> => {
@@ -497,7 +519,7 @@ const MobileChatHistoryItemComponent: React.FC<{
     );
 });
 
-const Sidebar: React.FC<SidebarProps> = ({ isOpen, isMinimized = false, onClose, onNewChat, onSelectChat, onDeleteChat, chatHistory = [], activeChatId, onOpenProfile }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isOpen, isMinimized = false, onClose, onNewChat, onSelectChat, onDeleteChat, chatHistory = [], activeChatId, onOpenProfile, onOpenHelp }) => {
     const { isAuthenticated, user, logout, openLoginModal, openSignupModal } = useAuth();
     const navRef = useRef<HTMLDivElement>(null);
     const [canScrollUp, setCanScrollUp] = useState(false);
@@ -549,7 +571,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, isMinimized = false, onClose,
                                         onClick={onOpenProfile}
                                         className="flex items-center gap-1 text-slate-500 cursor-pointer hover:text-slate-700 transition-colors"
                                     >
-                                        <UserAvatar initials={user?.firstName?.charAt(0).toUpperCase() || 'U'} size="sm" />
+                                        <UserAvatar initials={user?.firstName?.charAt(0).toUpperCase() || 'U'} src={user?.avatar} size="sm" />
                                         <span className="text-sm font-medium">{user?.firstName || 'Personal'}</span>
                                         <ChevronDown size={14} className="flex-shrink-0" />
                                     </div>
@@ -613,19 +635,19 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, isMinimized = false, onClose,
                         <div className="px-4 py-3">
                             <ClayPromoCard isMinimized={false} title="Zeta Trial" icon={<UfoIcon size={18} />} description={<span>There are <span className="text-slate-800 font-bold">12 days left</span> for you to enjoy the various features.</span>} action={<button className="w-full text-[10px] font-bold bg-slate-900 text-white py-1.5 px-3 rounded-lg shadow-md shadow-blue-500/20 hover:shadow-blue-500/30 hover:bg-slate-800 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-1.5"><span>Upgrade to Pro</span><TrendingUp size={10} className="text-blue-200" /></button>} />
                         </div>
-                        <div className="border-t border-slate-100 px-4 py-3 flex justify-center">
-                            {!isAuthenticated && (
+                        <div className="px-4 pb-2 flex justify-center">
+                            <ClayPill size="sm" onClick={() => { onOpenHelp?.(); onClose?.(); }}>Need Help?</ClayPill>
+                        </div>
+                        {!isAuthenticated && (
+                            <div className="border-t border-slate-100 px-4 py-3 flex justify-center">
                                 <button
                                     onClick={openSignupModal}
                                     className="px-10 py-1.5 text-[13px] font-medium text-white bg-gradient-to-b from-slate-700 to-slate-900 rounded-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.15),inset_0_-1px_3px_rgba(0,0,0,0.2),0_2px_4px_rgba(0,0,0,0.1)] border border-slate-600/50 hover:from-slate-600 hover:to-slate-800 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_4px_8px_rgba(0,0,0,0.15)] transition-all duration-200 active:scale-[0.98]"
                                 >
                                     Sign up
                                 </button>
-                            )}
-                            {isAuthenticated && (
-                                <button onClick={logout} className="w-full flex items-center gap-2 px-2.5 py-2 text-slate-500 hover:text-slate-700 rounded-xl text-[13px] transition-colors hover:bg-white/60"><LogOut size={16} className="text-slate-500" /><span>Sign Out</span></button>
-                            )}
-                        </div>
+                            </div>
+                        )}
                     </motion.div>
                 )}
             </AnimatePresence>
@@ -846,37 +868,42 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, isMinimized = false, onClose,
                         </motion.button>
                     )}
                     {isAuthenticated && (
-                        <motion.button
-                            onClick={logout}
-                            layout
-                            layoutId="logout-button"
-                            title={isMinimized ? "Sign Out" : undefined}
-                            variants={elementVariants}
-                            initial="hidden"
-                            animate="visible"
-                            exit={{ opacity: 0, scale: 0.95, transition: { duration: ANIMATION_CONFIG.duration.fast } }}
-                            transition={ANIMATION_CONFIG.easing.spring}
-                            className={`flex items-center text-slate-500 hover:text-slate-700 rounded-xl text-sm transition-colors hover:bg-white/60 ${isMinimized ? "justify-center p-2.5" : "w-full justify-start gap-2.5 px-3 py-2"}`}
-                        >
-                            <motion.div variants={iconVariants} animate={isMinimized ? "minimized" : "expanded"}>
-                                <Logout2Linear className="w-[18px] h-[18px] flex-shrink-0" />
-                            </motion.div>
-                            <AnimatePresence mode="wait" initial={false}>
-                                {!isMinimized && (
+                        <AnimatePresence mode="wait" initial={false}>
+                            {isMinimized ? (
+                                <motion.button
+                                    key="logout-min"
+                                    onClick={logout}
+                                    title="Sign Out"
+                                    variants={elementVariants}
+                                    initial="hidden"
+                                    animate="visible"
+                                    exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.1 } }}
+                                    className="flex items-center justify-center rounded-xl text-sm font-medium transition-all bg-gradient-to-b from-red-50 to-red-100/80 border border-red-200/60 shadow-[0_2px_4px_rgba(239,68,68,0.15),0_1px_2px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.8)] text-red-600 hover:text-red-700 hover:shadow-[0_3px_6px_rgba(239,68,68,0.2),0_1px_2px_rgba(0,0,0,0.06)] p-2.5"
+                                >
+                                    <LogOut size={14} className="text-red-500" />
+                                </motion.button>
+                            ) : (
+                                <motion.button
+                                    key="logout-max"
+                                    onClick={logout}
+                                    variants={logoutBtnVariants}
+                                    initial="minimized"
+                                    animate="expanded"
+                                    exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.1 } }}
+                                    className="w-full flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all bg-gradient-to-b from-red-50 to-red-100/80 border border-red-200/60 shadow-[0_2px_4px_rgba(239,68,68,0.15),0_1px_2px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.8)] text-red-600 hover:text-red-700 hover:shadow-[0_3px_6px_rgba(239,68,68,0.2),0_1px_2px_rgba(0,0,0,0.06)]"
+                                >
+                                    <motion.div variants={iconVariants}>
+                                        <LogOut size={14} className="text-red-500" />
+                                    </motion.div>
                                     <motion.span
-                                        key="logout-text"
-                                        variants={textVariants}
-                                        initial="minimized"
-                                        animate="expanded"
-                                        exit="minimized"
-                                        transition={{ duration: ANIMATION_CONFIG.duration.fast, ease: ANIMATION_CONFIG.easing.smooth }}
                                         className="whitespace-nowrap"
+                                        variants={textVariants}
                                     >
                                         Sign Out
                                     </motion.span>
-                                )}
-                            </AnimatePresence>
-                        </motion.button>
+                                </motion.button>
+                            )}
+                        </AnimatePresence>
                     )}
                 </div>
             </motion.div>

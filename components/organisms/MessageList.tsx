@@ -3,8 +3,9 @@
  */
 
 import { AnimatePresence, motion } from 'framer-motion';
-import { User } from 'lucide-react';
+import { User as UserIcon } from 'lucide-react';
 import React, { memo, useCallback, useEffect, useMemo, useRef } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
 import { Message } from '../../types';
 import { ShimmerText } from '../atoms/ShimmerText';
 import { AIMessageBubble } from '../molecules/AIMessageBubble';
@@ -49,6 +50,7 @@ const MessageItem = memo(({
     onStartEdit,
     onCancelEdit,
     onSubmitEdit,
+    userAvatar,
 }: {
     msg: Message;
     isLast: boolean;
@@ -67,6 +69,7 @@ const MessageItem = memo(({
     onStartEdit: (id: string) => void;
     onCancelEdit: () => void;
     onSubmitEdit: (id: string, content: string) => void;
+    userAvatar?: string;
 }) => {
     const isStreaming = isLast && isLoading && msg.role === 'model';
     const isMenuOpen = openMenuId === msg.id;
@@ -86,7 +89,11 @@ const MessageItem = memo(({
                 {/* Avatar */}
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 mt-1 relative ${msg.role === 'user' ? 'bg-slate-200 overflow-hidden shadow-sm' : 'bg-transparent border-transparent shadow-[0_10px_25px_-5px_rgba(0,0,0,0.3),0_8px_10px_-6px_rgba(0,0,0,0.2)]'}`}>
                     {msg.role === 'user' ? (
-                        <User size={14} className="text-slate-500" />
+                        userAvatar ? (
+                            <img src={userAvatar} alt="User" className="w-full h-full object-cover" />
+                        ) : (
+                            <UserIcon size={14} className="text-slate-500" />
+                        )
                     ) : (
                         <img
                             src={new URL('../atoms/branding/orb.png', import.meta.url).href}
@@ -146,7 +153,8 @@ const MessageItem = memo(({
         prevProps.copiedId === nextProps.copiedId &&
         prevProps.openMenuId === nextProps.openMenuId &&
         prevProps.editingMessageId === nextProps.editingMessageId &&
-        prevProps.editingContent === nextProps.editingContent
+        prevProps.editingContent === nextProps.editingContent &&
+        prevProps.userAvatar === nextProps.userAvatar
     );
 });
 
@@ -172,6 +180,7 @@ export const MessageList: React.FC<MessageListProps> = ({
 }) => {
     const messagesContainerRef = useRef<HTMLDivElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const { user } = useAuth(); // Get current user
 
     const shouldRenderMath = useMemo(() => {
         for (const m of messages) {
@@ -301,6 +310,7 @@ export const MessageList: React.FC<MessageListProps> = ({
                                     onStartEdit={onStartEdit}
                                     onCancelEdit={onCancelEdit}
                                     onSubmitEdit={onSubmitEdit}
+                                    userAvatar={user?.avatar}
                                 />
                             </div>
                         );
@@ -345,5 +355,6 @@ export const MessageList: React.FC<MessageListProps> = ({
         </motion.div>
     );
 };
+
 
 export default MessageList;

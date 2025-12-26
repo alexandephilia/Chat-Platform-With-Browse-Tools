@@ -34,6 +34,39 @@ export function getUserEnvironmentContext(): string {
     // ISO timestamp for precise reference
     const isoTimestamp = now.toISOString();
 
+    // Get user profile from localStorage (if authenticated)
+    let userContext = '';
+    if (typeof localStorage !== 'undefined') {
+        const storedUser = localStorage.getItem('zeta_auth_user');
+        if (storedUser) {
+            try {
+                const user = JSON.parse(storedUser);
+                userContext = `
+[USER PROFILE]
+Name: ${user.firstName || 'Unknown'}
+Email: ${user.email || 'Unknown'}
+Address the user by their name when appropriate. Be warm and personalized in your responses.
+[/USER PROFILE]
+`;
+            } catch {
+                // Invalid JSON, skip user context
+            }
+        }
+    }
+
+    // Get custom instructions from localStorage
+    let customInstructions = '';
+    if (typeof localStorage !== 'undefined') {
+        const instructions = localStorage.getItem('zeta_custom_instructions');
+        if (instructions && instructions.trim()) {
+            customInstructions = `
+[CUSTOM INSTRUCTIONS FROM USER]
+${instructions.trim()}
+[/CUSTOM INSTRUCTIONS]
+`;
+        }
+    }
+
     return `
 [CURRENT DATE & TIME - IMPORTANT]
 Today is ${dateStr}
@@ -44,5 +77,5 @@ ISO timestamp: ${isoTimestamp}
 
 Use this information when the user asks about "today", "now", "this week", current events, or anything time-sensitive. Always consider the user's timezone when discussing times or scheduling.
 [/CURRENT DATE & TIME]
-`.trim();
+${userContext}${customInstructions}`.trim();
 }

@@ -5,6 +5,7 @@ import { GlobalTheme } from './components/atoms/GlobalTheme';
 import { HamburgerMenuBroken } from './components/atoms/Icons';
 import { AuthModal } from './components/molecules/AuthModal';
 import { CustomInstructionsModal } from './components/molecules/CustomInstructionsModal';
+import { OnboardingTour, shouldShowOnboarding } from './components/molecules/OnboardingTour';
 import { ProfilePortal } from './components/molecules/ProfilePortal';
 import GlobalHeader from './components/organisms/GlobalHeader';
 import Sidebar from './components/organisms/Sidebar';
@@ -18,10 +19,20 @@ function AppContent() {
     const [isInstructionsOpen, setIsInstructionsOpen] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isSidebarMinimized, setIsSidebarMinimized] = useState(false);
+    const [isOnboardingOpen, setIsOnboardingOpen] = useState(false);
     const [isDarkMode, setIsDarkMode] = useState(() => {
         const saved = localStorage.getItem('zeta_theme');
         return saved === 'dark';
     });
+
+    // Check if onboarding should show on first load
+    useEffect(() => {
+        if (shouldShowOnboarding()) {
+            // Small delay to let the app render first
+            const timer = setTimeout(() => setIsOnboardingOpen(true), 500);
+            return () => clearTimeout(timer);
+        }
+    }, []);
 
     const toggleTheme = useCallback(() => {
         setIsDarkMode(prev => {
@@ -105,6 +116,7 @@ function AppContent() {
                         onToggleTheme={toggleTheme}
                         onOpenProfile={() => setIsProfileOpen(true)}
                         isProfileOpen={isProfileOpen}
+                        onOpenHelp={() => setIsOnboardingOpen(true)}
                     />
                 </div>
 
@@ -139,6 +151,7 @@ function AppContent() {
                             setIsProfileOpen(true);
                             // Don't close sidebar - profile portal will appear on top
                         }}
+                        onOpenHelp={() => setIsOnboardingOpen(true)}
                     />
 
                     {/* Main Content */}
@@ -200,6 +213,12 @@ function AppContent() {
             <CustomInstructionsModal
                 isOpen={isInstructionsOpen}
                 onClose={() => setIsInstructionsOpen(false)}
+            />
+
+            {/* Onboarding Tour */}
+            <OnboardingTour
+                isOpen={isOnboardingOpen}
+                onClose={() => setIsOnboardingOpen(false)}
             />
         </>
     );

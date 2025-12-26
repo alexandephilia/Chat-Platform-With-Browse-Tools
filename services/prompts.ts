@@ -263,10 +263,30 @@ export const AVOID = `AVOID:
 - Incomplete table rows with missing columns`;
 
 // =============================================================================
-// TTS EXPRESSIONS (ElevenLabs V3 - Dynamic Expression System)
+// TTS EXPRESSIONS (Dynamic based on selected TTS model)
 // =============================================================================
 
-export const TTS_EXPRESSIONS = `VOICE EXPRESSION TAGS (MANDATORY FOR ALL RESPONSES):
+/**
+ * TTS Instructions for ElevenLabs V1 (eleven_multilingual_v2)
+ * V1 does NOT support expression tags - they will be spoken literally
+ */
+export const TTS_EXPRESSIONS_V1 = `VOICE STYLE (IMPORTANT):
+Your responses will be converted to speech. Write naturally and conversationally.
+
+GUIDELINES:
+- Write in a warm, engaging, conversational tone
+- Use natural sentence rhythm and pacing
+- Vary sentence length for natural flow
+- Use punctuation to create natural pauses (commas, periods, ellipses)
+- Avoid overly formal or robotic language
+- DO NOT use any bracketed expressions like [laughs] or [pause] - they will be spoken literally as words
+- Express emotion through word choice and sentence structure instead`;
+
+/**
+ * TTS Instructions for ElevenLabs V3 (eleven_v3)
+ * V3 supports dynamic expression tags for enhanced vocal performance
+ */
+export const TTS_EXPRESSIONS_V3 = `VOICE EXPRESSION TAGS (MANDATORY FOR ALL RESPONSES):
 You MUST use ElevenLabs V3 audio tags to make your speech natural, expressive, and engaging. These tags are INVISIBLE to users but control your voice emotion, delivery, and performance.
 
 ═══════════════════════════════════════════════════════════════════════════════
@@ -331,6 +351,25 @@ CRITICAL RULES:
 4. Match tags to the emotional journey of your message
 5. Don't be afraid to use creative, descriptive expressions!`;
 
+// Legacy export for backward compatibility
+export const TTS_EXPRESSIONS = TTS_EXPRESSIONS_V3;
+
+/**
+ * Get the appropriate TTS instructions based on the selected TTS model
+ * This should be called when building prompts to ensure AI knows whether to use expression tags
+ */
+export function getTTSInstructions(): string {
+    // Check localStorage directly since elevenLabsService uses it
+    if (typeof localStorage !== 'undefined') {
+        const selectedModel = localStorage.getItem('elevenlabs_model');
+        if (selectedModel === 'zeta-v2') {
+            return TTS_EXPRESSIONS_V3;
+        }
+    }
+    // Default to V1 instructions (no expression tags)
+    return TTS_EXPRESSIONS_V1;
+}
+
 // =============================================================================
 // COMPOSED PROMPTS
 // =============================================================================
@@ -349,7 +388,7 @@ ${QUALITY}
 
 ${AVOID}
 
-${TTS_EXPRESSIONS}
+${getTTSInstructions()}
 
 ${getUserEnvironmentContext()}`;
 }
@@ -378,7 +417,7 @@ ${FORMATTING}
 
 ${AVOID}
 
-${TTS_EXPRESSIONS}
+${getTTSInstructions()}
 
 ${getUserEnvironmentContext()}`;
 }
@@ -399,7 +438,7 @@ ${QUALITY}
 
 ${AVOID}
 
-${TTS_EXPRESSIONS}
+${getTTSInstructions()}
 
 ${getUserEnvironmentContext()}`;
 }
@@ -430,7 +469,7 @@ ${FORMATTING}
 
 ${AVOID}
 
-${TTS_EXPRESSIONS}
+${getTTSInstructions()}
 
 ${getUserEnvironmentContext()}`;
 }

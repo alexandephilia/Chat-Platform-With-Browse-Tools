@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 
 interface ClayInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
     icon?: React.ReactElement;
@@ -7,6 +7,7 @@ interface ClayInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
     containerClassName?: string;
     layoutId?: string;
     isLoading?: boolean;
+    onShortcutTrigger?: () => void;
 }
 
 export const ClayInput: React.FC<ClayInputProps> = ({
@@ -15,9 +16,34 @@ export const ClayInput: React.FC<ClayInputProps> = ({
     containerClassName = "",
     layoutId,
     isLoading = false,
+    onShortcutTrigger,
     className = "",
     ...props
 }) => {
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    // Handle keyboard shortcut (⌘/ or Ctrl+/)
+    useEffect(() => {
+        if (!shortcut) return;
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            // Check for ⌘+/ (Mac) or Ctrl+/ (Windows/Linux)
+            const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+            const modifierKey = isMac ? e.metaKey : e.ctrlKey;
+
+            if (modifierKey && e.key === shortcut) {
+                e.preventDefault();
+                // Focus the input
+                inputRef.current?.focus();
+                // Call the callback if provided
+                onShortcutTrigger?.();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [shortcut, onShortcutTrigger]);
+
     return (
         <motion.div
             layoutId={layoutId}
@@ -43,15 +69,20 @@ export const ClayInput: React.FC<ClayInputProps> = ({
 
                     {/* Input Field */}
                     <input
+                        ref={inputRef}
                         className={`w-full bg-transparent border-none outline-none text-sm text-slate-700 placeholder-slate-400 px-3 py-2.5 ${className}`}
                         {...props}
                     />
 
-                    {/* Shortcut KBD */}
+                    {/* Shortcut KBD - Physical keyboard key style with soft UI */}
                     {shortcut && (
-                        <div className="pr-3 flex items-center">
-                            <kbd className="hidden sm:inline-flex h-5 items-center gap-1 rounded border border-slate-200 bg-slate-50 px-1.5 font-mono text-[10px] font-medium text-slate-500 shadow-[0_1px_1px_rgba(0,0,0,0.05)]">
-                                <span className="text-xs">⌘</span> {shortcut}
+                        <div className="pr-3 hidden sm:flex items-center">
+                            <kbd
+                                className="inline-flex h-[22px] items-center justify-center gap-1 rounded-[5px] px-2 font-mono font-medium text-slate-500 bg-gradient-to-b from-slate-50 via-slate-100 to-slate-200 border border-slate-300/80 shadow-[0_2px_0_0_rgb(203,213,225),0_3px_3px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.9)]"
+                                title={`Press ⌘${shortcut} to focus`}
+                            >
+                                <span className="text-[13px] leading-none">⌘</span>
+                                <span className="text-[12px] leading-none">{shortcut}</span>
                             </kbd>
                         </div>
                     )}
