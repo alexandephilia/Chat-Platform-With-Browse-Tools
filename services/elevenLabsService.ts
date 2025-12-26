@@ -371,11 +371,13 @@ export async function textToSpeech(
         ? cleanText.slice(0, 4997) + '...'
         : cleanText;
 
-    // Build voice settings - V3 does NOT support speaker boost
+    // Build voice settings - V3 needs lower stability for expression tag responsiveness
+    // Per ElevenLabs docs: "Creative" mode (low stability) = max expressiveness
+    const effectiveStability = isV3 ? Math.min(stability, 0.3) : stability;
     const voiceSettings: Record<string, number | boolean> = {
-        stability,
+        stability: effectiveStability,
         similarity_boost: similarityBoost,
-        style,
+        style: isV3 ? Math.max(style, 0.5) : style, // Higher style exaggeration for V3
     };
 
     // Only add speaker boost for non-V3 models

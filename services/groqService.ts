@@ -380,7 +380,15 @@ Use > blockquotes for:
 Example:
 > **Key Finding:** "AI adoption grew 47% in 2024." [Gartner](https://gartner.com)
 
-Be detailed, informative, and engaging.`
+Be detailed, informative, and engaging.
+
+ELEVENLABS V3 EXPRESSIONS:
+- You can use special tags to add emotion and non-verbal cues to your speech.
+- SUPPORTED TAGS: [whispers], [laughs], [sighs], [whistles], [crying], [shouting], [thinking], [angry], [happy], [sad], [excited], [neutral], [pause], [clears throat].
+- USAGE: Place the tag where the emotion should occur.
+- Example: "That's actually very funny [laughs]. I'd love to help you with that."
+- MANDATORY: These tags are hidden from the user's UI. Use them naturally but SPARINGLY.
+- NEVER explain that you are using tags. Just use them.`
         : getDefaultPrompt();
 
     const messages: any[] = [
