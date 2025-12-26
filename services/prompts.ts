@@ -267,20 +267,71 @@ export const AVOID = `AVOID:
 // =============================================================================
 
 export const TTS_EXPRESSIONS = `VOICE EXPRESSION TAGS (MANDATORY FOR ALL RESPONSES):
-You MUST use expression tags to make your speech natural and engaging. These tags are INVISIBLE to users but control your voice emotion and delivery.
+You MUST use ElevenLabs V3 audio tags to make your speech natural, expressive, and engaging. These tags are INVISIBLE to users but control your voice emotion, delivery, and performance.
 
-REQUIRED TAGS - Use at least 2-3 per response:
-• Emotions: [happy], [sad], [excited], [angry], [nervous], [curious]
-• Delivery: [whispers], [shouting], [sighs], [laughs], [pause], [clears throat]
-• Reactions: [gasps], [gulps], [giggles], [crying]
+═══════════════════════════════════════════════════════════════════════════════
+AVAILABLE AUDIO TAGS - Use liberally throughout your responses:
+═══════════════════════════════════════════════════════════════════════════════
 
+EMOTIONS (set the emotional tone):
+[happy], [sad], [angry], [excited], [nervous], [curious], [sorrowful], [tired],
+[awe], [fearful], [surprised], [calm], [confident], [worried], [hopeful],
+[frustrated], [relieved], [proud], [embarrassed], [grateful]
+
+DELIVERY (control tone and performance):
+[whispers], [shouts], [shouting], [dramatic tone], [rushed], [drawn out],
+[slowly], [softly], [loudly], [monotone], [sarcastic], [cheerfully]
+
+HUMAN REACTIONS (natural unscripted moments):
+[laughs], [laughs softly], [chuckles], [giggles], [sighs], [gasps], [gulps],
+[clears throat], [coughs], [yawns], [crying], [sobbing], [groans], [hums],
+[whistles], [inhales], [exhales]
+
+PACING & NARRATIVE:
+[pause], [long pause], [short pause], [beat], [interrupting], [trailing off],
+[emphasis]
+
+ACCENTS & VOICE CHARACTER (use sparingly for effect):
+[British accent], [French accent], [Southern US accent], [pirate voice],
+[robot voice], [old voice], [raspy voice], [deep voice]
+
+═══════════════════════════════════════════════════════════════════════════════
 PLACEMENT RULES:
-• Place BEFORE or AFTER the affected phrase: "[sighs] I don't know..." OR "That's amazing! [excited]"
-• For narratives: "[pause] The door creaked open... [whispers] something was wrong."
-• For humor: "Why did the chicken cross the road? [pause] To get to the other side! [laughs]"
-• For empathy: "[sighs] I'm sorry to hear that. [pause] Let me help you."
+═══════════════════════════════════════════════════════════════════════════════
 
-CRITICAL: These tags are STRIPPED from text display. Users NEVER see them. You MUST include them - they make your voice sound human, not robotic.`;
+• Place tags BEFORE or WITHIN the affected phrase for best results
+• Combine multiple tags for nuanced delivery
+• Use [pause] for dramatic effect and natural speech rhythm
+
+EXAMPLES:
+
+Conversational:
+"[sighs] I've been thinking about this a lot. [pause] The answer isn't simple."
+
+Storytelling:
+"[whispers] The door creaked open... [long pause] [gasps] Something was there!"
+
+Humor:
+"Why did the chicken cross the road? [pause] [cheerfully] To get to the other side! [laughs softly]"
+
+Empathy:
+"[softly] I'm really sorry to hear that. [pause] [hopeful] Let me see how I can help."
+
+Excitement:
+"[excited] Oh wow! [gasps] That's incredible news! [laughs]"
+
+Dramatic:
+"[dramatic tone] The fate of the world... [long pause] [whispers] rested in her hands."
+
+═══════════════════════════════════════════════════════════════════════════════
+CRITICAL RULES:
+═══════════════════════════════════════════════════════════════════════════════
+
+1. Use at least 3-5 tags per response for natural speech
+2. Tags are STRIPPED from text display - users NEVER see them
+3. Without tags, your voice sounds flat and robotic
+4. Match tags to the emotional context of your message
+5. Use [pause] liberally - it's essential for natural rhythm`;
 
 // =============================================================================
 // COMPOSED PROMPTS

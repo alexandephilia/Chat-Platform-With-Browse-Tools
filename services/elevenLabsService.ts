@@ -247,11 +247,80 @@ export function isElevenLabsConfigured(): boolean {
 }
 
 /**
+ * ElevenLabs V3 Audio Tags - Full Reference
+ * These tags control emotion, delivery, reactions, and more
+ * Docs: https://elevenlabs.io/blog/v3-audiotags
+ */
+
+// Emotion tags - set the emotional tone
+export const V3_EMOTION_TAGS = [
+    'happy', 'sad', 'angry', 'excited', 'nervous', 'curious',
+    'sorrowful', 'tired', 'awe', 'fearful', 'disgusted',
+    'surprised', 'calm', 'confident', 'worried', 'hopeful',
+    'frustrated', 'relieved', 'proud', 'embarrassed', 'grateful',
+] as const;
+
+// Delivery tags - control tone and performance style
+export const V3_DELIVERY_TAGS = [
+    'whispers', 'shouts', 'shouting', 'yelling',
+    'dramatic tone', 'rushed', 'drawn out', 'slowly',
+    'softly', 'loudly', 'monotone', 'sarcastic',
+    'cheerfully', 'sadly', 'angrily', 'excitedly',
+] as const;
+
+// Human reaction tags - natural unscripted moments
+export const V3_REACTION_TAGS = [
+    'laughs', 'laughs softly', 'chuckles', 'giggles',
+    'sighs', 'sigh', 'gasps', 'gulps',
+    'clears throat', 'coughs', 'sniffs', 'yawns',
+    'crying', 'sobbing', 'sniffles', 'groans', 'moans',
+    'hums', 'whistles', 'inhales', 'exhales',
+] as const;
+
+// Pacing and narrative control tags
+export const V3_PACING_TAGS = [
+    'pause', 'long pause', 'short pause', 'beat',
+    'interrupting', 'overlapping', 'trailing off',
+    'emphasis', 'stressed',
+] as const;
+
+// Sound effect tags (v3 can generate some sounds)
+export const V3_SOUND_TAGS = [
+    'gunshot', 'explosion', 'clapping', 'applause',
+    'thunder', 'rain', 'wind', 'footsteps',
+    'door creaking', 'glass breaking', 'phone ringing',
+] as const;
+
+// Accent and voice character tags
+export const V3_ACCENT_TAGS = [
+    'American accent', 'British accent', 'Australian accent',
+    'French accent', 'German accent', 'Spanish accent',
+    'Italian accent', 'Russian accent', 'Japanese accent',
+    'Southern US accent', 'New York accent', 'Irish accent',
+    'Scottish accent', 'Indian accent',
+    'pirate voice', 'robot voice', 'old voice', 'young voice',
+    'deep voice', 'high voice', 'raspy voice', 'smooth voice',
+] as const;
+
+// Build comprehensive regex from all tag categories
+const ALL_V3_TAGS = [
+    ...V3_EMOTION_TAGS,
+    ...V3_DELIVERY_TAGS,
+    ...V3_REACTION_TAGS,
+    ...V3_PACING_TAGS,
+    ...V3_SOUND_TAGS,
+    ...V3_ACCENT_TAGS,
+].map(tag => tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')); // Escape regex special chars
+
+/**
  * ElevenLabs V3 expression tags regex
  * These tags control emotion/delivery and should be preserved for V3 TTS
  * Exported for use in UI stripping (AIMessageBubble)
  */
-export const V3_EXPRESSION_REGEX = /\[(whispers|laughs|sighs|whistles|crying|shouting|thinking|angry|happy|sad|excited|neutral|pause|clears throat|gasps|gulps|giggles|nervous|curious)\]/gi;
+export const V3_EXPRESSION_REGEX = new RegExp(
+    `\\[(${ALL_V3_TAGS.join('|')})\\]`,
+    'gi'
+);
 
 /**
  * Strip markdown formatting from text for cleaner TTS

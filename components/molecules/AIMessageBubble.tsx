@@ -4,6 +4,7 @@
 
 import { AnimatedMarkdown } from 'flowtoken';
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ExpressionPill } from '../atoms/ExpressionPill';
 import { V3_EXPRESSION_REGEX, initAudioForMobile, isAudioPlaying, isElevenLabsConfigured, playAudio, stopAudio, textToSpeech } from '../../services/elevenLabsService';
 import { ModelIcon } from '../../services/modelIcons';
 import { Message } from '../../types';
@@ -94,9 +95,89 @@ const StableAnimatedContent = memo(({
         }
     }, [isStreaming]);
 
+    // Helper to process content and replace expression tags with pills
+    // We use this recursively for component children
+    const processContentWithPills = useCallback((children: any): any => {
+        if (typeof children === 'string') {
+            // Regex has capturing group, so split includes duplicates at odd indices
+            // Filter to keep only text parts (even indices)
+            const parts = children.split(V3_EXPRESSION_REGEX).filter((_, i) => i % 2 === 0);
+            const matches = children.match(V3_EXPRESSION_REGEX);
+            
+            if (!matches) return children;
+            
+            return parts.map((part, i) => (
+                <React.Fragment key={i}>
+                    {part}
+                    {matches[i] && <ExpressionPill expression={matches[i]} />}
+                </React.Fragment>
+            ));
+        }
+        
+        if (Array.isArray(children)) {
+            return children.map((child, i) => (
+                <React.Fragment key={i}>
+                    {processContentWithPills(child)}
+                </React.Fragment>
+            ));
+        }
+        
+        if (React.isValidElement(children)) {
+            // Traverse deeper if it's a React element with children
+            const props = (children.props as any) || {};
+            if (props.children) {
+                return React.cloneElement(children, {
+                    ...props,
+                    children: processContentWithPills(props.children)
+                });
+            }
+        }
+        
+        return children;
+    }, []);
+
     // Memoize customComponents to prevent recreation
     // These override flowtoken's default components to ensure proper animation
     const customComponents = useMemo(() => ({
+        // Standard text containers - process content for pills
+        p: ({ children, animateText, ...props }: any) => {
+            const content = processContentWithPills(children);
+            return <p {...props}>{animateText ? animateText(content) : content}</p>;
+        },
+        li: ({ children, animateText, ...props }: any) => {
+            const content = processContentWithPills(children);
+            return <li {...props}>{animateText ? animateText(content) : content}</li>;
+        },
+        blockquote: ({ children, animateText, ...props }: any) => {
+            const content = processContentWithPills(children);
+            return <blockquote {...props}>{animateText ? animateText(content) : content}</blockquote>;
+        },
+        // Headers
+        h1: ({ children, animateText, ...props }: any) => {
+            const content = processContentWithPills(children);
+            return <h1 {...props}>{animateText ? animateText(content) : content}</h1>;
+        },
+        h2: ({ children, animateText, ...props }: any) => {
+            const content = processContentWithPills(children);
+            return <h2 {...props}>{animateText ? animateText(content) : content}</h2>;
+        },
+        h3: ({ children, animateText, ...props }: any) => {
+            const content = processContentWithPills(children);
+            return <h3 {...props}>{animateText ? animateText(content) : content}</h3>;
+        },
+        h4: ({ children, animateText, ...props }: any) => {
+            const content = processContentWithPills(children);
+            return <h4 {...props}>{animateText ? animateText(content) : content}</h4>;
+        },
+        h5: ({ children, animateText, ...props }: any) => {
+            const content = processContentWithPills(children);
+            return <h5 {...props}>{animateText ? animateText(content) : content}</h5>;
+        },
+        h6: ({ children, animateText, ...props }: any) => {
+            const content = processContentWithPills(children);
+            return <h6 {...props}>{animateText ? animateText(content) : content}</h6>;
+        },
+
         // Table wrapper for horizontal scrolling - fit content, don't stretch
         table: ({ children, animateText, ...props }: any) => (
             <div className="table-wrapper" style={{
@@ -106,12 +187,6 @@ const StableAnimatedContent = memo(({
             }}>
                 <table {...props}>{children}</table>
             </div>
-        ),
-        // Blockquote - flowtoken doesn't have this by default!
-        blockquote: ({ children, animateText, ...props }: any) => (
-            <blockquote {...props}>
-                {animateText ? animateText(children) : children}
-            </blockquote>
         ),
         // Table structure elements - ensure proper rendering during streaming
         thead: ({ children, animateText, ...props }: any) => (
@@ -136,27 +211,9 @@ const StableAnimatedContent = memo(({
         ),
     }), []);
 
-    // ElevenLabs V3 Stealth Mode: Strip expression tags from UI display
-    // These tags are preserved in the raw content for TTS but hidden here
-    // Uses shared regex from elevenLabsService for consistency
-    const displayContent = useMemo(() => {
-        // Reset regex lastIndex since it's global
-        V3_EXPRESSION_REGEX.lastIndex = 0;
-        const stripped = content.replace(V3_EXPRESSION_REGEX, '');
-
-        // Log if expressions were found and stripped
-        V3_EXPRESSION_REGEX.lastIndex = 0;
-        const matches = content.match(V3_EXPRESSION_REGEX);
-        if (matches && matches.length > 0) {
-            console.log('[AIMessageBubble] Stripped V3 expressions from UI:', matches);
-        }
-
-        return stripped;
-    }, [content]);
-
     return (
         <AnimatedMarkdown
-            content={displayContent}
+            content={content}
             sep="diff"
             animation={animationEnabled ? "blurAndSharpen" : null}
             animationDuration="1.8s"
