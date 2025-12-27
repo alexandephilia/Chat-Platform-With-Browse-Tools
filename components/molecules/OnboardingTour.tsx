@@ -140,12 +140,22 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ isOpen, onClose 
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0, pointerEvents: 'none' }}
                         className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
-                        onClick={handleSkip}
                     />
 
                     {/* Modal */}
                     <motion.div
                         layout
+                        drag="x"
+                        dragConstraints={{ left: 0, right: 0 }}
+                        dragElastic={0.2}
+                        onDragEnd={(e, { offset, velocity }) => {
+                            const swipeThreshold = 50;
+                            if (offset.x < -swipeThreshold || velocity.x < -500) {
+                                handleNext();
+                            } else if (offset.x > swipeThreshold || velocity.x > 500) {
+                                handlePrev();
+                            }
+                        }}
                         initial={{ scale: 0.9, opacity: 0, y: 20 }}
                         animate={{ scale: 1, opacity: 1, y: 0 }}
                         exit={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -155,7 +165,7 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ isOpen, onClose 
                             stiffness: 200,
                             layout: { duration: 2, type: "spring", stiffness: 200, damping: 25 }
                         }}
-                        className="relative w-full max-w-sm"
+                        className="relative w-full max-w-sm cursor-grab active:cursor-grabbing"
                     >
                         {/* Outer rim */}
                         <motion.div layout className="p-1 bg-gradient-to-b from-white to-slate-300 rounded-[28px] shadow-2xl">
