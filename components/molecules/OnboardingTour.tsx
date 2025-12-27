@@ -190,6 +190,8 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ isOpen, onClose 
                                                 <img 
                                                     src={step.backgroundImage} 
                                                     alt="" 
+                                                    loading="lazy"
+                                                    decoding="async"
                                                     className="w-full h-full object-cover opacity-100"
                                                     style={{ filter: 'blur(1.6px) brightness(1.1) saturate(1)' }}
                                                 />
