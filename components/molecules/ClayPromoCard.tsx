@@ -65,7 +65,7 @@ const MinimizedCard: React.FC = () => (
                             className="absolute -top-3 -right-1 z-20 text-[9px] font-black px-1.5 py-0.5 rounded-md shadow-[0_3px_6px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.15),inset_0_-2px_4px_rgba(0,0,0,0.2)] ring-1 ring-slate-600/50"
                             style={{ background: 'linear-gradient(180deg, #475569 0%, #1e293b 40%, #0f172a 100%)' }}
                         >
-                            <span className="bg-gradient-to-r from-white via-blue-200 to-white bg-[length:200%_100%] bg-clip-text text-transparent animate-[shimmer_2s_ease-in-out_infinite] drop-shadow-[0_0_3px_rgba(147,197,253,0.5)]">PRO</span>
+                            <span className="text-white drop-shadow-[0_0_8px_rgba(191,219,254,0.8)] animate-icon-glow-pro">PRO</span>
                         </motion.div>
                     </div>
                 </div>
@@ -152,7 +152,7 @@ export const ClayPromoCard: React.FC<ClayPromoCardProps> = ({
                             exit={{ opacity: 0, filter: 'blur(10px)', scale: 0.9 }}
                             transition={{
                                 duration: 0.42,
-                                ease: [0.16, 1, 0.3, 1] // Matches sidebar easing
+                                ease: [0.36, 1, 0.3, 1] // Matches sidebar easing
                             }}
                             className="w-full"
                         >
@@ -165,7 +165,7 @@ export const ClayPromoCard: React.FC<ClayPromoCardProps> = ({
                             animate={{ opacity: 1, filter: 'blur(0px)', scale: 1 }}
                             exit={{ opacity: 0, filter: 'blur(10px)', scale: 1.05 }}
                             transition={{
-                                duration: 0.22,
+                                duration: 0.12,
                                 ease: [0.26, 0.1, 0.3, 1]
                             }}
                             className="w-full"

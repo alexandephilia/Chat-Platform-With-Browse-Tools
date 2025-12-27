@@ -8,6 +8,33 @@
     }
 }
 
+/* Premium Pro Shimmer - Theatrical light sweep with high-intensity glass effect */
+@keyframes shimmer-pro {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+/* Radiant Icon Glow - Intense breathing radiance with multi-layer bloom */
+@keyframes icon-glow-pro {
+    0%, 100% {
+        filter: drop-shadow(0 0 2px rgba(191, 219, 254, 0.6)) 
+                drop-shadow(0 0 8px rgba(59, 130, 246, 0.3));
+        transform: scale(1) rotate(0deg);
+        opacity: 0.9;
+    }
+    50% {
+        filter: drop-shadow(0 0 6px rgba(191, 219, 254, 0.9)) 
+                drop-shadow(0 0 15px rgba(59, 130, 246, 0.6))
+                drop-shadow(0 0 25px rgba(37, 99, 235, 0.3));
+        transform: scale(1.2) rotate(2deg);
+        opacity: 1;
+    }
+}
+
 .animate-shimmer {
     animation: shimmer 2s ease-in-out infinite;
     background: linear-gradient(
@@ -17,4 +44,13 @@
         transparent
     );
     background-size: 200% 100%;
+}
+
+.animate-shimmer-pro {
+    animation: shimmer-pro 4s ease-in-out infinite;
+    background-size: 400% 100% !important;
+}
+
+.animate-icon-glow-pro {
+    animation: icon-glow-pro 3s ease-in-out infinite;
 }
