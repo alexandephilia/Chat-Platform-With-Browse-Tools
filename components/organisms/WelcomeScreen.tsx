@@ -259,9 +259,9 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                 {/* Middle Section - Input Card */}
                 <div className="flex flex-col items-center shrink-0">
                     <motion.div
-                        className="w-full px-0"
+                        className="w-full px-4"
                         style={{
-                            maxWidth: 'min(480px, calc(100vw - 24px))'
+                            maxWidth: 'min(420px, 100vw)'
                         }}
                         initial={{ opacity: 0, y: 20, filter: 'blur(16px)' }}
                         animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
@@ -272,33 +272,33 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                         }}
                     >
                         {/* Architectural Layer - Multi-rim depth effect for mobile */}
-                        <div className="p-1 bg-gradient-to-b from-white to-slate-300 rounded-[22px] shadow-sm">
-                            <div className="p-1 bg-slate-100 rounded-[20px] shadow-inner">
-                                <div className="bg-gradient-to-b from-white to-[#F5F5F5] rounded-[18px] overflow-hidden border border-white" style={{ boxShadow: "0 8px 10px rgba(0, 0, 0, 0.1), 0 4px 4px rgba(0, 0, 0, 0.04)" }}>
-                                    <div className="bg-transparent px-4 pt-3 pb-2 flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-9 h-9 rounded-full bg-transparent flex items-center justify-center flex-shrink-0 relative shadow-[0_5px_8px_rgba(0,0,0,0.35)]">
+                        <div className="p-0.5 bg-gradient-to-b from-white to-slate-300 rounded-[20px] shadow-sm">
+                            <div className="p-0.5 bg-slate-100 rounded-[18px] shadow-inner">
+                                <div className="bg-gradient-to-b from-white to-[#F5F5F5] rounded-[16px] overflow-hidden border border-white" style={{ boxShadow: "0 6px 8px rgba(0, 0, 0, 0.08), 0 3px 3px rgba(0, 0, 0, 0.03)" }}>
+                                    <div className="bg-transparent px-3 pt-2.5 pb-1.5 flex items-center justify-between">
+                                        <div className="flex items-center gap-2.5">
+                                            <div className="w-8 h-8 rounded-full bg-transparent flex items-center justify-center flex-shrink-0 relative shadow-[0_4px_6px_rgba(0,0,0,0.3)]">
                                                 <img
                                                     src={new URL('../atoms/branding/orb.png', import.meta.url).href}
                                                     alt="AI"
-                                                    className="absolute -top-[6px] inset-0 w-full h-full object-cover"
-                                                    style={{ transform: 'scale(2.25)' }}
+                                                    className="absolute -top-[5px] inset-0 w-full h-full object-cover"
+                                                    style={{ transform: 'scale(2.1)' }}
                                                 />
                                             </div>
                                             <div className="flex flex-col">
-                                                <span className="text-xs font-bold text-slate-800 tracking-tight leading-none mb-1">We are Live!</span>
-                                                <span className="text-[10px] text-slate-500 font-medium leading-none opacity-80">Work with Gemini and Groq</span>
+                                                <span className="text-[11px] font-bold text-slate-800 tracking-tight leading-none mb-0.5">We are Live!</span>
+                                                <span className="text-[9px] text-slate-500 font-medium leading-none opacity-80">Gemini & Groq</span>
                                             </div>
                                         </div>
                                         <ModelPicker
                                             selectedModel={selectedModel}
                                             onSelectModel={onSelectModel}
-                                            size="default"
+                                            size="small"
                                             menuAlign="right"
                                         />
                                     </div>
-                                    <div className="bg-white rounded-[14px] shadow-sm border border-slate-100 m-1"
-                                        style={{ boxShadow: "rgb(71 144 202 / 16%) 0px 10px 10px, rgba(255, 255, 255, 0.4) 0px 1px 0px inset" }}>
+                                    <div className="bg-white rounded-[12px] shadow-sm border border-slate-100 m-0.5"
+                                        style={{ boxShadow: "rgb(71 144 202 / 12%) 0px 8px 8px, rgba(255, 255, 255, 0.4) 0px 1px 0px inset" }}>
                                         <ChatInput
                                             onSend={onSendMessage}
                                             onStop={onStopStreaming}
