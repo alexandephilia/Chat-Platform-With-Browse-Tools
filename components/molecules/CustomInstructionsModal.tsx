@@ -79,9 +79,9 @@ export const CustomInstructionsModal: React.FC<CustomInstructionsModalProps> = (
     const currentTransition = isMobile ? {
         duration: 0.4,
         ease: [0.32, 0.72, 0, 1] // Native-style smooth ease
-    } : { 
-        duration: 0.4, 
-        ease: [0.22, 1, 0.36, 1] 
+    } : {
+        duration: 0.4,
+        ease: [0.22, 1, 0.36, 1]
     };
 
     return (
@@ -204,33 +204,48 @@ export const CustomInstructionsModal: React.FC<CustomInstructionsModalProps> = (
                                     </div>
 
                                     {/* Footer */}
-                                    <div className="px-5 sm:px-6 py-4 flex justify-end gap-2.5 shrink-0 border-t border-slate-100/80 bg-slate-50/30">
-                                        {/* Cancel button - raised soft style */}
-                                        <button
+                                    <div className="px-5 sm:px-6 py-4 flex justify-end gap-3 shrink-0 border-t border-slate-100/80 bg-slate-50/30">
+                                        {/* Cancel button - with outer rim and inset */}
+                                        <motion.div
+                                            whileTap={{ scale: 0.97 }}
                                             onClick={onClose}
-                                            className="px-4 py-2.5 text-[13px] font-medium text-slate-500 hover:text-slate-700 rounded-xl transition-all bg-slate-50/80 hover:bg-slate-100/80 shadow-[inset_0_1px_1px_rgba(255,255,255,1),0_1px_2px_rgba(0,0,0,0.04),0_0_0_1px_rgba(0,0,0,0.02)] hover:shadow-[inset_0_1px_1px_rgba(255,255,255,1),0_2px_4px_rgba(0,0,0,0.06)] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.08)]"
+                                            className="cursor-pointer select-none"
                                         >
-                                            Cancel
-                                        </button>
-                                        {/* Save button - primary action */}
-                                        <motion.button
+                                            <div className="p-[2px] rounded-xl bg-gradient-to-b from-white to-slate-300 shadow-[0_2px_6px_rgba(0,0,0,0.1)]">
+                                                <div className="p-[1px] rounded-[10px] bg-slate-200/80 shadow-[inset_0_1px_2px_rgba(0,0,0,0.08)]">
+                                                    <div className="relative px-4 py-2 rounded-lg bg-gradient-to-b from-white to-slate-50 text-slate-600 hover:text-slate-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.25)]">
+                                                        <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/90 to-transparent" />
+                                                        <span className="relative z-10 text-[13px] font-semibold">Cancel</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                        {/* Save button - with outer rim and inset, teal color */}
+                                        <motion.div
                                             whileTap={{ scale: 0.97 }}
                                             onClick={handleSave}
-                                            disabled={isSaving}
-                                            className={`relative px-5 py-2.5 rounded-xl text-white text-[13px] font-semibold overflow-hidden flex items-center gap-2 min-w-[120px] justify-center transition-all duration-200 bg-gradient-to-b from-[rgb(50,110,160)] to-[rgb(36,89,133)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.25),inset_0_-1px_1px_rgba(0,0,0,0.1),0_4px_12px_rgba(36,89,133,0.35),0_1px_3px_rgba(36,89,133,0.2)] ${isSaving ? 'opacity-70 cursor-wait' : 'hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),0_6px_16px_rgba(36,89,133,0.4)] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.15)]'}`}
+                                            className={`cursor-pointer select-none ${isSaving ? 'pointer-events-none opacity-70' : ''}`}
                                         >
-                                            <span className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/40 to-transparent" />
-                                            {isSaving ? (
-                                                <>
-                                                    <motion.div
-                                                        animate={{ rotate: 360 }}
-                                                        transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
-                                                        className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full"
-                                                    />
-                                                    Saving...
-                                                </>
-                                            ) : 'Save Changes'}
-                                        </motion.button>
+                                            <div className="p-[2px] rounded-xl bg-gradient-to-b from-[rgb(70,130,180)] to-[rgb(30,75,115)] shadow-[0_2px_6px_rgba(36,89,133,0.25)]">
+                                                <div className="p-[1px] rounded-[10px] bg-[rgb(36,89,133)]/50 shadow-[inset_0_1px_2px_rgba(0,0,0,0.08)]">
+                                                    <div className="relative px-4 py-2 rounded-lg bg-gradient-to-b from-[rgb(50,110,160)] to-[rgb(36,89,133)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.25)]">
+                                                        <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/40 to-transparent" />
+                                                        <span className="relative z-10 text-[13px] font-semibold flex items-center justify-center gap-2">
+                                                            {isSaving ? (
+                                                                <>
+                                                                    <motion.div
+                                                                        animate={{ rotate: 360 }}
+                                                                        transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
+                                                                        className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full"
+                                                                    />
+                                                                    Saving...
+                                                                </>
+                                                            ) : 'Save'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </motion.div>
                                     </div>
                                 </div>
                             </div>

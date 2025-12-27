@@ -16,6 +16,53 @@ const BlackHoleIcon: React.FC<{ size?: number; className?: string }> = ({ size =
     </svg>
 );
 
+// Clay Button with outer rim and inset layers
+interface ClayButtonProps {
+    children: React.ReactNode;
+    onClick?: () => void;
+    variant?: 'primary' | 'secondary';
+    disabled?: boolean;
+    className?: string;
+}
+
+const ClayButton: React.FC<ClayButtonProps> = ({ children, onClick, variant = 'secondary', disabled, className = '' }) => {
+    const isPrimary = variant === 'primary';
+
+    return (
+        <motion.div
+            whileTap={{ scale: 0.97 }}
+            className={`relative cursor-pointer select-none ${disabled ? 'pointer-events-none opacity-60' : ''} ${className}`}
+            onClick={disabled ? undefined : onClick}
+        >
+            {/* Outer rim */}
+            <div className={`p-[2px] rounded-xl ${isPrimary
+                ? 'bg-gradient-to-b from-blue-300 to-blue-600'
+                : 'bg-gradient-to-b from-white to-slate-300'
+                } shadow-[0_2px_6px_rgba(0,0,0,0.1)]`}>
+                {/* Inset track */}
+                <div className={`p-[1px] rounded-[10px] ${isPrimary
+                    ? 'bg-blue-500/50'
+                    : 'bg-slate-200/80'
+                    } shadow-[inset_0_1px_2px_rgba(0,0,0,0.08)]`}>
+                    {/* Inner button surface */}
+                    <div className={`relative px-4 py-2 rounded-lg ${isPrimary
+                        ? 'bg-gradient-to-b from-blue-400 to-blue-500 text-white'
+                        : 'bg-gradient-to-b from-white to-slate-50 text-slate-600 hover:text-slate-700'
+                        } shadow-[inset_0_1px_0_rgba(255,255,255,0.25)]`}>
+                        {/* Top highlight line */}
+                        <div className={`absolute inset-x-0 top-0 h-[1px] ${isPrimary
+                            ? 'bg-gradient-to-r from-transparent via-white/40 to-transparent'
+                            : 'bg-gradient-to-r from-transparent via-white/90 to-transparent'
+                            }`} />
+                        {/* Content */}
+                        <span className="relative z-10 text-[13px] font-semibold flex items-center justify-center">{children}</span>
+                    </div>
+                </div>
+            </div>
+        </motion.div>
+    );
+};
+
 interface ProfileEditModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -371,20 +418,12 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onCl
                                                     <ZoomIn size={16} className="text-slate-400" />
                                                 </div>
                                                 <div className="flex gap-3 pt-1">
-                                                    <button
-                                                        onClick={() => setImageSrc(null)}
-                                                        className="flex-1 px-4 py-2.5 text-[13px] font-medium text-slate-500 hover:text-slate-700 rounded-xl transition-all bg-slate-50/80 hover:bg-slate-100/80 shadow-[inset_0_1px_1px_rgba(255,255,255,1),0_1px_2px_rgba(0,0,0,0.04),0_0_0_1px_rgba(0,0,0,0.02)] hover:shadow-[inset_0_1px_1px_rgba(255,255,255,1),0_2px_4px_rgba(0,0,0,0.06)] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.08)] focus:outline-none"
-                                                    >
+                                                    <ClayButton onClick={() => setImageSrc(null)} variant="secondary" className="flex-1">
                                                         Cancel
-                                                    </button>
-                                                    <button
-                                                        onClick={saveCroppedImage}
-                                                        disabled={isProcessingImage}
-                                                        className="relative flex-1 px-5 py-2.5 rounded-xl text-white text-[13px] font-semibold overflow-hidden flex items-center gap-2 justify-center transition-all duration-200 bg-gradient-to-b from-blue-400 to-blue-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.25),inset_0_-1px_1px_rgba(0,0,0,0.1),0_4px_12px_rgba(59,130,246,0.35),0_1px_3px_rgba(59,130,246,0.2)] hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),0_6px_16px_rgba(59,130,246,0.4)] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.15)] disabled:opacity-70 disabled:cursor-not-allowed focus:outline-none"
-                                                    >
-                                                        <span className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/40 to-transparent" />
+                                                    </ClayButton>
+                                                    <ClayButton onClick={saveCroppedImage} variant="primary" disabled={isProcessingImage} className="flex-1">
                                                         {isProcessingImage ? 'Saving...' : 'Set Avatar'}
-                                                    </button>
+                                                    </ClayButton>
                                                 </div>
                                             </div>
                                         </div>
@@ -399,9 +438,9 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onCl
                                             {/* Header */}
                                             <div className="px-5 sm:px-6 py-4 sm:py-5 flex items-center justify-between shrink-0">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-[inset_0_2px_4px_rgba(0,0,0,0.08),0_1px_0_rgba(255,255,255,0.8)] bg-white">
-                                                        <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-gradient-to-b from-white to-slate-50 shadow-[0_2px_4px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,1)] text-blue-500">
-                                                            <BlackHoleIcon size={16} />
+                                                    <div className="w-11 h-11 rounded-xl flex items-center justify-center shadow-[inset_0_2px_4px_rgba(0,0,0,0.08),0_1px_0_rgba(255,255,255,0.8)] bg-white">
+                                                        <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-b from-white to-slate-50 shadow-[0_2px_4px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,1)] text-blue-500">
+                                                            <BlackHoleIcon size={20} />
                                                         </div>
                                                     </div>
                                                     <div className="flex flex-col">
@@ -476,9 +515,17 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onCl
                                                                                 ) : (
                                                                                     <UserCircle size={40} className="text-blue-400/80" strokeWidth={1.5} />
                                                                                 )}
-                                                                                {/* Film plastic glare effect */}
-                                                                                <div className="absolute inset-0 bg-gradient-to-br from-white/30 via-transparent to-transparent pointer-events-none" />
-                                                                                <div className="absolute top-0 left-0 right-0 h-1/3 bg-gradient-to-b from-white/20 to-transparent pointer-events-none" />
+                                                                                {/* Film laminate glare effect - multi-layer */}
+                                                                                {/* Base glossy layer */}
+                                                                                <div className="absolute inset-0 bg-gradient-to-br from-white/25 via-white/5 to-transparent pointer-events-none" />
+                                                                                {/* Top highlight streak */}
+                                                                                <div className="absolute -top-1 -left-1 w-[120%] h-[40%] bg-gradient-to-br from-white/35 via-white/10 to-transparent rotate-[-8deg] pointer-events-none" />
+                                                                                {/* Subtle diagonal shine line */}
+                                                                                <div className="absolute top-[15%] -left-[10%] w-[60%] h-[2px] bg-gradient-to-r from-transparent via-white/40 to-transparent rotate-[35deg] pointer-events-none blur-[0.5px]" />
+                                                                                {/* Secondary softer shine */}
+                                                                                <div className="absolute top-[25%] left-[5%] w-[40%] h-[1px] bg-gradient-to-r from-transparent via-white/25 to-transparent rotate-[35deg] pointer-events-none" />
+                                                                                {/* Edge reflection */}
+                                                                                <div className="absolute inset-0 rounded-xl shadow-[inset_1px_1px_0_rgba(255,255,255,0.3),inset_-1px_-1px_0_rgba(0,0,0,0.05)] pointer-events-none" />
                                                                             </div>
 
                                                                             {/* Hover Overlay */}
@@ -599,23 +646,13 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onCl
                                             </div>
 
                                             {/* Footer */}
-                                            <div className="px-5 sm:px-6 py-4 flex justify-end gap-2.5 shrink-0 border-t border-slate-100/80 bg-slate-50/30">
-                                                {/* Cancel button - raised soft style */}
-                                                <button
-                                                    onClick={onClose}
-                                                    className="px-4 py-2.5 text-[13px] font-medium text-slate-500 hover:text-slate-700 rounded-xl transition-all bg-slate-50/80 hover:bg-slate-100/80 shadow-[inset_0_1px_1px_rgba(255,255,255,1),0_1px_2px_rgba(0,0,0,0.04),0_0_0_1px_rgba(0,0,0,0.02)] hover:shadow-[inset_0_1px_1px_rgba(255,255,255,1),0_2px_4px_rgba(0,0,0,0.06)] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.08)] focus:outline-none"
-                                                >
+                                            <div className="px-5 sm:px-6 py-4 flex justify-end gap-3 shrink-0 border-t border-slate-100/80 bg-slate-50/30">
+                                                <ClayButton onClick={onClose} variant="secondary">
                                                     Cancel
-                                                </button>
-                                                {/* Done button - primary action with blue theme */}
-                                                <motion.button
-                                                    whileTap={{ scale: 0.97 }}
-                                                    onClick={handleDone}
-                                                    className="relative px-5 py-2.5 rounded-xl text-white text-[13px] font-semibold overflow-hidden flex items-center gap-2 min-w-[100px] justify-center transition-all duration-200 bg-gradient-to-b from-blue-400 to-blue-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.25),inset_0_-1px_1px_rgba(0,0,0,0.1),0_4px_12px_rgba(59,130,246,0.35),0_1px_3px_rgba(59,130,246,0.2)] hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),0_6px_16px_rgba(59,130,246,0.4)] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.15)] focus:outline-none"
-                                                >
-                                                    <span className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/40 to-transparent" />
+                                                </ClayButton>
+                                                <ClayButton onClick={handleDone} variant="primary">
                                                     Save
-                                                </motion.button>
+                                                </ClayButton>
                                             </div>
                                         </div>
                                     )}
