@@ -65,41 +65,47 @@ export default async function getCroppedImg(
     // Draw original image
     ctx.drawImage(image, 0, 0);
 
-    // Get the cropped data from the canvas
-    const data = ctx.getImageData(
+    // Create a new canvas for the cropped result
+    const croppedCanvas = document.createElement('canvas');
+    const croppedCtx = croppedCanvas.getContext('2d');
+
+    if (!croppedCtx) {
+        return '';
+    }
+
+    // Set the cropped canvas to the exact crop dimensions
+    croppedCanvas.width = pixelCrop.width;
+    croppedCanvas.height = pixelCrop.height;
+
+    // Draw the cropped portion from the rotated canvas to the new canvas
+    // This approach is more accurate than getImageData/putImageData
+    croppedCtx.drawImage(
+        canvas,
         pixelCrop.x,
         pixelCrop.y,
+        pixelCrop.width,
+        pixelCrop.height,
+        0,
+        0,
         pixelCrop.width,
         pixelCrop.height
     );
 
-    // Set canvas size to the final crop size
-    // This allows us to draw the cropped data onto a clean canvas
-    canvas.width = pixelCrop.width;
-    canvas.height = pixelCrop.height;
-
-    // Clear canvas before putting data (though resizing usually clears it)
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // Put the cropped data at 0,0
-    ctx.putImageData(data, 0, 0);
-
     // Output at reasonable quality and resolution
-    // If the crop is huge, we might want to scale it down, but 'exact crop' implies full res
     // For avatars, 512x512 is plenty.
-    
-    // Check if we need to resize
     const MAX_SIZE = 512;
-    let finalCanvas = canvas;
-    
+    let finalCanvas = croppedCanvas;
+
     if (pixelCrop.width > MAX_SIZE || pixelCrop.height > MAX_SIZE) {
         const resizeCanvas = document.createElement('canvas');
         resizeCanvas.width = MAX_SIZE;
         resizeCanvas.height = MAX_SIZE;
         const resizeCtx = resizeCanvas.getContext('2d');
         if (resizeCtx) {
-             // High quality resize
-            resizeCtx.drawImage(canvas, 0, 0, MAX_SIZE, MAX_SIZE);
+            // Enable high quality image smoothing for resize
+            resizeCtx.imageSmoothingEnabled = true;
+            resizeCtx.imageSmoothingQuality = 'high';
+            resizeCtx.drawImage(croppedCanvas, 0, 0, MAX_SIZE, MAX_SIZE);
             finalCanvas = resizeCanvas;
         }
     }

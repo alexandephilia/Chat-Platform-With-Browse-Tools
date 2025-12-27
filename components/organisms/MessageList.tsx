@@ -87,7 +87,7 @@ const MessageItem = memo(({
         >
             <div className={`flex max-w-[98%] md:max-w-[95%] gap-2 md:gap-4 ${msg.role === 'user' ? 'flex-row-reverse px-3' : 'flex-row px-1 md:px-3'}`}>
                 {/* Avatar */}
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 mt-1 relative ${msg.role === 'user' ? 'bg-slate-200 overflow-hidden shadow-sm' : 'bg-transparent border-transparent shadow-[0_10px_25px_-5px_rgba(0,0,0,0.3),0_8px_10px_-6px_rgba(0,0,0,0.2)]'}`}>
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 mt-1 relative ${msg.role === 'user' ? 'bg-slate-200 overflow-hidden shadow-[0_4px_12px_-2px_rgba(0,0,0,0.12),0_2px_4px_-1px_rgba(0,0,0,0.07)]' : 'bg-transparent border-transparent shadow-[0_10px_25px_-5px_rgba(0,0,0,0.3),0_8px_10px_-6px_rgba(0,0,0,0.2)]'}`}>
                     {msg.role === 'user' ? (
                         userAvatar ? (
                             <img src={userAvatar} alt="User" className="w-full h-full object-cover" />

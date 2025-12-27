@@ -145,17 +145,6 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ isOpen, onClose 
                     {/* Modal */}
                     <motion.div
                         layout
-                        drag="x"
-                        dragConstraints={{ left: 0, right: 0 }}
-                        dragElastic={0.2}
-                        onDragEnd={(e, { offset, velocity }) => {
-                            const swipeThreshold = 50;
-                            if (offset.x < -swipeThreshold || velocity.x < -500) {
-                                handleNext();
-                            } else if (offset.x > swipeThreshold || velocity.x > 500) {
-                                handlePrev();
-                            }
-                        }}
                         initial={{ scale: 0.9, opacity: 0, y: 20 }}
                         animate={{ scale: 1, opacity: 1, y: 0 }}
                         exit={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -165,7 +154,18 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ isOpen, onClose 
                             stiffness: 200,
                             layout: { duration: 2, type: "spring", stiffness: 200, damping: 25 }
                         }}
-                        className="relative w-full max-w-sm cursor-grab active:cursor-grabbing"
+                        className="relative w-full max-w-sm"
+                        drag="x"
+                        dragConstraints={{ left: 0, right: 0 }}
+                        dragElastic={0.2}
+                        onDragEnd={(_, info) => {
+                            const swipeThreshold = 50;
+                            if (info.offset.x < -swipeThreshold) {
+                                handleNext();
+                            } else if (info.offset.x > swipeThreshold) {
+                                handlePrev();
+                            }
+                        }}
                     >
                         {/* Outer rim */}
                         <motion.div layout className="p-1 bg-gradient-to-b from-white to-slate-300 rounded-[28px] shadow-2xl">
@@ -190,8 +190,6 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ isOpen, onClose 
                                                 <img 
                                                     src={step.backgroundImage} 
                                                     alt="" 
-                                                    loading="lazy"
-                                                    decoding="async"
                                                     className="w-full h-full object-cover opacity-100"
                                                     style={{ filter: 'blur(1.6px) brightness(1.1) saturate(1)' }}
                                                 />

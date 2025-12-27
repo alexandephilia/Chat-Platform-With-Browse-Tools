@@ -15,7 +15,9 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onCl
     const { user, updateUser } = useAuth();
     const [firstName, setFirstName] = useState('');
     const [isEditing, setIsEditing] = useState(false);
-    const [isSaving, setIsSaving] = useState(false);
+
+    // Pending name - only saved when user clicks "Save"
+    const [pendingName, setPendingName] = useState<string | null>(null);
     const dragY = useMotionValue(0);
     const sheetRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
@@ -51,6 +53,7 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onCl
             setZoom(1);
             setCrop({ x: 0, y: 0 });
             setPendingAvatar(null); // Reset pending avatar
+            setPendingName(null); // Reset pending name
         }
     }, [isOpen, dragY, user?.firstName]);
 
@@ -64,20 +67,22 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onCl
     const handleSave = () => {
         if (isProcessingImage) return; // Prevent saving while processing image
 
-        if (!firstName.trim() || firstName.trim() === user?.firstName) {
+        const trimmedName = firstName.trim();
+
+        if (!trimmedName) {
+            // Reset to pending name or original user name
             setIsEditing(false);
-            setFirstName(user?.firstName || '');
+            setFirstName(pendingName || user?.firstName || '');
             return;
         }
 
-        setIsSaving(true);
-        const trimmedName = firstName.trim().charAt(0).toUpperCase() + firstName.trim().slice(1).toLowerCase();
-        updateUser({ firstName: trimmedName });
+        // Format the name
+        const formattedName = trimmedName.charAt(0).toUpperCase() + trimmedName.slice(1).toLowerCase();
 
-        setTimeout(() => {
-            setIsSaving(false);
-            setIsEditing(false);
-        }, 300);
+        // Store as pending instead of saving immediately
+        setPendingName(formattedName);
+        setFirstName(formattedName);
+        setIsEditing(false);
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -88,7 +93,7 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onCl
                 setImageSrc(null); // Cancel crop on escape
             } else {
                 setIsEditing(false);
-                setFirstName(user?.firstName || '');
+                setFirstName(pendingName || user?.firstName || '');
             }
         }
     };
@@ -151,18 +156,28 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onCl
         }
     }, [imageSrc, croppedAreaPixels]);
 
-    // Handle Done button - save all pending changes
+    // Handle Save button - save all pending changes
     const handleDone = useCallback(() => {
-        // Apply updates
-        if (pendingAvatar) {
-            updateUser({ avatar: pendingAvatar });
+        // Build updates object with all pending changes
+        const updates: { firstName?: string; avatar?: string } = {};
+
+        if (pendingName && pendingName !== user?.firstName) {
+            updates.firstName = pendingName;
         }
-        
+        if (pendingAvatar) {
+            updates.avatar = pendingAvatar;
+        }
+
+        // Apply all updates at once
+        if (Object.keys(updates).length > 0) {
+            updateUser(updates);
+        }
+
         // Force cleanup and close
         requestAnimationFrame(() => {
-            onClose(); 
+            onClose();
         });
-    }, [pendingAvatar, updateUser, onClose]);
+    }, [pendingAvatar, pendingName, user?.firstName, updateUser, onClose]);
 
     const backdropOpacity = useTransform(dragY, [0, 300], [1, 0]);
     const sheetBlurFilter = useTransform(dragY, [0, 300], ['blur(0px)', 'blur(8px)']);
@@ -181,9 +196,9 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onCl
     const currentTransition = isMobile ? {
         duration: 0.4,
         ease: [0.32, 0.72, 0, 1] // Native-style smooth ease
-    } : { 
-        duration: 0.4, 
-        ease: [0.22, 1, 0.36, 1] 
+    } : {
+        duration: 0.4,
+        ease: [0.22, 1, 0.36, 1]
     };
 
     return createPortal(
@@ -196,7 +211,7 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onCl
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.15 }}
                     className={`fixed inset-0 z-[10003] flex ${isMobile ? 'items-end' : 'items-center'} justify-center pointer-events-none`}
-                    style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }} 
+                    style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
                 >
                     {/* Backdrop - Explicit pointer-events handling */}
                     <motion.div
@@ -380,15 +395,14 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onCl
                                                                 />
                                                                 <button
                                                                     onClick={handleSave}
-                                                                    disabled={isSaving}
-                                                                    className="p-2.5 rounded-xl text-white transition-all bg-gradient-to-b from-blue-400 to-blue-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.25),0_2px_6px_rgba(59,130,246,0.35)] hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),0_4px_10px_rgba(59,130,246,0.4)] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.15)] disabled:opacity-50"
+                                                                    className="p-2.5 rounded-xl text-white transition-all bg-gradient-to-b from-blue-400 to-blue-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.25),0_2px_6px_rgba(59,130,246,0.35)] hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),0_4px_10px_rgba(59,130,246,0.4)] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.15)]"
                                                                 >
                                                                     <Check size={14} strokeWidth={2.5} />
                                                                 </button>
                                                             </div>
                                                         ) : (
                                                             <div className="flex-1 flex items-center justify-between px-3.5 py-2.5 bg-slate-50/80 rounded-xl border border-slate-200/60 shadow-[inset_0_2px_4px_rgba(0,0,0,0.04),inset_0_1px_2px_rgba(0,0,0,0.02),0_1px_0_rgba(255,255,255,0.8)]">
-                                                                <span className="text-sm text-slate-700 font-medium">{user?.firstName || 'Unknown'}</span>
+                                                                <span className="text-sm text-slate-700 font-medium">{pendingName || user?.firstName || 'Unknown'}</span>
                                                                 <button
                                                                     onClick={() => setIsEditing(true)}
                                                                     className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 transition-all bg-white/80 hover:bg-white shadow-[0_1px_3px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,1)] hover:shadow-[0_2px_4px_rgba(0,0,0,0.1)]"
@@ -439,7 +453,7 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onCl
                                                     className="relative px-5 py-2.5 rounded-xl text-white text-[13px] font-semibold overflow-hidden flex items-center gap-2 min-w-[100px] justify-center transition-all duration-200 bg-gradient-to-b from-blue-400 to-blue-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.25),inset_0_-1px_1px_rgba(0,0,0,0.1),0_4px_12px_rgba(59,130,246,0.35),0_1px_3px_rgba(59,130,246,0.2)] hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),0_6px_16px_rgba(59,130,246,0.4)] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.15)]"
                                                 >
                                                     <span className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/40 to-transparent" />
-                                                    Done
+                                                    Save
                                                 </motion.button>
                                             </div>
                                         </div>
