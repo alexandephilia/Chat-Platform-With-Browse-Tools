@@ -222,7 +222,10 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
     return (
         <>
             {/* MOBILE Welcome Layout */}
-            <div className="lg:hidden flex flex-col h-full overflow-hidden w-full max-w-full">
+            <motion.div
+                className="lg:hidden flex flex-col h-full overflow-hidden w-full max-w-full"
+                exit={{ opacity: 0, transition: { duration: 0.12, ease: 'easeOut' } }}
+            >
                 {/* Top Section - Greeting */}
                 <div className={`flex flex-col items-center justify-start text-center px-4 shrink-0 transition-all duration-300 ${hasAttachments ? 'pt-10 pb-2' : 'pt-12 pb-4'}`}>
                     <motion.div
@@ -265,6 +268,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                         }}
                         initial={{ opacity: 0, y: 20, filter: 'blur(16px)' }}
                         animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                        exit={{ opacity: 0, y: 10, filter: 'blur(8px)', transition: { duration: 0.15, ease: 'easeOut' } }}
                         transition={{
                             duration: 0.6,
                             delay: 0.9,
@@ -375,7 +379,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                     </div>
                 </div>
 
-            </div>
+            </motion.div>
 
             {/* DESKTOP Greeting Section */}
             <motion.div

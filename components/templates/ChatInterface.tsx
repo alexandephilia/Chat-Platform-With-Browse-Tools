@@ -35,10 +35,6 @@ const STORAGE_KEYS = {
 const getStoredValue = <T,>(key: string, defaultValue: T, validator?: (val: any) => boolean): T => {
     try {
         const stored = localStorage.getItem(key);
-        if (stored === null) return defaultValue;
-        const parsed = JSON.parse(stored);
-        if (validator && !validator(parsed)) return defaultValue;
-        return parsed;
     } catch {
         return defaultValue;
     }
@@ -104,11 +100,19 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     // Track if initial load is done
     const isInitializedRef = useRef(false);
     const prevMessagesLengthRef = useRef(0);
+    const prevActiveChatIdRef = useRef<string | undefined>(activeChatId);
 
     // Initialize messages from props
     useEffect(() => {
-        // Stop any active streaming before switching sessions
-        stopStreaming();
+        // Only stop streaming if we're actually switching to a DIFFERENT chat session
+        // Don't stop if it's just a message update within the same session
+        const isSessionSwitch = prevActiveChatIdRef.current !== activeChatId;
+        prevActiveChatIdRef.current = activeChatId;
+
+        if (isSessionSwitch) {
+            // Stop any active streaming before switching sessions
+            stopStreaming();
+        }
 
         // Only update if messages are different (prevents loop with onMessagesChange)
         const messagesChanged =
@@ -117,14 +121,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 (initialMessages[0].id !== messages[0]?.id ||
                     initialMessages[initialMessages.length - 1].content !== messages[messages.length - 1]?.content));
 
-        if (messagesChanged || activeChatId === 'new') {
+        if ((messagesChanged && isSessionSwitch) || activeChatId === 'new') {
             setMessages(initialMessages);
             setHasConversationStarted(initialMessages.length > 0);
             prevMessagesLengthRef.current = initialMessages.length;
         }
 
         isInitializedRef.current = true;
-    }, [initialMessages, activeChatId, stopStreaming]);
+    }, [initialMessages, activeChatId]);
 
     // Track previous loading state to detect streaming completion
     const prevIsLoadingRef = useRef(false);
@@ -294,12 +298,17 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                         {isWelcomeMode && (
                             <motion.div
                                 key="welcome-screen-container"
-                                initial={{ opacity: 0, scale: 0.98, filter: 'blur(20px)' }}
+                                initial={{ opacity: 0, scale: 0.18, filter: 'blur(20px)' }}
                                 animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
-                                exit={{ opacity: 0, y: 80, filter: 'blur(20px)' }}
+                                exit={{
+                                    opacity: 0,
+                                    scale: 0.96,
+                                    filter: 'blur(12px)',
+                                    transition: { duration: 0.15, ease: 'easeOut' }
+                                }}
                                 transition={{
-                                    duration: 0.8,
-                                    ease: [0.22, 1, 0.36, 1],
+                                    duration: 0.4,
+                                    ease: [0.4, 0, 0.2, 1],
                                 }}
                                 className="w-full h-full flex flex-col justify-center items-center"
                             >
@@ -369,8 +378,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                         }}
                         transition={{
                             type: "spring",
-                            stiffness: 240,
-                            damping: 30,
+                            stiffness: 250,
+                            damping: 33,
                             mass: 2,
                             // Only use long delay on initial mount, not session switches
                             delay: !isInitializedRef.current && isWelcomeMode ? 0.9 : 0.05,
@@ -401,17 +410,18 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                                     }}
                                 >
                                     {/* Header - Only in welcome mode */}
-                                    <AnimatePresence mode="popLayout" initial={false}>
+                                    <AnimatePresence mode="wait" initial={false}>
                                         {isWelcomeMode && (
                                             <motion.div
                                                 key="welcome-header"
-                                                initial={{ opacity: 0, height: 0 }}
-                                                animate={{ opacity: 1, height: 'auto' }}
-                                                exit={{ opacity: 0, height: 0 }}
+                                                initial={{ opacity: 0, height: 0, filter: 'blur(8px)' }}
+                                                animate={{ opacity: 1, height: 'auto', filter: 'blur(0px)' }}
+                                                exit={{ opacity: 0, height: 0, filter: 'blur(8px)' }}
                                                 transition={{
-                                                    opacity: { duration: 0.4 },
-                                                    height: { duration: 0.6, ease: [0.4, 0, 0.2, 1] }
+                                                    duration: 0.30,
+                                                    ease: [0.3, 0, 1, 1]
                                                 }}
+                                                style={{ overflow: 'hidden' }}
                                             >
                                                 <div className="bg-[#FAFAFA] px-3 pt-3 pb-2 lg:px-3 lg:pt-4 lg:pb-2 flex items-center justify-between">
                                                     <div className="flex items-center gap-3 lg:gap-4">
@@ -419,7 +429,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                                                             <img
                                                                 src={new URL('../atoms/branding/orb.png', import.meta.url).href}
                                                                 alt="AI"
-                                                                className="absolute -top-[9px] inset-0 w-full h-full object-cover"
+                                                                className="absolute -top-[7px] inset-0 w-full h-full object-cover"
                                                                 style={{ transform: 'scale(2.25)' }}
                                                             />
                                                         </div>

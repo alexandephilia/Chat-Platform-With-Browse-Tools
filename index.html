@@ -1529,7 +1529,7 @@
             }
         }
 
-        /* Sonner Toast Customizations - Mobile Centered */
+        /* Sonner Toast Customizations */
         .sonner-toast-mobile-center [data-close-button="true"] {
             left: auto !important;
             right: -6px !important;
@@ -1545,27 +1545,38 @@
             background: #f8fafc !important;
         }
 
-        /* Mobile: center toast at bottom */
+        /* Mobile: top-center, compact */
         @media (max-width: 640px) {
             [data-sonner-toaster] {
-                left: 50% !important;
-                right: auto !important;
-                transform: translateX(-50%) !important;
-                bottom: 80px !important;
+                right: -5rem !important;
+                left: auto !important;
+                bottom: 16px !important;
+                top: auto !important;
             }
 
             [data-sonner-toaster] [data-sonner-toast] {
                 width: auto !important;
-                max-width: calc(100vw - 32px) !important;
+                padding: 10px 11px !important;
+                font-size: 11px !important;
+            }
+
+            [data-sonner-toaster] [data-sonner-toast] [data-content] {
+                gap: 6px !important;
+            }
+
+            [data-sonner-toaster] [data-sonner-toast] [data-icon] {
+                width: 14px !important;
+                height: 14px !important;
             }
         }
 
-        /* Desktop: position bottom-right */
+        /* Desktop: bottom-right */
         @media (min-width: 641px) {
             [data-sonner-toaster] {
-                right: 12px !important;
+                right: -15rem !important;
                 left: auto !important;
                 bottom: 16px !important;
+                top: auto !important;
             }
         }
     </style>
