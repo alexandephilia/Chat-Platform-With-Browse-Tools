@@ -85,7 +85,7 @@ export const ProfilePortal: React.FC<ProfilePortalProps> = ({
                         </motion.div>
 
                         {/* Menu Items */}
-                        <motion.div 
+                        <motion.div
                             className="p-1 space-y-0.5"
                             variants={{
                                 visible: { transition: { staggerChildren: 0.02 } }

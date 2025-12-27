@@ -113,7 +113,7 @@ const ExpandedCard: React.FC<{ title: string; description: React.ReactNode; icon
                 <div className="relative z-10 flex flex-col gap-2 p-3">
                     <div className="flex items-center gap-3">
                         {icon && (
-                            <div className="w-8 h-8 rounded-xl bg-white/50 ring-1 ring-cyan-50 shadow-sm shadow-cyan-500/20 text-cyan-600 flex items-center justify-center">
+                            <div className="w-8 h-8 rounded-xl bg-white/60 ring-1 ring-cyan-100/50 text-cyan-500 flex items-center justify-center animate-[container-glow_2s_ease-in-out_infinite]">
                                 {icon}
                             </div>
                         )}
