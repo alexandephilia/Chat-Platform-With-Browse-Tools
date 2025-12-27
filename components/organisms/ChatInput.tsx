@@ -725,7 +725,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
                                             initial="hidden"
                                             animate="visible"
                                             exit="exit"
-                                            className="p-1.5 bg-gradient-to-br from-white via-[#fafafa] to-slate-50 backdrop-blur-xl rounded-xl border border-slate-200/60 w-[220px]"
+                                            className="p-1 bg-gradient-to-br from-white via-[#fafafa] to-slate-50 backdrop-blur-xl rounded-xl border border-slate-200/60 w-[180px]"
                                             style={{
                                                 position: 'fixed',
                                                 left: searchTypeMenuPosition.x,

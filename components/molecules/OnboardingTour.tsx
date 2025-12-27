@@ -165,17 +165,6 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ isOpen, onClose 
                             layout: { duration: 2, type: "spring", stiffness: 200, damping: 25 }
                         }}
                         className="relative w-full max-w-sm"
-                        drag={isMobile ? "x" : false}
-                        dragConstraints={{ left: 0, right: 0 }}
-                        dragElastic={0.2}
-                        onDragEnd={isMobile ? (_, info) => {
-                            const swipeThreshold = 50;
-                            if (info.offset.x < -swipeThreshold) {
-                                handleNext();
-                            } else if (info.offset.x > swipeThreshold) {
-                                handlePrev();
-                            }
-                        } : undefined}
                     >
                         {/* Outer rim */}
                         <motion.div layout className="p-1 bg-gradient-to-b from-white to-slate-300 rounded-[28px] shadow-2xl">
@@ -185,6 +174,17 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ isOpen, onClose 
                                 <motion.div
                                     layout
                                     className="bg-white rounded-[24px] overflow-hidden border border-white/80 p-6 relative"
+                                    drag={isMobile ? "x" : false}
+                                    dragConstraints={{ left: 0, right: 0 }}
+                                    dragElastic={0.2}
+                                    onDragEnd={isMobile ? (_, info) => {
+                                        const swipeThreshold = 50;
+                                        if (info.offset.x < -swipeThreshold) {
+                                            handleNext();
+                                        } else if (info.offset.x > swipeThreshold) {
+                                            handlePrev();
+                                        }
+                                    } : undefined}
                                 >
                                     {/* Blurred Background Layer */}
                                     <AnimatePresence mode="popLayout">
