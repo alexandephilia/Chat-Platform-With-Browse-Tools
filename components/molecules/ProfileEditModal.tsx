@@ -1,6 +1,7 @@
 import { AnimatePresence, motion, PanInfo, useMotionValue, useTransform } from 'framer-motion';
 import { Camera, Check, Pencil, UserCircle, X, ZoomIn, ZoomOut } from 'lucide-react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Cropper from 'react-easy-crop';
 import { useAuth } from '../../contexts/AuthContext';
 import getCroppedImg from '../../utils/cropImage';
@@ -34,7 +35,7 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onCl
     const [isMobile, setIsMobile] = useState(false);
 
     useEffect(() => {
-        const checkMobile = () => setIsMobile(window.innerWidth < 640);
+        const checkMobile = () => setIsMobile(window.innerWidth < 768);
         checkMobile();
         window.addEventListener('resize', checkMobile);
         return () => window.removeEventListener('resize', checkMobile);
@@ -94,6 +95,8 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onCl
 
     const handleModalClick = useCallback((e: React.MouseEvent | React.TouchEvent) => {
         e.stopPropagation();
+        // Prevent click from bubbling to outside elements if portal logic fails
+        // but allow interaction within the modal
     }, []);
 
     const handleDragEnd = useCallback((_: unknown, info: PanInfo) => {
@@ -150,35 +153,40 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onCl
 
     // Handle Done button - save all pending changes
     const handleDone = useCallback(() => {
+        // Apply updates
         if (pendingAvatar) {
             updateUser({ avatar: pendingAvatar });
         }
-        onClose();
+        
+        // Force cleanup and close
+        requestAnimationFrame(() => {
+            onClose(); 
+        });
     }, [pendingAvatar, updateUser, onClose]);
 
     const backdropOpacity = useTransform(dragY, [0, 300], [1, 0]);
     const sheetBlurFilter = useTransform(dragY, [0, 300], ['blur(0px)', 'blur(8px)']);
 
-    // Animation variants - iOS style slide from bottom for both mobile and desktop
-    const mobileVariants = {
-        initial: { y: '100%', opacity: 1 },
+    // Use the locked state for animation consistency
+    const currentVariants = isMobile ? {
+        initial: { y: '100vh', opacity: 0 },
         animate: { y: 0, opacity: 1 },
-        exit: { y: '100%', opacity: 1 }
+        exit: { y: '100vh', opacity: 0 }
+    } : {
+        initial: { y: 20, opacity: 0, scale: 0.95, filter: 'blur(10px)' },
+        animate: { y: 0, opacity: 1, scale: 1, filter: 'blur(0px)' },
+        exit: { y: 10, opacity: 0, scale: 0.98, filter: 'blur(8px)' }
     };
 
-    const desktopVariants = {
-        initial: { y: '100%', opacity: 1 },
-        animate: { y: 0, opacity: 1 },
-        exit: { y: '100%', opacity: 1 }
-    };
-
-    const currentVariants = isMobile ? mobileVariants : desktopVariants;
-    const currentTransition = {
+    const currentTransition = isMobile ? {
         duration: 0.4,
-        ease: [0.32, 0.72, 0, 1] // iOS spring-like easing
+        ease: [0.32, 0.72, 0, 1] // Native-style smooth ease
+    } : { 
+        duration: 0.4, 
+        ease: [0.22, 1, 0.36, 1] 
     };
 
-    return (
+    return createPortal(
         <AnimatePresence mode="wait">
             {isOpen && (
                 <motion.div
@@ -187,18 +195,23 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onCl
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.15 }}
-                    className="fixed inset-0 z-[10003] flex items-end sm:items-center justify-center pointer-events-auto"
+                    className={`fixed inset-0 z-[10003] flex ${isMobile ? 'items-end' : 'items-center'} justify-center pointer-events-none`}
+                    style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }} 
                 >
-                    {/* Backdrop */}
+                    {/* Backdrop - Explicit pointer-events handling */}
                     <motion.div
                         key="modal-backdrop"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
+                        exit={{ opacity: 0, pointerEvents: 'none' }} // FORCE pointer-events none on exit
                         transition={{ duration: 0.2 }}
                         style={isMobile ? { opacity: backdropOpacity } : undefined}
-                        onClick={onClose}
-                        className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            onClose();
+                        }}
+                        className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm pointer-events-auto"
                     />
 
                     {/* Modal Content with Multi-rim depth effect */}
@@ -209,14 +222,14 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onCl
                         initial="initial"
                         animate="animate"
                         exit="exit"
-                        transition={currentTransition}
+                        transition={isMobile ? currentTransition : { duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
                         drag={isMobile && !imageSrc ? 'y' : false} // Disable drag when cropping
                         dragConstraints={{ top: 0, bottom: 0 }}
                         dragElastic={{ top: 0, bottom: 0.3 }}
                         onDragEnd={handleDragEnd}
                         onClick={handleModalClick}
                         onTouchEnd={handleModalClick}
-                        className="relative w-full sm:max-w-[420px] touch-none sm:touch-auto"
+                        className="relative w-full sm:max-w-[420px] touch-none sm:touch-auto pointer-events-auto"
                         style={isMobile ? { y: dragY, filter: sheetBlurFilter } : {}}
                     >
                         {/* Outer rim - gradient border */}
@@ -230,7 +243,7 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onCl
                                 >
                                     {imageSrc ? (
                                         // CROPPER VIEW
-                                        <div className="flex-1 flex flex-col h-full bg-slate-50">
+                                        <div key="cropper-view" className="flex-1 flex flex-col h-full bg-slate-50">
                                             <div className="relative flex-1 w-full bg-slate-100 rounded-t-[18px] overflow-hidden">
                                                 <Cropper
                                                     image={imageSrc}
@@ -282,7 +295,7 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onCl
                                         </div>
                                     ) : (
                                         // NORMAL PROFILE VIEW
-                                        <>
+                                        <div key="profile-view" className="contents">
                                             {/* Drag Handle for Mobile */}
                                             <div className="sm:hidden flex justify-center pt-3 pb-1 cursor-grab active:cursor-grabbing">
                                                 <div className="w-10 h-1 bg-slate-300/80 rounded-full shadow-[inset_0_1px_2px_rgba(0,0,0,0.1)]" />
@@ -429,7 +442,7 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onCl
                                                     Done
                                                 </motion.button>
                                             </div>
-                                        </>
+                                        </div>
                                     )}
                                 </div>
                             </div>
@@ -437,7 +450,8 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onCl
                     </motion.div>
                 </motion.div>
             )}
-        </AnimatePresence>
+        </AnimatePresence>,
+        document.body
     );
 };
 

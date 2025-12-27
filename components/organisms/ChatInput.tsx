@@ -2,7 +2,7 @@ import { getModelCapabilities, hasBuiltInTools } from '@/services/modelConfig';
 import { IconWorldBolt, IconWorldSearch } from '@tabler/icons-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { FileText, Image as ImageIcon, Mic, Paperclip, Plus, Send, Square, X } from 'lucide-react';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { toast } from 'sonner';
 import { useVoiceRecorder } from '../../hooks/useVoiceRecorder';
@@ -14,6 +14,7 @@ import { InfoPill } from '../atoms/InfoPill';
 import { LazyImage } from '../atoms/LazyImage';
 import ModelPicker, { AIModel, AVAILABLE_MODELS } from '../molecules/ModelPicker';
 import VoicePicker from '../molecules/VoicePicker';
+import { menuContainerVariants, menuItemVariants } from '../../utils/menuAnimations';
 
 interface ChatInputProps {
     onSend: (message: string, attachments?: Attachment[], webSearchEnabled?: boolean, searchType?: 'auto' | 'fast' | 'deep') => void;
@@ -81,7 +82,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
 
     const [menuPlacement, setMenuPlacement] = useState<'top' | 'bottom'>('top');
     const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
-    const [searchTypeMenuPosition, setSearchTypeMenuPosition] = useState({ x: 0, y: 0 });
+    const [searchTypeMenuPosition, setSearchTypeMenuPosition] = useState<{ x: number; y: number } | null>(null);
     const [searchTypeMenuPlacement, setSearchTypeMenuPlacement] = useState<'top' | 'bottom'>('top');
     const menuContainerRef = useRef<HTMLDivElement>(null);
     const searchTypeButtonRef = useRef<HTMLButtonElement>(null);
@@ -272,37 +273,47 @@ const ChatInput: React.FC<ChatInputProps> = ({
         }
     }, [isMenuOpen, menuPlacement]);
 
+    // Unified position calculation helper
+    const calculateSearchMenuPosition = useCallback(() => {
+        if (!searchTypeButtonRef.current) return null;
+
+        const rect = searchTypeButtonRef.current.getBoundingClientRect();
+        const menuHeight = 280;
+        const menuWidth = 200;
+        const padding = 12;
+
+        const spaceAbove = rect.top;
+        const spaceBelow = window.innerHeight - rect.bottom;
+
+        // Choose placement
+        const placement: 'top' | 'bottom' = spaceAbove >= menuHeight
+            ? 'top'
+            : (spaceBelow >= menuHeight ? 'bottom' : (spaceAbove > spaceBelow ? 'top' : 'bottom'));
+
+        // Calculate X
+        let menuX = rect.left;
+        const maxX = window.innerWidth - menuWidth - padding;
+        const minX = padding;
+        menuX = Math.max(minX, Math.min(maxX, menuX));
+
+        return {
+            x: menuX,
+            y: placement === 'bottom' ? rect.bottom : rect.top,
+            placement
+        };
+    }, []);
+
     // Update search type menu position
     useEffect(() => {
         if (isSearchTypeMenuOpen && searchTypeButtonRef.current) {
             const compute = () => {
-                const rect = searchTypeButtonRef.current!.getBoundingClientRect();
-                const spaceBelow = window.innerHeight - rect.bottom;
-                const spaceAbove = rect.top;
-                const menuHeight = 280; // Increased to account for full menu height
-                const menuWidth = 200;
-                const padding = 12; // Safe padding from screen edges
+                const next = calculateSearchMenuPosition();
+                if (!next) return;
 
-                // Choose placement: prefer top on mobile (input is usually at bottom)
-                // Use bottom only if there's clearly more space below
-                const placement: 'top' | 'bottom' = spaceAbove >= menuHeight
-                    ? 'top'
-                    : (spaceBelow >= menuHeight ? 'bottom' : (spaceAbove > spaceBelow ? 'top' : 'bottom'));
-
-                // Calculate x position with viewport awareness
-                // Align to button's left edge on mobile for better positioning
-                let menuX = rect.left;
-
-                // Clamp to viewport bounds
-                const maxX = window.innerWidth - menuWidth - padding;
-                const minX = padding;
-                menuX = Math.max(minX, Math.min(maxX, menuX));
-
-                const next = { x: menuX, y: placement === 'bottom' ? rect.bottom : rect.top, placement };
                 const last = lastSearchMenuPosRef.current;
                 if (!last || last.x !== next.x || last.y !== next.y || last.placement !== next.placement) {
                     lastSearchMenuPosRef.current = next;
-                    setSearchTypeMenuPlacement(placement);
+                    setSearchTypeMenuPlacement(next.placement);
                     setSearchTypeMenuPosition({ x: next.x, y: next.y });
                 }
             };
@@ -315,7 +326,9 @@ const ChatInput: React.FC<ChatInputProps> = ({
                 });
             };
 
-            schedule();
+            // Initial compute
+            compute();
+
             window.addEventListener('scroll', schedule, { capture: true, passive: true });
             window.addEventListener('resize', schedule, { passive: true });
             return () => {
@@ -327,7 +340,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
                 }
             };
         }
-    }, [isSearchTypeMenuOpen, variant]);
+    }, [isSearchTypeMenuOpen, variant, calculateSearchMenuPosition]);
 
     const toggleMenu = () => {
         if (!isMenuOpen && menuContainerRef.current) {
@@ -337,6 +350,28 @@ const ChatInput: React.FC<ChatInputProps> = ({
         }
         setIsMenuOpen(!isMenuOpen);
     };
+
+    // Sync position calculation for search type menu - prevents jump on first open
+    const handleSearchTypeOpen = useCallback(() => {
+        if (!searchTypeButtonRef.current) return;
+
+        const next = calculateSearchMenuPosition();
+        if (next) {
+            // Update ref immediately to prevent useEffect from triggering a re-render/jump
+            lastSearchMenuPosRef.current = next;
+            setSearchTypeMenuPlacement(next.placement);
+            setSearchTypeMenuPosition({
+                x: next.x,
+                y: next.y
+            });
+            setIsSearchTypeMenuOpen(true);
+        }
+    }, [calculateSearchMenuPosition]);
+
+    const handleSearchTypeClose = useCallback(() => {
+        setIsSearchTypeMenuOpen(false);
+        // Do NOT nullify position here - needed for exit animation
+    }, []);
 
     const handleSubmit = () => {
         if ((input.trim() || attachments.length > 0) && !disabled) {
@@ -518,20 +553,10 @@ const ChatInput: React.FC<ChatInputProps> = ({
                                     {/* Menu */}
                                     <motion.div
                                         key="plus-menu-content"
-                                        initial={{
-                                            opacity: 0,
-                                            scale: 0.95,
-                                            y: menuPlacement === 'bottom' ? -8 : 8,
-                                            filter: 'blur(8px)'
-                                        }}
-                                        animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
-                                        exit={{
-                                            opacity: 0,
-                                            scale: 0.95,
-                                            y: menuPlacement === 'bottom' ? -8 : 8,
-                                            filter: 'blur(4px)'
-                                        }}
-                                        transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                                        variants={menuContainerVariants}
+                                        initial="hidden"
+                                        animate="visible"
+                                        exit="exit"
                                         style={{
                                             position: 'fixed',
                                             left: menuPosition.x,
@@ -544,18 +569,18 @@ const ChatInput: React.FC<ChatInputProps> = ({
                                         className="p-1.5 bg-gradient-to-br from-white via-[#fafafa] to-slate-50 backdrop-blur-xl rounded-xl border border-slate-200/60 min-w-[160px]"
                                     >
                                         <div className="flex flex-col gap-0.5">
-                                            <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 w-full p-2 rounded-lg transition-all duration-300 text-left group/item text-slate-500 hover:bg-slate-50/80">
+                                            <motion.button variants={menuItemVariants} onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 w-full p-2 rounded-lg transition-colors duration-200 text-left group/item text-slate-500 hover:bg-slate-50/80">
                                                 <Paperclip size={14} className="text-slate-400" />
                                                 <span className="text-[11px] font-medium">Upload File</span>
-                                            </button>
-                                            <button onClick={() => imageInputRef.current?.click()} className="flex items-center gap-2 w-full p-2 rounded-lg transition-all duration-300 text-left group/item text-slate-500 hover:bg-slate-50/80">
+                                            </motion.button>
+                                            <motion.button variants={menuItemVariants} onClick={() => imageInputRef.current?.click()} className="flex items-center gap-2 w-full p-2 rounded-lg transition-colors duration-200 text-left group/item text-slate-500 hover:bg-slate-50/80">
                                                 <ImageIcon size={14} className="text-slate-400" />
                                                 <span className="text-[11px] font-medium">Upload Image</span>
-                                            </button>
-                                            <button onClick={() => docInputRef.current?.click()} className="flex items-center gap-2 w-full p-2 rounded-lg transition-all duration-300 text-left group/item text-slate-500 hover:bg-slate-50/80">
+                                            </motion.button>
+                                            <motion.button variants={menuItemVariants} onClick={() => docInputRef.current?.click()} className="flex items-center gap-2 w-full p-2 rounded-lg transition-colors duration-200 text-left group/item text-slate-500 hover:bg-slate-50/80">
                                                 <FileText size={14} className="text-slate-400" />
                                                 <span className="text-[11px] font-medium">Document</span>
-                                            </button>
+                                            </motion.button>
                                         </div>
                                     </motion.div>
                                 </AnimatePresence>,
@@ -651,7 +676,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
                                 return (
                                     <button
                                         ref={searchTypeButtonRef}
-                                        {...createTapHandler(() => setIsSearchTypeMenuOpen(!isSearchTypeMenuOpen))}
+                                        {...createTapHandler(() => isSearchTypeMenuOpen ? handleSearchTypeClose() : handleSearchTypeOpen())}
                                         className={`
                                             w-7 h-7 md:w-9 md:h-9 flex items-center justify-center transition-colors duration-200 rounded-xl gap-0.5 border touch-manipulation
                                             ${isSearchTypeMenuOpen
@@ -676,7 +701,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
                         {/* Search Type Menu Portal - Outside the button container (only for non-built-in models) */}
                         {!hasBuiltInTools(selectedModel.id) && createPortal(
                             <AnimatePresence>
-                                {isSearchTypeMenuOpen && (
+                                {isSearchTypeMenuOpen && searchTypeMenuPosition && (
                                     <>
                                         {/* Backdrop */}
                                         <motion.div
@@ -690,21 +715,11 @@ const ChatInput: React.FC<ChatInputProps> = ({
                                         {/* Menu */}
                                         <motion.div
                                             key="search-type-menu"
-                                            initial={{
-                                                opacity: 0,
-                                                scale: 0.95,
-                                                y: searchTypeMenuPlacement === 'bottom' ? -8 : 8,
-                                                filter: 'blur(8px)'
-                                            }}
-                                            animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
-                                            exit={{
-                                                opacity: 0,
-                                                scale: 0.95,
-                                                y: searchTypeMenuPlacement === 'bottom' ? -8 : 8,
-                                                filter: 'blur(4px)'
-                                            }}
-                                            transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                                            className="p-1 backdrop-blur-xl rounded-xl border border-slate-200/60 shadow-[0_8px_32px_rgba(0,0,0,0.12),0_4px_8px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] min-w-[200px]"
+                                            variants={menuContainerVariants}
+                                            initial="hidden"
+                                            animate="visible"
+                                            exit="exit"
+                                            className="p-1.5 bg-gradient-to-br from-white via-[#fafafa] to-slate-50 backdrop-blur-xl rounded-xl border border-slate-200/60 w-[220px]"
                                             style={{
                                                 position: 'fixed',
                                                 left: searchTypeMenuPosition.x,
@@ -713,23 +728,20 @@ const ChatInput: React.FC<ChatInputProps> = ({
                                                     : { top: 'auto', bottom: window.innerHeight - searchTypeMenuPosition.y + 8 }
                                                 ),
                                                 zIndex: 9999,
-                                                transform: 'translateZ(0)',
-                                                willChange: 'transform, opacity, filter',
-                                                background: 'rgb(250, 250, 250)'
                                             }}
                                         >
                                             {/* Toggle Web Search On/Off */}
-                                            <button
+                                            <motion.button
+                                                variants={menuItemVariants}
                                                 onClick={() => {
                                                     onWebSearchToggle?.(!webSearchEnabled);
                                                 }}
-                                                className={`flex items-center gap-2 w-full p-2 rounded-lg transition-all duration-300 text-left mb-0.5 ${webSearchEnabled
+                                                className={`flex items-center gap-2 w-full p-2 rounded-lg transition-colors duration-200 text-left mb-0.5 ${webSearchEnabled
                                                     ? 'bg-gradient-to-r from-blue-50 to-indigo-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_1px_2px_rgba(59,130,246,0.1),0_0_0_1px_rgba(59,130,246,0.05)]'
                                                     : 'text-slate-500 hover:bg-slate-50/80'
                                                     }`}
                                             >
                                                 <motion.div
-                                                    layout
                                                     className="w-8 h-5 rounded-full relative flex items-center shrink-0 overflow-hidden"
                                                     animate={{
                                                         backgroundColor: webSearchEnabled ? 'rgb(147, 197, 253)' : 'rgb(226, 232, 240)',
@@ -737,7 +749,6 @@ const ChatInput: React.FC<ChatInputProps> = ({
                                                     transition={{ duration: 0.3 }}
                                                 >
                                                     <motion.div
-                                                        layout
                                                         className="absolute w-3.5 h-3.5 rounded-full flex items-center justify-center z-10"
                                                         initial={false}
                                                         animate={{
@@ -764,7 +775,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
                                                     <span className={`text-[11px] font-bold leading-none mb-0.5 ${webSearchEnabled ? 'text-blue-500' : 'text-slate-400'}`}>{webSearchEnabled ? 'Deep Search Enabled' : 'Search Disabled'}</span>
                                                     <span className="text-[9px] text-slate-400 leading-none">Toggle live web access</span>
                                                 </div>
-                                            </button>
+                                            </motion.button>
 
                                             <div className="space-y-1">
                                                 {(Object.keys(SEARCH_TYPES) as Array<'auto' | 'fast' | 'deep'>).map((type) => {
@@ -794,7 +805,8 @@ const ChatInput: React.FC<ChatInputProps> = ({
                                                     const currentVariant = variants[type];
 
                                                     return (
-                                                        <button
+                                                        <motion.button
+                                                            variants={menuItemVariants}
                                                             key={type}
                                                             onClick={() => {
                                                                 onSearchTypeChange?.(type);
@@ -803,7 +815,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
                                                                 }
                                                                 setIsSearchTypeMenuOpen(false);
                                                             }}
-                                                            className={`flex items-center gap-2 w-full p-2 rounded-lg transition-all duration-300 text-left group/item relative ${isSelected && webSearchEnabled
+                                                            className={`flex items-center gap-2 w-full p-2 rounded-lg transition-colors duration-200 text-left group/item relative ${isSelected && webSearchEnabled
                                                                 ? currentVariant.selected + ' shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_1px_2px_rgba(59,130,246,0.1),0_0_0_1px_rgba(59,130,246,0.05)]'
                                                                 : `text-slate-500 hover:bg-slate-50/80 shadow-[inset_0_1px_1px_rgba(255,255,255,1),0_1px_2px_rgba(0,0,0,0.03),0_0_0_1px_rgba(0,0,0,0.02)] ${currentVariant.hover}`
                                                                 }`}
@@ -826,7 +838,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
                                                             {isSelected && webSearchEnabled && (
                                                                 <div className={`w-1.5 h-1.5 rounded-full shadow-[0_0_4px_rgba(0,0,0,0.1)] ${currentVariant.activeDot}`} />
                                                             )}
-                                                        </button>
+                                                        </motion.button>
                                                     );
                                                 })}
                                             </div>

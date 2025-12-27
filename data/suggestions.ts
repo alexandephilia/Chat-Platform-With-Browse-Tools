@@ -1,3 +1,5 @@
+import { Bug, Code2, Compass, Feather, LucideIcon, Sparkles, Zap } from 'lucide-react';
+
 /**
  * Suggestion cards data for the welcome screen
  */
@@ -6,21 +8,46 @@ export interface SuggestionCard {
     title: string;
     description: string;
     prompt: string;
+    icon: LucideIcon;
 }
 
 export const ALL_SUGGESTIONS: SuggestionCard[] = [
-    { title: "Write Email", description: "Draft a professional email for any occasion.", prompt: "Help me write a professional email to request a meeting with a potential client." },
-    { title: "Story Ideas", description: "Get creative story concepts and plot ideas.", prompt: "Give me 3 unique short story ideas with interesting plot twists." },
-    { title: "Explain Concept", description: "Break down complex topics into simple terms.", prompt: "Explain quantum computing like I'm a beginner with no technical background." },
-    { title: "Research Help", description: "Get summaries and insights on any topic.", prompt: "What are the key differences between machine learning and deep learning?" },
-    { title: "Plan My Day", description: "Create a productive schedule for your tasks.", prompt: "Help me create a productive daily schedule. I have meetings, coding work, and exercise to fit in." },
-    { title: "Meeting Notes", description: "Summarize and organize meeting discussions.", prompt: "Help me create a template for taking effective meeting notes." },
-    { title: "Debug Code", description: "Find and fix issues in your code.", prompt: "What are common debugging strategies when my code isn't working as expected?" },
-    { title: "Code Review", description: "Get feedback on code quality and best practices.", prompt: "What are the best practices for writing clean, maintainable code?" },
-    { title: "Travel Plan", description: "Plan your perfect trip itinerary.", prompt: "Help me plan a 5-day trip to Tokyo. I love food, culture, and hidden gems." },
-    { title: "Recipe Ideas", description: "Get cooking inspiration and recipes.", prompt: "Suggest a healthy dinner recipe I can make in under 30 minutes with common ingredients." },
-    { title: "Brainstorm", description: "Generate ideas for any challenge.", prompt: "Help me brainstorm creative solutions for improving team communication in a remote work environment." },
-    { title: "Decision Help", description: "Weigh pros and cons for tough choices.", prompt: "Help me create a pros and cons list for switching careers to tech." },
+    { 
+        title: "Creative Spark", 
+        description: "Generate unique ideas and concepts.", 
+        prompt: "Give me 5 creative ideas for a new mobile app that solves a common daily problem.",
+        icon: Sparkles
+    },
+    { 
+        title: "Bug Hunter", 
+        description: "Find and fix issues in your code.", 
+        prompt: "Analyze this code snippet, find the potential bugs, and suggest fixes with explanations.",
+        icon: Bug
+    },
+    { 
+        title: "Ghost Writer", 
+        description: "Draft engaging emails and content.", 
+        prompt: "Draft a professional but warm email to a potential client introducing my freelance servces.",
+        icon: Feather
+    },
+    { 
+        title: "Code Architect", 
+        description: "Design scalable systems and patterns.", 
+        prompt: "Suggest a scalable folder structure and architecture for a modern React application.",
+        icon: Code2
+    },
+    { 
+        title: "Navigator", 
+        description: "Plan itineraries and schedules.", 
+        prompt: "Create a detailed 3-day itinerary for a trip to Kyoto, focusing on food and culture.",
+        icon: Compass
+    },
+    { 
+        title: "Quick Learn", 
+        description: "Understand complex topics instantly.", 
+        prompt: "Explain the concept of Neural Networks using a simple real-world analogy.",
+        icon: Zap
+    },
 ];
 
 export function getRandomSuggestions(count: number = 3): SuggestionCard[] {

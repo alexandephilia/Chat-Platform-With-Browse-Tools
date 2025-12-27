@@ -175,25 +175,7 @@ const itemTextVariants: Variants = {
     exit: { opacity: 0, x: -50, filter: 'blur(6px)', transition: { duration: 0.01 } }
 };
 
-const logoutBtnVariants: Variants = {
-    minimized: {
-        scale: 1,
-        transition: {
-            duration: 0.1,
-            ease: "easeOut"
-        }
-    },
-    expanded: {
-        scale: [0.5, 1.5, 1], // Start small, overshoot (pop), then settle
-        transition: {
-            type: "spring",
-            stiffness: 120, // High stiffness = fast snap
-            damping: 5,    // Low damping = nice wobble
-            mass: 0.2,      // Low mass = lightweight/fast
-            delay: 0.07     // Sync with sidebar end (0.4s) - 0.7s was too late
-        }
-    }
-};
+
 
 interface SidebarProps {
     isOpen: boolean;
@@ -561,9 +543,20 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, isMinimized = false, onClose,
 
     return (
         <>
-            <AnimatePresence initial={false}>
+            <AnimatePresence initial={false} mode="wait">
                 {isOpen && (
-                    <motion.div key="mobile-sidebar" initial={{ x: "-100%" }} animate={{ x: 0 }} exit={{ x: "-100%" }} transition={{ duration: 0.25, ease: [0.32, 0.72, 0, 1] }} className="fixed inset-y-0 left-0 z-50 w-[240px] bg-[var(--color-bg-sidebar)] flex flex-col overflow-hidden shadow-xl md:hidden rounded-r-3xl" style={{ willChange: 'transform', transform: 'translateZ(0)', contain: 'layout style paint' }}>
+                    <motion.div
+                        key="mobile-sidebar"
+                        initial={{ x: "-100%" }}
+                        animate={{ x: 0 }}
+                        exit={{ x: "-100%" }}
+                        transition={{
+                            duration: 0.4,
+                            ease: [0.32, 0.72, 0, 1]
+                        }}
+                        className="fixed inset-y-0 left-0 z-50 w-[240px] bg-[var(--color-bg-sidebar)] flex flex-col overflow-hidden shadow-xl md:hidden rounded-r-3xl"
+                        style={{ willChange: 'transform', transform: 'translateZ(0)', contain: 'layout style paint' }}
+                    >
                         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
                             <div className="flex items-center gap-3">
                                 {isAuthenticated ? (
@@ -817,7 +810,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, isMinimized = false, onClose,
                 <div className={`py-4 w-full ${isMinimized ? "px-3" : "px-4"}`}>
                     <ClayPromoCard isMinimized={isMinimized} title="Zeta Trial" icon={<UfoIcon size={18} />} description={<span>There are <span className="text-slate-800 font-bold">12 days left</span> for you to enjoy the various features.</span>} action={<button className="w-full text-[10px] font-bold bg-slate-900 text-white py-1.5 px-3 rounded-lg shadow-md shadow-blue-500/20 hover:shadow-blue-500/30 hover:bg-slate-800 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-1.5"><span>Upgrade to Pro</span><TrendingUp size={10} className="text-blue-200" /></button>} />
                 </div>
-                <div className={`pb-4 flex justify-center ${isMinimized ? "px-3" : "px-4"}`}>
+                <motion.div
+                    className={`pb-4 flex justify-center ${isMinimized ? "px-3" : "px-4"}`}
+                    variants={containerVariants}
+                    initial={false}
+                    animate={isMinimized ? "minimized" : "expanded"}
+                >
                     {!isAuthenticated && (
                         <motion.button
                             onClick={openSignupModal}
@@ -886,7 +884,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, isMinimized = false, onClose,
                                 <motion.button
                                     key="logout-max"
                                     onClick={logout}
-                                    variants={logoutBtnVariants}
+                                    variants={elementVariants}
                                     initial="minimized"
                                     animate="expanded"
                                     exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.1 } }}
@@ -905,7 +903,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, isMinimized = false, onClose,
                             )}
                         </AnimatePresence>
                     )}
-                </div>
+                </motion.div>
             </motion.div>
         </>
     );

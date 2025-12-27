@@ -3,7 +3,7 @@ export const createImage = (url: string): Promise<HTMLImageElement> =>
         const image = new Image();
         image.addEventListener('load', () => resolve(image));
         image.addEventListener('error', (error) => reject(error));
-        image.setAttribute('crossOrigin', 'anonymous'); // needed to avoid cross-origin issues on CodeSandbox
+        image.setAttribute('crossOrigin', 'anonymous');
         image.src = url;
     });
 
@@ -26,15 +26,15 @@ export function rotateSize(width: number, height: number, rotation: number) {
 }
 
 /**
- * This function was adapted from the one in the React Easy Crop README.
- * It creates a new image element, draws it to a canvas, and returns the canvas as a Blob or Base64 string.
+ * Validates and retrieves the cropped image.
+ * Ensures the canvas is properly sized and the crop pixels are respected.
  */
 export default async function getCroppedImg(
     imageSrc: string,
     pixelCrop: { x: number; y: number; width: number; height: number },
     rotation = 0,
     flip = { horizontal: false, vertical: false }
-): Promise<string> { // Returns base64 string
+): Promise<string> {
     const image = await createImage(imageSrc);
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
@@ -45,28 +45,27 @@ export default async function getCroppedImg(
 
     const rotRad = getRadianAngle(rotation);
 
-    // calculate bounding box of the rotated image
+    // Calculate bounding box of the rotated image
     const { width: bBoxWidth, height: bBoxHeight } = rotateSize(
         image.width,
         image.height,
         rotation
     );
 
-    // set canvas size to match the bounding box
+    // Set canvas size to match the bounding box
     canvas.width = bBoxWidth;
     canvas.height = bBoxHeight;
 
-    // translate canvas context to a central location to allow rotating and flipping around the center
+    // Translate canvas context to center for rotation/flipping
     ctx.translate(bBoxWidth / 2, bBoxHeight / 2);
     ctx.rotate(rotRad);
     ctx.scale(flip.horizontal ? -1 : 1, flip.vertical ? -1 : 1);
     ctx.translate(-image.width / 2, -image.height / 2);
 
-    // draw rotated image
+    // Draw original image
     ctx.drawImage(image, 0, 0);
 
-    // croppedAreaPixels values are bounding box relative
-    // extract the cropped image using these values
+    // Get the cropped data from the canvas
     const data = ctx.getImageData(
         pixelCrop.x,
         pixelCrop.y,
@@ -74,25 +73,37 @@ export default async function getCroppedImg(
         pixelCrop.height
     );
 
-    // set canvas width to final desired crop size - standardizing to 256px for avatar
+    // Set canvas size to the final crop size
+    // This allows us to draw the cropped data onto a clean canvas
     canvas.width = pixelCrop.width;
     canvas.height = pixelCrop.height;
 
-    // paste generated rotate image at the top left corner
+    // Clear canvas before putting data (though resizing usually clears it)
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Put the cropped data at 0,0
     ctx.putImageData(data, 0, 0);
 
-    // Resize to a reasonable avatar size to save space (e.g. 256x256)
-    // We create a second canvas for resizing
-    const resizeCanvas = document.createElement('canvas');
-    resizeCanvas.width = 256;
-    resizeCanvas.height = 256;
-    const resizeCtx = resizeCanvas.getContext('2d');
+    // Output at reasonable quality and resolution
+    // If the crop is huge, we might want to scale it down, but 'exact crop' implies full res
+    // For avatars, 512x512 is plenty.
     
-    if (resizeCtx) {
-        resizeCtx.drawImage(canvas, 0, 0, 256, 256);
-        // return base64
-        return resizeCanvas.toDataURL('image/jpeg', 0.85); // JPEG 0.85 quality
+    // Check if we need to resize
+    const MAX_SIZE = 512;
+    let finalCanvas = canvas;
+    
+    if (pixelCrop.width > MAX_SIZE || pixelCrop.height > MAX_SIZE) {
+        const resizeCanvas = document.createElement('canvas');
+        resizeCanvas.width = MAX_SIZE;
+        resizeCanvas.height = MAX_SIZE;
+        const resizeCtx = resizeCanvas.getContext('2d');
+        if (resizeCtx) {
+             // High quality resize
+            resizeCtx.drawImage(canvas, 0, 0, MAX_SIZE, MAX_SIZE);
+            finalCanvas = resizeCanvas;
+        }
     }
-    
-    return canvas.toDataURL('image/jpeg', 0.85); 
+
+    // Return as Base64 JPEG
+    return finalCanvas.toDataURL('image/jpeg', 0.92);
 }

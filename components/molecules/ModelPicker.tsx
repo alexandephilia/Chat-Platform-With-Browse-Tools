@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Check, ChevronDown, ChevronRight } from 'lucide-react';
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { menuContainerVariants, menuItemVariants } from '../../utils/menuAnimations';
 import { AIModel, AVAILABLE_MODELS, ModelProvider } from '../../services/modelConfig';
 import { ModelIcon, ProviderIcon, ProviderIconKey } from '../../services/modelIcons';
 import { StatusPill } from '../atoms/StatusPill';
@@ -236,22 +237,35 @@ const ModelPicker: React.FC<ModelPickerProps> = ({
                 <div className={`
                     flex items-center justify-center rounded-full overflow-hidden bg-slate-100
                     ${isSmall ? 'w-4 h-4' : 'w-6 h-6'}
-                    shadow-[inset_0_1px_2px_rgba(0,0,0,0.06)]
+                    shadow-[inset_0_5px_2px_rgba(0,0,0,0.08)]
                 `}>
-                    <ModelIcon
-                        iconKey={selectedModel.icon}
-                        size={isSmall ? 16 : 24}
-                    />
+                    <span style={{ flex: '0 0 auto', lineHeight: '1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <ModelIcon
+                            iconKey={selectedModel.icon}
+                            size={isSmall ? 10 : 16}
+                        />
+                    </span>
                 </div>
 
                 <span className={`font-medium text-slate-600 leading-tight truncate ${isSmall ? 'text-[9px] max-w-[90px]' : 'text-[10px] max-w-[110px]'}`}>
                     {selectedModel.name}
                 </span>
 
-                <ChevronDown
-                    size={isSmall ? 8 : 10}
-                    className={`text-slate-400 transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180' : ''}`}
-                />
+                <svg 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    width={isSmall ? "8" : "10"} 
+                    height={isSmall ? "8" : "10"} 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="2" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    className={`lucide lucide-chevron-down text-slate-400 transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180' : ''}`}
+                    aria-hidden="true"
+                >
+                    <path d="m6 9 6 6 6-6"></path>
+                </svg>
             </button>
 
             {/* Dropdown Menu - Portal */}
@@ -273,10 +287,10 @@ const ModelPicker: React.FC<ModelPickerProps> = ({
                             {/* Provider Menu */}
                             <motion.div
                                 key="model-picker-menu"
-                                initial={{ opacity: 0, scale: 0.95 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.95 }}
-                                transition={{ duration: 0.15 }}
+                                variants={menuContainerVariants}
+                                initial="hidden"
+                                animate="visible"
+                                exit="exit"
                                 style={{
                                     position: 'fixed',
                                     left: menuPosition.x,
@@ -284,12 +298,10 @@ const ModelPicker: React.FC<ModelPickerProps> = ({
                                         ? { top: menuPosition.y }
                                         : { bottom: window.innerHeight - menuPosition.y }
                                     ),
+                                    transformOrigin: menuPosition.placement === 'bottom' ? 'top left' : 'bottom left',
                                     zIndex: 9999,
-                                    transform: 'translateZ(0)',
-                                    willChange: 'transform, opacity',
-                                    background: 'rgb(250, 250, 250)'
                                 }}
-                                className="w-[160px] p-1 backdrop-blur-xl rounded-xl border border-slate-200/60 shadow-[0_8px_32px_rgba(0,0,0,0.12),0_4px_8px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.9)]"
+                                className="w-[160px] p-1 bg-gradient-to-br from-white via-[#fafafa] to-slate-50 backdrop-blur-xl rounded-xl border border-slate-200/60 shadow-[0_8px_32px_rgba(0,0,0,0.12),0_4px_8px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.9)]"
                             >
                                 <div className="px-2 py-0.2 mb-0.5">
                                     <span className="text-[11px] font-bold text-slate-400 tracking-wider">
@@ -302,7 +314,8 @@ const ModelPicker: React.FC<ModelPickerProps> = ({
                                         const hasSelectedModel = provider.models.some(m => m.id === selectedModel.id);
 
                                         return (
-                                            <button
+                                            <motion.button
+                                                variants={menuItemVariants}
                                                 key={provider.label}
                                                 ref={(el) => {
                                                     if (el) providerItemRefs.current.set(provider.label, el);
@@ -311,7 +324,7 @@ const ModelPicker: React.FC<ModelPickerProps> = ({
                                                 onClick={() => setActiveProvider(provider.label)}
                                                 className={`
                                                     w-full flex items-center gap-2 px-2 py-1.5 rounded-lg
-                                                    transition-all duration-300 group/item relative
+                                                    transition-colors duration-200 group/item relative
                                                     ${isActive
                                                         ? 'bg-gradient-to-r from-blue-50 to-indigo-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_1px_2px_rgba(59,130,246,0.1),0_0_0_1px_rgba(59,130,246,0.05)]'
                                                         : 'text-slate-500 hover:bg-slate-50/80 shadow-[inset_0_1px_1px_rgba(255,255,255,1),0_1px_2px_rgba(0,0,0,0.03),0_0_0_1px_rgba(0,0,0,0.02)]'
@@ -338,7 +351,7 @@ const ModelPicker: React.FC<ModelPickerProps> = ({
                                                 </span>
 
                                                 <ChevronRight size={10} className="text-slate-400" />
-                                            </button>
+                                            </motion.button>
                                         );
                                     })}
                                 </div>
@@ -348,20 +361,17 @@ const ModelPicker: React.FC<ModelPickerProps> = ({
                             {activeProvider && submenuPosition && (
                                 <motion.div
                                     key={`model-submenu-${activeProvider}`}
-                                    initial={{ opacity: 0, x: -8 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: -8 }}
-                                    transition={{ duration: 0.12 }}
+                                    variants={menuContainerVariants}
+                                    initial="hidden"
+                                    animate="visible"
+                                    exit="exit"
                                     style={{
                                         position: 'fixed',
                                         left: submenuPosition.x,
                                         top: submenuPosition.y,
                                         zIndex: 10000,
-                                        transform: 'translateZ(0)',
-                                        willChange: 'transform, opacity',
-                                        background: 'rgb(250, 250, 250)'
                                     }}
-                                    className="w-[180px] p-1 backdrop-blur-xl rounded-xl border border-slate-200/60 shadow-[0_8px_32px_rgba(0,0,0,0.12),0_4px_8px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.9)]"
+                                    className="w-[180px] p-1 bg-gradient-to-br from-white via-[#fafafa] to-slate-50 backdrop-blur-xl rounded-xl border border-slate-200/60 shadow-[0_8px_32px_rgba(0,0,0,0.12),0_4px_8px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.9)]"
                                     onMouseEnter={handleSubmenuMouseEnter}
                                     onMouseLeave={handleSubmenuMouseLeave}
                                 >
@@ -372,12 +382,13 @@ const ModelPicker: React.FC<ModelPickerProps> = ({
                                                 const isSelected = model.id === selectedModel.id;
 
                                                 return (
-                                                    <button
+                                                    <motion.button
+                                                        variants={menuItemVariants}
                                                         key={model.id}
                                                         onClick={() => handleSelectModel(model)}
                                                         className={`
                                                             w-full flex items-center gap-2 px-2 py-1.5 rounded-lg
-                                                            transition-all duration-300 group/item
+                                                            transition-colors duration-200 group/item
                                                             ${isSelected
                                                                 ? 'bg-gradient-to-r from-blue-50 to-indigo-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_1px_2px_rgba(59,130,246,0.1),0_0_0_1px_rgba(59,130,246,0.05)]'
                                                                 : 'text-slate-500 hover:bg-slate-50/80 shadow-[inset_0_1px_1px_rgba(255,255,255,1),0_1px_2px_rgba(0,0,0,0.03),0_0_0_1px_rgba(0,0,0,0.02)]'
@@ -424,7 +435,7 @@ const ModelPicker: React.FC<ModelPickerProps> = ({
                                                                 <Check size={8} className="text-white drop-shadow-[0_0.8px_1px_rgba(0,0,0,0.5)]" strokeWidth={3} />
                                                             </div>
                                                         )}
-                                                    </button>
+                                                    </motion.button>
                                                 );
                                             })}
                                     </div>

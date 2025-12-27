@@ -9,6 +9,7 @@ interface OnboardingStep {
     title: string;
     description: string;
     icon: React.ReactNode;
+    backgroundImage?: string;
 }
 
 const UfoIcon: React.FC<{ size?: number; className?: string }> = ({ size = 24, className = "" }) => (
@@ -30,30 +31,35 @@ const steps: OnboardingStep[] = [
         title: 'Welcome to Zeta',
         description: 'Your intelligent AI assistant. Let me show you around.',
         icon: <UfoIcon size={42} />,
+        backgroundImage: '/components/atoms/branding/onboard1.jpg',
     },
     {
         id: 'chat',
-        title: 'Start a Conversation',
+        title: 'Start Chatting',
         description: 'Type your message or question in the chat input. Zeta will assist you.',
         icon: <MessageSquare size={42} />,
+        backgroundImage: '/components/atoms/branding/onboard2.jpg',
     },
     {
         id: 'voice',
         title: 'Voice Input',
         description: 'Prefer talking? Use the microphone button. Zeta will transcribe and respond.',
         icon: <Mic size={42} />,
+        backgroundImage: '/components/atoms/branding/onboard3.jpg',
     },
     {
         id: 'search',
         title: 'Search Your Chats',
         description: 'Use search through your conversation history. All your chats are saved locally.',
         icon: <Search size={42} />,
+        backgroundImage: '/components/atoms/branding/onboard4.jpg',
     },
     {
         id: 'ready',
         title: "You're All Set!",
         description: 'Start chatting with Zeta. You can always access this tour again from the "Need Help?" button.',
         icon: <Sparkles size={42} />,
+        backgroundImage: '/components/atoms/branding/onboard5.jpg',
     },
 ];
 
@@ -132,7 +138,7 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ isOpen, onClose 
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
+                        exit={{ opacity: 0, pointerEvents: 'none' }}
                         className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
                         onClick={handleSkip}
                     />
@@ -146,8 +152,8 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ isOpen, onClose 
                         transition={{
                             type: 'spring',
                             damping: 25,
-                            stiffness: 300,
-                            layout: { duration: 0.3, type: "spring", stiffness: 300, damping: 30 }
+                            stiffness: 200,
+                            layout: { duration: 2, type: "spring", stiffness: 200, damping: 25 }
                         }}
                         className="relative w-full max-w-sm"
                     >
@@ -158,9 +164,38 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ isOpen, onClose 
                                 {/* Inner card */}
                                 <motion.div
                                     layout
-                                    className="bg-gradient-to-b from-white to-[#FAFAFA] rounded-[24px] overflow-hidden border border-white/80 p-6"
+                                    className="bg-white rounded-[24px] overflow-hidden border border-white/80 p-6 relative"
                                 >
-                                    <AnimatePresence mode="popLayout" initial={false}>
+                                    {/* Blurred Background Layer */}
+                                    <AnimatePresence mode="popLayout">
+                                        {step.backgroundImage && (
+                                            <motion.div
+                                                key={`bg-${step.id}`}
+                                                initial={{ opacity: 0, scale: 1.1 }}
+                                                animate={{ opacity: 1, scale: 1 }}
+                                                exit={{ opacity: 0, scale: 1.1 }}
+                                                transition={{ duration: 0.4, ease: "easeInOut" }}
+                                                className="absolute inset-0 z-0 pointer-events-none"
+                                            >
+                                                <img 
+                                                    src={step.backgroundImage} 
+                                                    alt="" 
+                                                    className="w-full h-full object-cover opacity-100"
+                                                    style={{ filter: 'blur(1.6px) brightness(1.1) saturate(1)' }}
+                                                />
+                                                {/* Gradient fade from middle to bottom */}
+                                                <div 
+                                                    className="absolute inset-0" 
+                                                    style={{ 
+                                                        background: 'linear-gradient(to bottom, transparent 0%, transparent 35%, rgba(255, 255, 255, 0.42) 55%, rgba(255, 255, 255, 1) 100%)' 
+                                                    }} 
+                                                />
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+
+                                    <div className="relative z-10">
+                                        <AnimatePresence mode="popLayout" initial={false}>
                                         <motion.div
                                             key={step.id}
                                             initial={{ opacity: 0, x: 20, filter: 'blur(8px)' }}
@@ -171,29 +206,8 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ isOpen, onClose 
                                                 ease: "easeOut"
                                             }}
                                         >
-                                            {/* Icon */}
-                                            <div className="relative w-20 h-20 mx-auto mb-6 group">
-                                                <div className="absolute inset-0 bg-blue-500/20 rounded-[24px] blur-xl transform translate-y-4" />
-                                                <div className="relative w-full h-full rounded-[24px] bg-gradient-to-b from-white to-[#6ba2e840] flex items-center justify-center shadow-[0_8px_20px_rgba(59,130,246,0.15),inset_0_-4px_4px_rgba(0,0,0,0.05),inset_0_2px_4px_rgba(255,255,255,1)] border border-blue-100 p-1">
-                                                     {/* Inner bevel */}
-                                                     <div className="w-full h-full rounded-[20px] bg-gradient-to-br from-blue-50 to-white flex items-center justify-center border border-white shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)] text-blue-500 overflow-hidden relative">
-                                                        {step.icon}
-                                                        
-                                                        {/* Glare animation */}
-                                                        <motion.div
-                                                            initial={{ x: '-100%', opacity: 0 }}
-                                                            animate={{ x: '100%', opacity: [0, 1, 0.5, 0] }}
-                                                            transition={{ 
-                                                                repeat: Infinity, 
-                                                                duration: 1.5, 
-                                                                ease: "easeInOut",
-                                                                repeatDelay: 0.75
-                                                            }}
-                                                            className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white to-transparent -skew-x-12 opacity-70 mix-blend-overlay"
-                                                        />
-                                                     </div>
-                                                </div>
-                                            </div>
+                                            {/* Spacer (keeps top spacing) */}
+                                            <div className="w-20 h-20 mx-auto mb-6" />
 
                                             {/* Content */}
                                             <div className="text-center mb-6">
@@ -202,9 +216,10 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ isOpen, onClose 
                                             </div>
                                         </motion.div>
                                     </AnimatePresence>
+                                    </div>
 
                                     {/* Progress dots */}
-                                    <div className="flex justify-center gap-1.5 mb-6">
+                                    <div className="flex justify-center gap-1.5 mb-6 relative z-10">
                                         {steps.map((_, index) => (
                                             <motion.div
                                                 key={index}
@@ -220,11 +235,11 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ isOpen, onClose 
                                     </div>
 
                                     {/* Actions */}
-                                    <div className="flex justify-center gap-3">
+                                    <div className="flex justify-center gap-3 relative z-10">
                                         {!isLastStep && (
                                             <button
                                                 onClick={handleSkip}
-                                                className="px-6 py-2.5 text-[13px] font-medium text-slate-500 hover:text-slate-700 rounded-xl transition-all bg-slate-50/80 hover:bg-slate-100/80 shadow-[inset_0_1px_1px_rgba(255,255,255,1),0_1px_2px_rgba(0,0,0,0.04)]"
+                                                className="px-6 py-2.5 text-[13px] font-medium text-slate-600 hover:text-slate-800 rounded-xl transition-all bg-gradient-to-b from-white to-slate-100 border border-slate-200/60 shadow-[0_2px_4px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,1)] hover:shadow-[0_4px_8px_rgba(0,0,0,0.06)]"
                                             >
                                                 Skip
                                             </button>
@@ -232,9 +247,9 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ isOpen, onClose 
                                         <motion.button
                                             whileTap={{ scale: 0.97 }}
                                             onClick={handleNext}
-                                            className={`relative px-6 py-2.5 rounded-xl text-white text-[13px] font-semibold overflow-hidden flex items-center gap-2 justify-center transition-all duration-200 bg-gradient-to-b from-blue-400 to-blue-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.25),inset_0_-1px_1px_rgba(0,0,0,0.1),0_4px_12px_rgba(59,130,246,0.35)] hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),0_6px_16px_rgba(59,130,246,0.4)]`}
+                                            className="relative px-6 py-2.5 rounded-xl text-white text-[13px] font-semibold overflow-hidden flex items-center gap-2 justify-center transition-all duration-200 bg-gradient-to-b from-blue-400 to-blue-600 backdrop-blur-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.3),inset_0_-2px_4px_rgba(0,0,0,0.15),0_4px_12px_rgba(59,130,246,0.4)] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.4),0_6px_16px_rgba(59,130,246,0.5)] border border-blue-500/50"
                                         >
-                                            <span className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/40 to-transparent" />
+                                            <span className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/50 to-transparent" />
                                             {isLastStep ? "Get Started" : "Next"}
                                             {!isLastStep && <ArrowRight size={14} />}
                                         </motion.button>

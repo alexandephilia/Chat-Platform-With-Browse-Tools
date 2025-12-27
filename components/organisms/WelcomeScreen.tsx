@@ -3,7 +3,7 @@
  */
 
 import { AnimatePresence, motion, Variants } from 'framer-motion';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { getRandomSuggestions, SuggestionCard } from '../../data/suggestions';
 import { Attachment } from '../../types';
@@ -109,25 +109,26 @@ const descVariants: Variants = {
 // Mobile card variants - consistent with desktop
 const mobileCardVariants: Variants = {
     hidden: { opacity: 0, filter: 'blur(16px)', scale: 0.95 },
-    visible: (i: number) => ({
+    visible: ({ index, isRefresh }: { index: number; isRefresh: boolean }) => ({
         opacity: 1,
         filter: 'blur(0px)',
         scale: 1,
         transition: {
             duration: 0.4,
-            delay: i * 0.1 + 1.5,
+            delay: isRefresh ? 0.4 + (index * 0.15) : index * 0.1 + 1.5,
             ease: [0.22, 1, 0.36, 1],
         }
     }),
-    exit: {
+    exit: ({ index }: { index: number }) => ({
         opacity: 0,
         filter: 'blur(8px)',
-        scale: 0.98,
+        scale: 0.95,
         transition: {
-            duration: 0.25,
-            ease: 'easeOut',
+            duration: 0.2,
+            delay: index * 0.05,
+            ease: 'easeIn',
         }
-    }
+    })
 };
 
 // Card variants without layout animation to prevent shift
@@ -172,6 +173,19 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
     const [suggestions, setSuggestions] = useState<SuggestionCard[]>(() => getRandomSuggestions(3));
     const [refreshKey, setRefreshKey] = useState(0);
     const { user } = useAuth();
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+    // Initial scroll setup for mobile - runs only once
+    useEffect(() => {
+        if (scrollContainerRef.current) {
+            const cardWidth = 200;
+            const gap = 12;
+            const scrollTo = cardWidth + gap;
+            setTimeout(() => {
+                scrollContainerRef.current?.scrollTo({ left: scrollTo, behavior: 'instant' });
+            }, 100);
+        }
+    }, []);
 
     // Memoize greeting to prevent recalculation on every render
     const greeting = useMemo(() => getTimeBasedGreeting(), []);
@@ -239,7 +253,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                             ease: [0.22, 1, 0.36, 1],
                         }}
                     >
-                        {/* Architectural Layer - Multi-rim depth effect for mobile */}
+                       {/* Architectural Layer - Multi-rim depth effect for mobile */}
                         <div className="p-1 bg-gradient-to-b from-white to-slate-300 rounded-[22px] shadow-sm">
                             <div className="p-1 bg-slate-100 rounded-[20px] shadow-inner">
                                 <div className="bg-gradient-to-b from-white to-[#F5F5F5] rounded-[18px] overflow-hidden border border-white" style={{ boxShadow: "0 8px 10px rgba(0, 0, 0, 0.1), 0 4px 4px rgba(0, 0, 0, 0.04)" }}>
@@ -254,8 +268,8 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                                                 />
                                             </div>
                                             <div className="flex flex-col">
-                                                <span className="text-xs font-bold text-slate-700">We are Live!</span>
-                                                <span className="text-[10px] text-slate-400">Work with Gemini and Groq</span>
+                                                <span className="text-xs font-bold text-slate-800 tracking-tight leading-none mb-1">We are Live!</span>
+                                                <span className="text-[10px] text-slate-500 font-medium leading-none opacity-80">Work with Gemini and Groq</span>
                                             </div>
                                         </div>
                                         <ModelPicker
@@ -291,28 +305,18 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                 {/* Mobile Suggestions */}
                 <div className={`flex flex-col gap-2 w-full flex-1 min-h-0 ${hasAttachments ? 'mt-4' : 'mt-3'}`}>
                     <div
-                        key={`mobile-container-${refreshKey}`}
-                        ref={(el) => {
-                            if (el) {
-                                const cardWidth = 200;
-                                const gap = 12;
-                                const scrollTo = cardWidth + gap;
-                                setTimeout(() => {
-                                    el.scrollTo({ left: scrollTo, behavior: 'instant' });
-                                }, 100);
-                            }
-                        }}
+                        ref={scrollContainerRef}
                         className="flex gap-3 overflow-x-auto py-4 scrollbar-hide snap-x snap-mandatory w-full"
                         style={{
                             paddingLeft: 'calc(50vw - 100px)',
                             paddingRight: 'calc(50vw - 100px)',
                         }}
                     >
-                        <AnimatePresence>
+                        <AnimatePresence mode="popLayout">
                             {memoizedSuggestions.map((card, index) => (
                                 <motion.div
                                     key={`mobile-${refreshKey}-${card.title}`}
-                                    custom={index}
+                                    custom={{ index, isRefresh: refreshKey > 0 }}
                                     variants={mobileCardVariants}
                                     initial="hidden"
                                     animate="visible"
@@ -326,6 +330,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                                     <ClayCard
                                         title={card.title}
                                         description={card.description}
+                                        icon={card.icon}
                                         onClick={() => onSendMessage(card.prompt)}
                                         className="h-full text-xs"
                                     />
@@ -395,7 +400,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                 }}
             >
                 <div className="grid grid-cols-3 gap-2 md:gap-4 w-full">
-                    <AnimatePresence>
+                    <AnimatePresence mode="popLayout">
                         {memoizedSuggestions.map((card, index) => (
                             <motion.div
                                 key={`${refreshKey}-${card.title}`}
@@ -409,6 +414,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                                 <ClayCard
                                     title={card.title}
                                     description={card.description}
+                                    icon={card.icon}
                                     onClick={() => onSendMessage(card.prompt)}
                                     className="w-full h-full text-xs md:text-sm"
                                 />

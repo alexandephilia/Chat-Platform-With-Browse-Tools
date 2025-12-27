@@ -20,6 +20,7 @@ import {
     VoiceInfo,
     VoiceKey
 } from '../../services/elevenLabsService';
+import { menuContainerVariants, menuItemVariants } from '../../utils/menuAnimations';
 import v1IconImg from '../atoms/branding/orbv1.png';
 import voiceIconImg from '../atoms/branding/voice.png';
 
@@ -402,10 +403,10 @@ const VoicePicker: React.FC<VoicePickerProps> = ({
                             <motion.div
                                 ref={mainMenuRef}
                                 key="voice-picker-menu"
-                                initial={{ opacity: 0, scale: 0.95 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.95 }}
-                                transition={{ duration: 0.15 }}
+                                variants={menuContainerVariants}
+                                initial="hidden"
+                                animate="visible"
+                                exit="exit"
                                 style={{
                                     position: 'fixed',
                                     left: menuPosition.x,
@@ -414,11 +415,8 @@ const VoicePicker: React.FC<VoicePickerProps> = ({
                                         : { bottom: window.innerHeight - menuPosition.y }
                                     ),
                                     zIndex: 9999,
-                                    transform: 'translateZ(0)',
-                                    willChange: 'transform, opacity',
-                                    background: 'rgb(250, 250, 250)'
                                 }}
-                                className="w-[160px] p-1 backdrop-blur-xl rounded-xl border border-slate-200/60 shadow-[0_8px_32px_rgba(0,0,0,0.12),0_4px_8px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.9)]"
+                                className="w-[160px] p-1 bg-gradient-to-br from-white via-[#fafafa] to-slate-50 backdrop-blur-xl rounded-xl border border-slate-200/60 shadow-[0_8px_32px_rgba(0,0,0,0.12),0_4px_8px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.9)]"
                                 onTouchStart={(e) => e.stopPropagation()}
                                 onTouchMove={(e) => e.stopPropagation()}
                                 onTouchEnd={(e) => e.stopPropagation()}
@@ -437,7 +435,8 @@ const VoicePicker: React.FC<VoicePickerProps> = ({
                                         const isV2 = modelKey === 'zeta-v2';
 
                                         return (
-                                            <button
+                                            <motion.button
+                                                variants={menuItemVariants}
                                                 key={modelKey}
                                                 ref={(el) => {
                                                     if (el) modelItemRefs.current.set(modelKey, el);
@@ -446,7 +445,7 @@ const VoicePicker: React.FC<VoicePickerProps> = ({
                                                 {...createTapHandler(() => setActiveModel(modelKey))}
                                                 className={`
                                                     w-full flex items-center gap-2 px-2 py-1.5 rounded-lg
-                                                    transition-all duration-300 group/item relative touch-manipulation
+                                                    transition-colors duration-200 group/item relative touch-manipulation
                                                     ${isActive
                                                         ? 'bg-gradient-to-r from-blue-50 to-indigo-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_1px_2px_rgba(59,130,246,0.1),0_0_0_1px_rgba(59,130,246,0.05)]'
                                                         : 'text-slate-500 hover:bg-slate-50/80 shadow-[inset_0_1px_1px_rgba(255,255,255,1),0_1px_2px_rgba(0,0,0,0.03),0_0_0_1px_rgba(0,0,0,0.02)]'
@@ -472,7 +471,7 @@ const VoicePicker: React.FC<VoicePickerProps> = ({
                                                 </div>
 
                                                 <ChevronRight size={10} className="text-slate-400" />
-                                            </button>
+                                            </motion.button>
                                         );
                                     })}
                                 </div>
@@ -482,20 +481,17 @@ const VoicePicker: React.FC<VoicePickerProps> = ({
                             {activeModel && submenuPosition && (
                                 <motion.div
                                     key="voice-submenu"
-                                    initial={{ opacity: 0, x: -8 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={{ opacity: 0, x: -8 }}
-                                    transition={{ duration: 0.12 }}
+                                    variants={menuContainerVariants}
+                                    initial="hidden"
+                                    animate="visible"
+                                    exit="exit"
                                     style={{
                                         position: 'fixed',
                                         left: submenuPosition.x,
                                         top: submenuPosition.y,
                                         zIndex: 10000,
-                                        transform: 'translateZ(0)',
-                                        willChange: 'transform, opacity',
-                                        background: 'rgb(250, 250, 250)'
                                     }}
-                                    className="w-[200px] p-1.5 backdrop-blur-xl rounded-xl border border-slate-200/60 shadow-[0_8px_32px_rgba(0,0,0,0.12),0_4px_8px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] max-h-[320px] overflow-y-auto overscroll-contain"
+                                    className="w-[200px] p-1.5 bg-gradient-to-br from-white via-[#fafafa] to-slate-50 backdrop-blur-xl rounded-xl border border-slate-200/60 shadow-[0_8px_32px_rgba(0,0,0,0.12),0_4px_8px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] max-h-[320px] overflow-y-auto overscroll-contain"
                                     onMouseEnter={!isTouchDevice() ? handleSubmenuMouseEnter : undefined}
                                     onMouseLeave={!isTouchDevice() ? handleSubmenuMouseLeave : undefined}
                                     onTouchStart={(e) => e.stopPropagation()}
@@ -643,14 +639,15 @@ const VoiceOption = memo(({
     }, [onSelect, voiceKey]);
 
     return (
-        <button
+        <motion.button
+            variants={menuItemVariants}
             onClick={handleClick}
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
             className={`
                 w-full flex items-center gap-2 px-2 py-1.5 rounded-lg
-                transition-all duration-300 group/item touch-manipulation select-none
+                transition-colors duration-200 group/item touch-manipulation select-none
                 ${isSelected
                     ? 'bg-gradient-to-r from-blue-50 to-indigo-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_1px_2px_rgba(59,130,246,0.1),0_0_0_1px_rgba(59,130,246,0.05)]'
                     : 'text-slate-500 hover:bg-slate-50/80 shadow-[inset_0_1px_1px_rgba(255,255,255,1),0_1px_2px_rgba(0,0,0,0.03),0_0_0_1px_rgba(0,0,0,0.02)]'
@@ -683,7 +680,7 @@ const VoiceOption = memo(({
                     <Check size={8} className="text-white drop-shadow-[0_0.8px_1px_rgba(0,0,0,0.5)]" strokeWidth={3} />
                 </div>
             )}
-        </button>
+        </motion.button>
     );
 });
 

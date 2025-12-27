@@ -9,6 +9,7 @@ import {
 import React, { useCallback, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { menuContainerVariants, menuItemVariants } from '../../utils/menuAnimations';
 import { ProfileEditModal } from './ProfileEditModal';
 
 const AtomOutline = (props: React.SVGProps<SVGSVGElement>) => (
@@ -61,31 +62,40 @@ export const ProfilePortal: React.FC<ProfilePortalProps> = ({
 
                     {/* Compact Portal Content */}
                     <motion.div
-                        initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                        transition={{ duration: 0.15, ease: [0.4, 0, 0.2, 1] }}
+
+                        initial="hidden"
+                        animate="visible"
+                        exit="exit"
                         onClick={handleMenuClick}
                         onTouchEnd={handleMenuClick}
-                        className="fixed z-[10001] backdrop-blur-xl rounded-xl border border-slate-200/60 shadow-[0_8px_32px_rgba(0,0,0,0.12),0_4px_8px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] overflow-hidden w-48 left-4 top-14 sm:top-16"
+                        className="fixed z-[10001] backdrop-blur-xl rounded-xl border border-slate-200/60 shadow-[0_8px_32px_rgba(0,0,0,0.12),0_4px_8px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] overflow-hidden w-52 left-4 top-14 sm:top-16"
                         style={{
-                            background: 'rgb(250, 250, 250)',
-                            willChange: 'transform, opacity'
+                            background: 'linear-gradient(135deg, #ffffff 0%, #fafafa 50%, #f1f5f9 100%)',
+                        }}
+                        variants={{
+                            ...menuContainerVariants,
+                            visible: { ...menuContainerVariants.visible, transition: { staggerChildren: 0.02, delayChildren: 0.02 } }
                         }}
                     >
                         {/* Header Area */}
-                        <div className="px-3 py-2 mb-0.5">
+                        <motion.div variants={menuItemVariants} className="px-3 py-2 mb-0.5">
                             <span className="text-[11px] font-bold text-slate-400 tracking-wider uppercase">
                                 Account
                             </span>
-                        </div>
+                        </motion.div>
 
                         {/* Menu Items */}
-                        <div className="p-1 space-y-0.5">
+                        <motion.div 
+                            className="p-1 space-y-0.5"
+                            variants={{
+                                visible: { transition: { staggerChildren: 0.02 } }
+                            }}
+                        >
                             {/* User branding - now clickable */}
-                            <button
+                            <motion.button
+                                variants={menuItemVariants}
                                 onClick={handleOpenProfileEdit}
-                                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-slate-500 shadow-[inset_0_2px_4px_rgba(0,0,0,0.04),inset_0_1px_1px_rgba(0,0,0,0.02),0_1px_0_rgba(255,255,255,0.8)] border border-transparent hover:bg-slate-50/80 hover:border-slate-200/40 transition-all duration-200 group/profile"
+                                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-slate-500 shadow-[inset_0_2px_4px_rgba(0,0,0,0.04),inset_0_1px_1px_rgba(0,0,0,0.02),0_1px_0_rgba(255,255,255,0.8)] border border-transparent hover:bg-slate-50/80 hover:border-slate-200/40 group/profile"
                             >
                                 <div className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center shrink-0 shadow-[inset_0_1px_2px_rgba(0,0,0,0.06)] overflow-hidden group-hover/profile:bg-blue-50 transition-colors">
                                     {user?.avatar ? (
@@ -103,18 +113,19 @@ export const ProfilePortal: React.FC<ProfilePortalProps> = ({
                                     </p>
                                 </div>
                                 <ChevronRight size={10} className="text-slate-300 group-hover/profile:text-blue-400 transition-colors" />
-                            </button>
+                            </motion.button>
 
                             <div className="h-px bg-slate-200/40 my-1 mx-1.5" />
 
                             {/* Theme Toggle */}
-                            <button
+                            <motion.button
+                                variants={menuItemVariants}
                                 onClick={() => {
                                     onToggleTheme();
                                 }}
                                 className={`
                                     w-full flex items-center justify-between px-2 py-1.5 rounded-lg
-                                    transition-all duration-300 group/item relative
+                                    group/item relative
                                     text-slate-500 hover:bg-slate-50/80 hover:text-blue-600
                                     shadow-[inset_0_1px_1px_rgba(255,255,255,1),0_1px_2px_rgba(0,0,0,0.03),0_0_0_1px_rgba(0,0,0,0.02)]
                                 `}
@@ -130,17 +141,18 @@ export const ProfilePortal: React.FC<ProfilePortalProps> = ({
                                     </span>
                                 </div>
                                 <ChevronRight size={10} className="text-slate-300 group-hover/item:text-blue-400 transition-colors" />
-                            </button>
+                            </motion.button>
 
                             {/* Custom Instructions Trigger */}
-                            <button
+                            <motion.button
+                                variants={menuItemVariants}
                                 onClick={() => {
                                     onOpenInstructions();
                                     onClose();
                                 }}
                                 className={`
                                     w-full flex items-center justify-between px-2 py-1.5 rounded-lg
-                                    transition-all duration-300 group/item relative
+                                    group/item relative
                                     text-slate-500 hover:bg-slate-50/80
                                     shadow-[inset_0_1px_1px_rgba(255,255,255,1),0_1px_2px_rgba(0,0,0,0.03),0_0_0_1px_rgba(0,0,0,0.02)]
                                 `}
@@ -158,22 +170,23 @@ export const ProfilePortal: React.FC<ProfilePortalProps> = ({
                                     </span>
                                 </div>
                                 <ChevronRight size={10} className="text-slate-300 transition-colors group-hover/item:text-[rgb(36,89,133)]" />
-                            </button>
+                            </motion.button>
 
                             <div className="h-px bg-slate-200/40 my-1 mx-1.5" />
 
                             {/* Sign Out */}
-                            <button
+                            <motion.button
+                                variants={menuItemVariants}
                                 onClick={() => {
                                     logout();
                                     onClose();
                                 }}
-                                className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-[11px] font-bold transition-all bg-gradient-to-b from-red-50 to-red-100/80 border border-red-200/60 shadow-[0_2px_4px_rgba(239,68,68,0.15),0_1px_2px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.8)] text-red-600 hover:text-red-700 hover:shadow-[0_3px_6px_rgba(239,68,68,0.2),0_1px_2px_rgba(0,0,0,0.06)]"
+                                className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-[11px] font-bold bg-gradient-to-b from-red-50 to-red-100/80 border border-red-200/60 shadow-[0_2px_4px_rgba(239,68,68,0.15),0_1px_2px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.8)] text-red-600 hover:text-red-700 hover:shadow-[0_3px_6px_rgba(239,68,68,0.2),0_1px_2px_rgba(0,0,0,0.06)]"
                             >
                                 <LogOut size={12} className="text-red-500" />
                                 <span>Sign Out</span>
-                            </button>
-                        </div>
+                            </motion.button>
+                        </motion.div>
                     </motion.div>
                 </div>
             )}
