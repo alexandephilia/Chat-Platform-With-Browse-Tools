@@ -176,6 +176,19 @@ const itemTextVariants: Variants = {
 };
 
 
+const pageLoadVariants: Variants = {
+    hidden: { opacity: 0, x: -20, filter: 'blur(10px)' },
+    visible: (i: number) => ({
+        opacity: 1,
+        x: 0,
+        filter: 'blur(0px)',
+        transition: {
+            duration: 0.6,
+            delay: 0.2 + (i * 0.1),
+            ease: [0.22, 1, 0.36, 1]
+        }
+    })
+};
 
 interface SidebarProps {
     isOpen: boolean;
@@ -185,7 +198,8 @@ interface SidebarProps {
     onSelectChat?: (chatId: string) => void;
     onDeleteChat?: (chatId: string) => void;
     chatHistory?: ChatHistoryItem[];
-    activeChatId?: string;
+    activeChatId?: string | null;
+    isInitialLoad?: boolean;
     onOpenProfile?: () => void;
     onOpenHelp?: () => void;
 }
@@ -285,7 +299,7 @@ const ChatHistoryItemComponent: React.FC<{
                 onTouchStart={handleTouchStart}
                 onTouchEnd={handleTouchEnd}
                 title={isMinimized ? chat.title : undefined}
-                className={`w-full flex items-center rounded-xl text-sm transition-colors duration-150 ${isMinimized ? "justify-center px-1.5 py-2.5" : "justify-start px-3 py-2"} ${isActive ? "bg-gradient-to-br from-white via-white to-slate-50 text-slate-800 shadow-[0_1px_0px_rgba(0,0,0,0.1),0_3px_6px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] border border-slate-200/60" : isNew ? "text-blue-600 hover:bg-blue-50/80" : "text-slate-600 hover:bg-white/80 hover:text-slate-700"}`}
+                className={`relative w-full flex items-center rounded-[8px] text-sm transition-all duration-150 overflow-hidden border border-transparent ${isMinimized ? "justify-center px-1 py-1.5" : "justify-start px-2 py-1"} ${isActive ? "bg-gradient-to-b from-white to-slate-50 text-slate-800 shadow-[0_2px_3px_rgba(0,0,0,0.12),0_1px_1px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.9)] !border-slate-200/60" : isNew ? "text-blue-600 hover:bg-gradient-to-b hover:from-white hover:to-slate-50 hover:shadow-[0_2px_4px_rgba(0,0,0,0.12),0_1px_2px_rgba(0,0,0,0.08)]" : "text-slate-600 hover:bg-gradient-to-b hover:from-white hover:to-slate-50 hover:shadow-[0_2px_4px_rgba(0,0,0,0.12),0_1px_2px_rgba(0,0,0,0.08)] hover:text-slate-700"}`}
                 style={{ transform: 'translateZ(0)' }}
             >
                 {isMinimized ? (
@@ -439,7 +453,7 @@ const MobileChatHistoryItemComponent: React.FC<{
                 onClick={onSelect}
                 onTouchStart={handleTouchStart}
                 onTouchEnd={handleTouchEnd}
-                className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-[13px] transition-colors duration-150 ${isActive ? "bg-gradient-to-br from-white via-white to-slate-50 text-slate-800 shadow-[0_2px_8px_rgba(0,0,0,0.06)] border border-slate-200/60" : isNew ? "text-blue-600 active:bg-blue-50/80" : "text-slate-600 active:bg-white/80"}`}
+                className={`relative w-full flex items-center gap-2 px-2 py-1 rounded-[8px] text-[13px] transition-all duration-150 overflow-hidden border border-transparent ${isActive ? "bg-gradient-to-b from-white to-slate-50 text-slate-800 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_2px_rgba(0,0,0,0.06)] !border-slate-200/60" : isNew ? "text-blue-600 active:bg-gradient-to-b active:from-white active:to-slate-50 active:shadow-[0_2px_4px_rgba(0,0,0,0.1)]" : "text-slate-600 active:bg-gradient-to-b active:from-white active:to-slate-50 active:shadow-[0_2px_4px_rgba(0,0,0,0.1)]"}`}
                 style={{ transform: 'translateZ(0)' }}
             >
                 <div className="relative flex-shrink-0">
@@ -501,7 +515,19 @@ const MobileChatHistoryItemComponent: React.FC<{
     );
 });
 
-const Sidebar: React.FC<SidebarProps> = ({ isOpen, isMinimized = false, onClose, onNewChat, onSelectChat, onDeleteChat, chatHistory = [], activeChatId, onOpenProfile, onOpenHelp }) => {
+const Sidebar: React.FC<SidebarProps> = ({ 
+    isOpen, 
+    isMinimized = false, 
+    onClose, 
+    onNewChat, 
+    onSelectChat, 
+    onDeleteChat, 
+    chatHistory = [], 
+    activeChatId, 
+    isInitialLoad = false,
+    onOpenProfile, 
+    onOpenHelp 
+}) => {
     const { isAuthenticated, user, logout, openLoginModal, openSignupModal } = useAuth();
     const navRef = useRef<HTMLDivElement>(null);
     const [canScrollUp, setCanScrollUp] = useState(false);
@@ -541,6 +567,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, isMinimized = false, onClose,
         onClose?.();
     };
 
+    const isInitializedInternalRef = useRef(false);
+    const shouldShowPageLoadAnimation = isInitialLoad && !isInitializedInternalRef.current;
+
+    React.useEffect(() => {
+        if (isOpen) {
+            isInitializedInternalRef.current = true;
+        }
+    }, [isOpen]);
+
     return (
         <>
             <AnimatePresence initial={false} mode="wait">
@@ -557,7 +592,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, isMinimized = false, onClose,
                         className="fixed inset-y-0 left-0 z-50 w-[240px] bg-[var(--color-bg-sidebar)] flex flex-col overflow-hidden shadow-xl md:hidden rounded-r-3xl"
                         style={{ willChange: 'transform', transform: 'translateZ(0)', contain: 'layout style paint' }}
                     >
-                        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
+                        <motion.div 
+                            className="flex items-center justify-between px-4 py-3 border-b border-slate-100"
+                            custom={0}
+                            variants={pageLoadVariants}
+                            initial={shouldShowPageLoadAnimation ? "hidden" : false}
+                            animate="visible"
+                        >
                             <div className="flex items-center gap-3">
                                 {isAuthenticated ? (
                                     <div
@@ -583,16 +624,39 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, isMinimized = false, onClose,
                                 </button>
                             </div>
                             <button onClick={onClose} className="p-2 -mr-2 hover:bg-slate-100 active:bg-slate-200 rounded-xl text-slate-500 transition-colors"><X size={20} /></button>
-                        </div>
-                        <div className="px-4 py-3">
+                        </motion.div>
+                        <motion.div 
+                            className="px-4 py-3"
+                            custom={1}
+                            variants={pageLoadVariants}
+                            initial={shouldShowPageLoadAnimation ? "hidden" : false}
+                            animate="visible"
+                        >
                             <ClayInput icon={<Search size={16} />} placeholder="Search chats..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-                        </div>
-                        <div className="px-4 pb-2">
-                            <button onClick={handleNewChat} className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-xl text-[13px] font-medium transition-all duration-300 bg-gradient-to-br from-white via-white to-slate-50 shadow-[0_2px_3px_rgba(0,0,0,0.06),0_1px_0_rgba(255,255,255,1)] border border-slate-200/40 hover:border-slate-300/60 hover:bg-slate-50/50 hover:shadow-[inset_0_2px_3px_rgb(0_0_0_/_12%),_0_1px_0_rgba(255,255,255,0.8)] active:scale-[0.98] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.2)] ${isChatButtonPressed ? 'shadow-[inset_0_2px_4px_rgba(0,0,0,0.25)] bg-slate-50/50' : ''}`}>
-                                <UfoIcon size={16} className="text-slate-500" /><span>New Chat</span>
-                            </button>
-                        </div>
-                        <div className="flex-1 overflow-y-auto px-4 py-2" style={{ contain: 'content' }}>
+                        </motion.div>
+                        <motion.div 
+                            className="px-4 pb-2"
+                            custom={2}
+                            variants={pageLoadVariants}
+                            initial={shouldShowPageLoadAnimation ? "hidden" : false}
+                            animate="visible"
+                        >
+                            <div className="p-[3px] rounded-[14px] bg-gradient-to-b from-white via-slate-50/50 to-slate-100/80 shadow-[inset_0_1px_2px_rgba(0,0,0,0.02),0_1px_0_rgba(255,255,255,0.8)]">
+                                <button onClick={handleNewChat} className={`relative w-full flex items-center gap-2 px-2.5 py-2 rounded-xl text-[13px] font-medium transition-all duration-300 overflow-hidden bg-gradient-to-b from-white to-slate-100 border border-slate-200/40 ${isChatButtonPressed ? 'shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]' : 'shadow-[0_4px_12px_rgba(0,0,0,0.08),0_2px_4px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,1)]'} hover:shadow-[0_8px_24px_rgba(0,0,0,0.12),0_4px_8px_rgba(0,0,0,0.06)] hover:border-slate-300/60 active:scale-[0.98]`}>
+                                    <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white to-transparent pointer-events-none" />
+                                    <UfoIcon size={16} className="text-slate-700" />
+                                    <span className="text-slate-700">New Chat</span>
+                                </button>
+                            </div>
+                        </motion.div>
+                        <motion.div 
+                            className="flex-1 overflow-y-auto px-4 py-2" 
+                            style={{ contain: 'content' }}
+                            custom={3}
+                            variants={pageLoadVariants}
+                            initial={shouldShowPageLoadAnimation ? "hidden" : false}
+                            animate="visible"
+                        >
                             {Object.entries(groupedChats).map(([group, chats]) => (
                                 <div key={group} className="mb-4">
                                     <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2 mb-2">{group}</div>
@@ -600,12 +664,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, isMinimized = false, onClose,
                                         {chats.map((chat) => (
                                             <div
                                                 key={chat.id}
-                                                className="p-0.5 rounded-xl shadow-[inset_0_1px_4px_rgba(0,0,0,0.08)]"
+                                                className="p-[3px] rounded-[10px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.08),inset_0_0_0_1px_rgba(0,0,0,0.02)] relative overflow-hidden"
                                                 style={{
-                                                    background: 'linear-gradient(145deg, rgba(241,245,249,0.7) 0%, rgba(226,232,240,0.5) 100%)',
+                                                    background: 'linear-gradient(145deg, rgba(241,245,249,0.8) 0%, rgba(226,232,240,0.6) 100%)',
                                                     contain: 'layout style',
                                                 }}
                                             >
+                                                {/* Top inset gradient - subtle highlight */}
+                                                <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/70 to-transparent pointer-events-none" />
                                                 <MobileChatHistoryItemComponent
                                                     chat={chat}
                                                     isActive={activeChatId === chat.id}
@@ -624,27 +690,44 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, isMinimized = false, onClose,
                                     <span className="text-sm">{searchQuery ? "No chats found" : "No chat history yet"}</span>
                                 </div>
                             )}
-                        </div>
-                        <div className="px-4 py-3">
-                            <ClayPromoCard isMinimized={false} title="Zeta Trial" icon={<UfoIcon size={18} />} description={<span>There are <span className="text-slate-800 font-bold">12 days left</span> for you to enjoy the various features.</span>} action={<button className="w-full text-[10px] font-bold bg-slate-900 text-white py-1.5 px-3 rounded-lg shadow-md shadow-blue-500/20 hover:shadow-blue-500/30 hover:bg-slate-800 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-1.5"><span>Upgrade to Pro</span><TrendingUp size={10} className="text-blue-200" /></button>} />
-                        </div>
-                        <div className="px-4 pb-2 flex justify-center">
+                        </motion.div>
+                        <motion.div 
+                            className="px-4 py-3"
+                            custom={4}
+                            variants={pageLoadVariants}
+                            initial={shouldShowPageLoadAnimation ? "hidden" : false}
+                            animate="visible"
+                        >
+                            <ClayPromoCard isMinimized={false} title="Zeta Trial" icon={<UfoIcon size={18} />} description={<span>There are <span className="text-slate-800 font-bold">12 days left</span> for you to enjoy the various features.</span>} action={<div className="w-full p-[1.5px] rounded-[10px] bg-gradient-to-b from-slate-400/60 via-slate-600/40 to-slate-800/60"><button className="relative w-full text-[10px] font-bold text-white py-2 px-3 rounded-[8.5px] overflow-hidden shadow-[0_4px_12px_rgba(59,130,246,0.35),0_2px_4px_rgba(0,0,0,0.2),inset_0_-2px_6px_rgba(0,0,0,0.3)] hover:shadow-[0_6px_20px_rgba(59,130,246,0.45),0_3px_6px_rgba(0,0,0,0.25),inset_0_-2px_6px_rgba(0,0,0,0.25)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] active:shadow-[inset_0_2px_8px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(0,0,0,0.3)] transition-all duration-200 flex items-center justify-center gap-1.5" style={{ background: 'linear-gradient(180deg, #475569 0%, #1e293b 25%, #0f172a 100%)' }}><div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/50 to-transparent pointer-events-none" /><span className="relative z-10 bg-gradient-to-r from-white via-blue-200 to-white bg-[length:200%_100%] bg-clip-text text-transparent animate-[shimmer_2s_ease-in-out_infinite] drop-shadow-[0_0_3px_rgba(147,197,253,0.4)]">Upgrade to Pro</span><TrendingUp size={10} className="relative z-10 text-blue-300 animate-[icon-glow_2s_ease-in-out_infinite]" /></button></div>} />
+                        </motion.div>
+                        <motion.div 
+                            className="px-4 pb-2 flex justify-center"
+                            custom={5}
+                            variants={pageLoadVariants}
+                            initial={shouldShowPageLoadAnimation ? "hidden" : false}
+                            animate="visible"
+                        >
                             <ClayPill size="sm" onClick={() => { onOpenHelp?.(); onClose?.(); }}>Need Help?</ClayPill>
-                        </div>
+                        </motion.div>
                         {!isAuthenticated && (
-                            <div className="border-t border-slate-100 px-4 py-3 flex justify-center">
+                            <motion.div 
+                                className="border-t border-slate-100 px-4 py-3 flex justify-center"
+                                custom={6}
+                                variants={pageLoadVariants}
+                                initial={shouldShowPageLoadAnimation ? "hidden" : false}
+                                animate="visible"
+                            >
                                 <button
                                     onClick={openSignupModal}
                                     className="px-10 py-1.5 text-[13px] font-medium text-white bg-gradient-to-b from-slate-700 to-slate-900 rounded-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.15),inset_0_-1px_3px_rgba(0,0,0,0.2),0_2px_4px_rgba(0,0,0,0.1)] border border-slate-600/50 hover:from-slate-600 hover:to-slate-800 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_4px_8px_rgba(0,0,0,0.15)] transition-all duration-200 active:scale-[0.98]"
                                 >
                                     Sign up
                                 </button>
-                            </div>
+                            </motion.div>
                         )}
                     </motion.div>
                 )}
             </AnimatePresence>
-
 
             <motion.div
                 initial={false}
@@ -665,7 +748,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, isMinimized = false, onClose,
                     initial={false}
                     animate={isMinimized ? "minimized" : "expanded"}
                 >
-                    <AnimatePresence mode="wait" initial={false}>
+                    <motion.div
+                        custom={0}
+                        variants={pageLoadVariants}
+                        initial={shouldShowPageLoadAnimation ? "hidden" : false}
+                        animate="visible"
+                    >
+                        <AnimatePresence mode="wait" initial={false}>
                         {!isMinimized ? (
                             <motion.div
                                 key="search-expanded"
@@ -694,73 +783,100 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, isMinimized = false, onClose,
                         )}
                     </AnimatePresence>
                 </motion.div>
+                </motion.div>
                 <motion.div
                     className={`pb-3 ${isMinimized ? "px-3" : "px-4"}`}
                     variants={containerVariants}
                     initial={false}
                     animate={isMinimized ? "minimized" : "expanded"}
+                    custom={1}
                 >
-                    <AnimatePresence mode="wait" initial={false}>
+                    <motion.div
+                        variants={pageLoadVariants}
+                        initial={shouldShowPageLoadAnimation ? "hidden" : false}
+                        animate="visible"
+                        custom={1}
+                    >
+                        <AnimatePresence mode="wait" initial={false}>
                         {!isMinimized ? (
-                            <motion.button
-                                key="new-chat-expanded"
+                            <motion.div
+                                key="new-chat-expanded-wrapper"
                                 layout="position"
-                                layoutId="new-chat-button"
-                                onClick={handleNewChat}
-                                className={`w-full flex items-center rounded-xl text-sm font-medium transition-all duration-300 bg-gradient-to-br from-white via-white to-slate-50 shadow-[0_4px_3px_rgba(0,0,0,0.08),0_1px_0_rgba(255,255,255,1)] border border-slate-200/40 hover:border-slate-300/60 hover:bg-slate-50/50 hover:shadow-[inset_0_1px_3px_rgb(0_0_0_/_18%),_0_1px_0_rgba(255,255,255,0.8)] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.2)] ${isChatButtonPressed ? 'shadow-[inset_0_2px_4px_rgba(0,0,0,0.25)] bg-slate-50/50' : ''} justify-start px-3 py-2 gap-2.5`}
+                                className="p-[3px] rounded-[14px] bg-gradient-to-b from-white via-slate-50/50 to-slate-100/80 shadow-[inset_0_1px_2px_rgba(0,0,0,0.02),0_1px_0_rgba(255,255,255,0.8)]"
                                 variants={elementVariants}
                                 initial="hidden"
                                 animate="visible"
                                 exit={{ opacity: 0, scale: 0.95, transition: { duration: ANIMATION_CONFIG.duration.fast } }}
-                                whileTap={{ scale: 0.98 }}
-                                transition={{
-                                    layout: { duration: ANIMATION_CONFIG.duration.medium, ease: ANIMATION_CONFIG.easing.smooth },
-                                    scale: { duration: ANIMATION_CONFIG.duration.fast, ease: ANIMATION_CONFIG.easing.smooth }
-                                }}
                             >
-                                <motion.div
-                                    layout="position"
-                                    className="flex-shrink-0"
-                                    variants={iconVariants}
-                                    transition={{ layout: { duration: ANIMATION_CONFIG.duration.medium, ease: ANIMATION_CONFIG.easing.smooth } }}
+                                <motion.button
+                                    layoutId="new-chat-button"
+                                    onClick={handleNewChat}
+                                    className={`relative w-full flex items-center rounded-xl text-sm font-medium transition-all duration-300 justify-start px-3 py-2 gap-2.5 overflow-hidden bg-gradient-to-b from-white to-slate-100 border border-slate-200/40 ${isChatButtonPressed ? 'shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]' : 'shadow-[0_4px_12px_rgba(0,0,0,0.08),0_2px_4px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,1)]'} hover:shadow-[0_8px_24px_rgba(0,0,0,0.12),0_4px_8px_rgba(0,0,0,0.06)] hover:border-slate-300/60 active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]`}
+                                    whileTap={{ scale: 0.98 }}
+                                    transition={{
+                                        layout: { duration: ANIMATION_CONFIG.duration.medium, ease: ANIMATION_CONFIG.easing.smooth },
+                                        scale: { duration: ANIMATION_CONFIG.duration.fast, ease: ANIMATION_CONFIG.easing.smooth }
+                                    }}
                                 >
-                                    <UfoIcon size={18} className="text-slate-500" />
-                                </motion.div>
-                                <motion.span
-                                    variants={textVariants}
-                                    initial="minimized"
-                                    animate="expanded"
-                                    exit="minimized"
-                                    className="whitespace-nowrap"
-                                    layout="position"
-                                    transition={{ layout: { duration: ANIMATION_CONFIG.duration.medium, ease: ANIMATION_CONFIG.easing.smooth } }}
-                                >
-                                    New Chat
-                                </motion.span>
-                            </motion.button>
+                                    {/* Top shine inset */}
+                                    <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white to-transparent pointer-events-none" />
+                                    <motion.div
+                                        layout="position"
+                                        className="flex-shrink-0"
+                                        variants={iconVariants}
+                                        transition={{ layout: { duration: ANIMATION_CONFIG.duration.medium, ease: ANIMATION_CONFIG.easing.smooth } }}
+                                    >
+                                        <UfoIcon size={18} className="text-slate-700" />
+                                    </motion.div>
+                                    <motion.span
+                                        variants={textVariants}
+                                        initial="minimized"
+                                        animate="expanded"
+                                        exit="minimized"
+                                        className="whitespace-nowrap text-slate-700 font-semibold"
+                                        layout="position"
+                                        transition={{ layout: { duration: ANIMATION_CONFIG.duration.medium, ease: ANIMATION_CONFIG.easing.smooth } }}
+                                    >
+                                        New Chat
+                                    </motion.span>
+                                </motion.button>
+                            </motion.div>
                         ) : (
-                            <motion.button
-                                key="new-chat-minimized"
+                            <motion.div
+                                key="new-chat-minimized-wrapper"
                                 layout="position"
-                                layoutId="new-chat-button"
-                                onClick={handleNewChat}
-                                title="New Chat"
-                                className={`w-full flex items-center justify-center rounded-xl text-sm font-medium transition-all duration-300 bg-gradient-to-br from-white via-white to-slate-50 shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_0_rgba(255,255,255,1)] border border-slate-200/40 hover:border-slate-300/60 hover:bg-slate-50/50 hover:shadow-[inset_0_1px_3px_rgb(0_0_0_/_18%),_0_1px_0_rgba(255,255,255,0.8)] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.2)] ${isChatButtonPressed ? 'shadow-[inset_0_2px_4px_rgba(0,0,0,0.25)] bg-slate-50/50' : ''} p-2`}
+                                className="p-[3px] rounded-[14px] bg-gradient-to-b from-white via-slate-50/50 to-slate-100/80 shadow-[inset_0_1px_2px_rgba(0,0,0,0.02),0_1px_0_rgba(255,255,255,0.8)]"
                                 variants={elementVariants}
                                 initial="expanded"
                                 animate="minimized"
                                 exit={{ opacity: 0, scale: 0.9, transition: { duration: ANIMATION_CONFIG.duration.fast } }}
-                                transition={{ duration: ANIMATION_CONFIG.duration.fast, ease: ANIMATION_CONFIG.easing.smooth }}
-                                whileTap={{ scale: 0.98 }}
                             >
-                                <motion.div variants={iconVariants} animate="minimized">
-                                    <UfoIcon size={18} className="text-slate-500" />
-                                </motion.div>
-                            </motion.button>
+                                <motion.button
+                                    layoutId="new-chat-button"
+                                    onClick={handleNewChat}
+                                    title="New Chat"
+                                    className={`relative w-full flex items-center justify-center rounded-xl text-sm font-medium transition-all duration-300 p-2 overflow-hidden bg-gradient-to-b from-white to-slate-100 border border-slate-200/40 ${isChatButtonPressed ? 'shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]' : 'shadow-[0_4px_12px_rgba(0,0,0,0.08),0_2px_4px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,1)]'} hover:shadow-[0_8px_24px_rgba(0,0,0,0.12),0_4px_8px_rgba(0,0,0,0.06)] hover:border-slate-300/60 active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]`}
+                                    transition={{ duration: ANIMATION_CONFIG.duration.fast, ease: ANIMATION_CONFIG.easing.smooth }}
+                                    whileTap={{ scale: 0.98 }}
+                                >
+                                    {/* Top shine inset */}
+                                    <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white to-transparent pointer-events-none" />
+                                    <motion.div variants={iconVariants} animate="minimized">
+                                        <UfoIcon size={18} className="text-slate-700" />
+                                    </motion.div>
+                                </motion.button>
+                            </motion.div>
                         )}
                     </AnimatePresence>
                 </motion.div>
-                <motion.div className="flex-1 relative min-h-0">
+                </motion.div>
+                <motion.div 
+                    className="flex-1 relative min-h-0"
+                    custom={2}
+                    variants={pageLoadVariants}
+                    initial={shouldShowPageLoadAnimation ? "hidden" : false}
+                    animate="visible"
+                >
                     <motion.div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-[#F8F9FB] via-[#F8F9FB]/80 to-transparent z-10 pointer-events-none" initial={{ opacity: 0 }} animate={{ opacity: canScrollUp ? 1 : 0 }} transition={{ duration: ANIMATION_CONFIG.duration.medium, ease: ANIMATION_CONFIG.easing.smooth }} />
                     <motion.div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-[#F8F9FB] via-[#F8F9FB]/80 to-transparent z-10 pointer-events-none" initial={{ opacity: 0 }} animate={{ opacity: canScrollDown ? 1 : 0 }} transition={{ duration: ANIMATION_CONFIG.duration.medium, ease: ANIMATION_CONFIG.easing.smooth }} />
                     <div
@@ -780,12 +896,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, isMinimized = false, onClose,
                                     {chats.map((chat) => (
                                         <div
                                             key={chat.id}
-                                            className="p-0.5 rounded-xl shadow-[inset_0_1px_4px_rgba(0,0,0,0.08)]"
+                                            className="p-[3px] rounded-[10px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.08),inset_0_0_0_1px_rgba(0,0,0,0.02)] relative overflow-hidden"
                                             style={{
-                                                background: 'linear-gradient(145deg, rgba(241,245,249,0.7) 0%, rgba(226,232,240,0.5) 100%)',
+                                                background: 'linear-gradient(145deg, rgba(241,245,249,0.8) 0%, rgba(226,232,240,0.6) 100%)',
                                                 contain: 'layout style',
                                             }}
                                         >
+                                            {/* Top inset gradient - subtle highlight */}
+                                            <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/70 to-transparent pointer-events-none" />
                                             <ChatHistoryItemComponent
                                                 chat={chat}
                                                 isActive={activeChatId === chat.id}
@@ -807,102 +925,98 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, isMinimized = false, onClose,
                         )}
                     </div>
                 </motion.div>
-                <div className={`py-4 w-full ${isMinimized ? "px-3" : "px-4"}`}>
-                    <ClayPromoCard isMinimized={isMinimized} title="Zeta Trial" icon={<UfoIcon size={18} />} description={<span>There are <span className="text-slate-800 font-bold">12 days left</span> for you to enjoy the various features.</span>} action={<button className="w-full text-[10px] font-bold bg-slate-900 text-white py-1.5 px-3 rounded-lg shadow-md shadow-blue-500/20 hover:shadow-blue-500/30 hover:bg-slate-800 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-1.5"><span>Upgrade to Pro</span><TrendingUp size={10} className="text-blue-200" /></button>} />
-                </div>
+                <motion.div 
+                    className={`py-4 w-full ${isMinimized ? "px-3" : "px-4"}`}
+                    custom={3}
+                    variants={pageLoadVariants}
+                    initial={shouldShowPageLoadAnimation ? "hidden" : false}
+                    animate="visible"
+                >
+                    <ClayPromoCard isMinimized={isMinimized} title="Zeta Trial" icon={<UfoIcon size={18} />} description={<span>There are <span className="text-slate-800 font-bold">12 days left</span> for you to enjoy the various features.</span>} action={<div className="w-full p-[1.5px] rounded-[10px] bg-gradient-to-b from-slate-400/60 via-slate-600/40 to-slate-800/60"><button className="relative w-full text-[10px] font-bold text-white py-2 px-3 rounded-[8.5px] overflow-hidden shadow-[0_4px_12px_rgba(59,130,246,0.35),0_2px_4px_rgba(0,0,0,0.2),inset_0_-2px_6px_rgba(0,0,0,0.3)] hover:shadow-[0_6px_20px_rgba(59,130,246,0.45),0_3px_6px_rgba(0,0,0,0.25),inset_0_-2px_6px_rgba(0,0,0,0.25)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] active:shadow-[inset_0_2px_8px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(0,0,0,0.3)] transition-all duration-200 flex items-center justify-center gap-1.5" style={{ background: 'linear-gradient(180deg, #475569 0%, #1e293b 25%, #0f172a 100%)' }}><div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/50 to-transparent pointer-events-none" /><span className="relative z-10 bg-gradient-to-r from-white via-blue-200 to-white bg-[length:200%_100%] bg-clip-text text-transparent animate-[shimmer_2s_ease-in-out_infinite] drop-shadow-[0_0_3px_rgba(147,197,253,0.4)]">Upgrade to Pro</span><TrendingUp size={10} className="relative z-10 text-blue-300 animate-[icon-glow_2s_ease-in-out_infinite]" /></button></div>} />
+                </motion.div>
                 <motion.div
                     className={`pb-4 flex justify-center ${isMinimized ? "px-3" : "px-4"}`}
                     variants={containerVariants}
                     initial={false}
                     animate={isMinimized ? "minimized" : "expanded"}
+                    custom={4}
                 >
-                    {!isAuthenticated && (
-                        <motion.button
-                            onClick={openSignupModal}
-                            layout
-                            layoutId="signup-button"
-                            title={isMinimized ? "Sign up" : undefined}
-                            variants={elementVariants}
-                            initial="hidden"
-                            animate="visible"
-                            exit={{ opacity: 0, scale: 0.95, transition: { duration: ANIMATION_CONFIG.duration.fast } }}
-                            transition={{
-                                layout: {
-                                    duration: ANIMATION_CONFIG.duration.medium,
-                                    ease: ANIMATION_CONFIG.easing.smooth
-                                },
-                                scale: { duration: ANIMATION_CONFIG.duration.fast, ease: ANIMATION_CONFIG.easing.smooth }
-                            }}
-                            className={`flex items-center justify-center text-white bg-gradient-to-b from-slate-700 to-slate-900 rounded-xl text-sm font-medium shadow-[inset_0_1px_0_rgba(255,255,255,0.15),inset_0_-1px_3px_rgba(0,0,0,0.2),0_2px_4px_rgba(0,0,0,0.1)] border border-slate-600/50 hover:from-slate-600 hover:to-slate-800 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_4px_8px_rgba(0,0,0,0.15)] active:scale-[0.98] transition-all duration-200 ${isMinimized ? "p-2.5" : "px-8 py-2 w-full"}`}
-                        >
-                            {!isMinimized && (
-                                <motion.span
-                                    key="signup-text"
-                                    layout="position"
-                                    variants={textVariants}
-                                    initial="minimized"
-                                    animate="expanded"
-                                    exit="minimized"
-                                    className="whitespace-nowrap"
-                                    transition={{ layout: { duration: ANIMATION_CONFIG.duration.medium, ease: ANIMATION_CONFIG.easing.smooth } }}
-                                >
-                                    Sign up
-                                </motion.span>
-                            )}
-                            {isMinimized && (
-                                <motion.span
-                                    key="signup-icon"
-                                    layout="position"
-                                    variants={iconVariants}
-                                    initial="expanded"
-                                    animate="minimized"
-                                    exit="expanded"
-                                    className="text-xs font-bold"
-                                    transition={{ layout: { duration: ANIMATION_CONFIG.duration.medium, ease: ANIMATION_CONFIG.easing.smooth } }}
-                                >
-                                    +
-                                </motion.span>
-                            )}
-                        </motion.button>
-                    )}
-                    {isAuthenticated && (
-                        <AnimatePresence mode="wait" initial={false}>
-                            {isMinimized ? (
+                    <motion.div
+                        variants={pageLoadVariants}
+                        initial={shouldShowPageLoadAnimation ? "hidden" : false}
+                        animate="visible"
+                        custom={4}
+                        className="w-full h-full flex justify-center"
+                    >
+                        <AnimatePresence mode="wait">
+                            {!isAuthenticated ? (
                                 <motion.button
-                                    key="logout-min"
-                                    onClick={logout}
-                                    title="Sign Out"
-                                    variants={elementVariants}
-                                    initial="hidden"
-                                    animate="visible"
-                                    exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.1 } }}
-                                    className="flex items-center justify-center rounded-xl text-sm font-medium transition-all bg-gradient-to-b from-red-50 to-red-100/80 border border-red-200/60 shadow-[0_2px_4px_rgba(239,68,68,0.15),0_1px_2px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.8)] text-red-600 hover:text-red-700 hover:shadow-[0_3px_6px_rgba(239,68,68,0.2),0_1px_2px_rgba(0,0,0,0.06)] p-2.5"
+                                    key="signup-button"
+                                    onClick={openSignupModal}
+                                    layoutId="signup-button"
+                                    title={isMinimized ? "Sign up" : undefined}
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.95 }}
+                                    className={`flex items-center justify-center text-white bg-gradient-to-b from-slate-700 to-slate-900 rounded-xl text-sm font-medium shadow-[inset_0_1px_0_rgba(255,255,255,0.15),inset_0_-1px_3px_rgba(0,0,0,0.2),0_2px_4px_rgba(0,0,0,0.1)] border border-slate-600/50 hover:from-slate-600 hover:to-slate-800 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_4px_8px_rgba(0,0,0,0.15)] active:scale-[0.98] transition-all duration-200 ${isMinimized ? "p-2.5" : "px-8 py-2 w-full"}`}
                                 >
-                                    <LogOut size={14} className="text-red-500" />
+                                    {!isMinimized ? (
+                                        <motion.span
+                                            key="signup-text"
+                                            layout="position"
+                                            variants={textVariants}
+                                            initial="minimized"
+                                            animate="expanded"
+                                            exit="minimized"
+                                            className="whitespace-nowrap"
+                                        >
+                                            Sign up
+                                        </motion.span>
+                                    ) : (
+                                        <motion.span
+                                            key="signup-icon"
+                                            layout="position"
+                                            variants={iconVariants}
+                                            initial="expanded"
+                                            animate="minimized"
+                                            exit="expanded"
+                                            className="text-xs font-bold"
+                                        >
+                                            +
+                                        </motion.span>
+                                    )}
                                 </motion.button>
                             ) : (
-                                <motion.button
-                                    key="logout-max"
-                                    onClick={logout}
-                                    variants={elementVariants}
-                                    initial="minimized"
-                                    animate="expanded"
-                                    exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.1 } }}
-                                    className="w-full flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all bg-gradient-to-b from-red-50 to-red-100/80 border border-red-200/60 shadow-[0_2px_4px_rgba(239,68,68,0.15),0_1px_2px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.8)] text-red-600 hover:text-red-700 hover:shadow-[0_3px_6px_rgba(239,68,68,0.2),0_1px_2px_rgba(0,0,0,0.06)]"
-                                >
-                                    <motion.div variants={iconVariants}>
-                                        <LogOut size={14} className="text-red-500" />
-                                    </motion.div>
-                                    <motion.span
-                                        className="whitespace-nowrap"
-                                        variants={textVariants}
-                                    >
-                                        Sign Out
-                                    </motion.span>
-                                </motion.button>
+                                <AnimatePresence mode="wait" initial={false}>
+                                    {isMinimized ? (
+                                        <motion.button
+                                            key="logout-min"
+                                            onClick={logout}
+                                            title="Sign Out"
+                                            initial={{ opacity: 0, scale: 0.8 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.1 } }}
+                                            className="flex items-center justify-center rounded-xl text-sm font-medium transition-all bg-gradient-to-b from-red-50 to-red-100/80 border border-red-200/60 shadow-[0_2px_4px_rgba(239,68,68,0.15),0_1px_2px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.8)] text-red-600 hover:text-red-700 hover:shadow-[0_3px_6px_rgba(239,68,68,0.2),0_1px_2px_rgba(0,0,0,0.06)] p-2.5"
+                                        >
+                                            <LogOut size={14} className="text-red-500" />
+                                        </motion.button>
+                                    ) : (
+                                        <motion.button
+                                            key="logout-max"
+                                            onClick={logout}
+                                            initial={{ opacity: 0, scale: 0.95 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.1 } }}
+                                            className="w-full flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all bg-gradient-to-b from-red-50 to-red-100/80 border border-red-200/60 shadow-[0_2px_4px_rgba(239,68,68,0.15),0_1px_2px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.8)] text-red-600 hover:text-red-700 hover:shadow-[0_3px_6px_rgba(239,68,68,0.2),0_1px_2px_rgba(0,0,0,0.06)]"
+                                        >
+                                            <LogOut size={14} className="text-red-500" />
+                                            <span className="whitespace-nowrap">Sign Out</span>
+                                        </motion.button>
+                                    )}
+                                </AnimatePresence>
                             )}
                         </AnimatePresence>
-                    )}
+                    </motion.div>
                 </motion.div>
             </motion.div>
         </>

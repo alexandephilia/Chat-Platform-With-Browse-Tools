@@ -28,9 +28,9 @@ const cardShellStyle = {
 
 // Minimized card component (desktop sidebar only)
 const MinimizedCard: React.FC = () => (
-    <div className="relative w-full rounded-[24px]" style={{ minHeight: 76 }}>
+    <div className="relative w-full rounded-[24px] pt-1 pr-1" style={{ minHeight: 76 }}>
         {/* Shine effect */}
-        <div className="absolute inset-0 rounded-[24px] overflow-hidden">
+        <div className="absolute inset-0 top-1 right-1 rounded-[24px] overflow-hidden">
             <div
                 className="absolute inset-[-100%] bg-[conic-gradient(from_0deg_at_50%_50%,transparent_0deg,transparent_60deg,#60a5fa_120deg,#818cf8_180deg,#60a5fa_240deg,transparent_300deg,transparent_360deg)] opacity-50 blur-md animate-spin"
                 style={{ animationDuration: '3s' }}
@@ -62,9 +62,10 @@ const MinimizedCard: React.FC = () => (
                                 y: [0, -2, 0]
                             }}
                             transition={{ duration: 2, repeat: Infinity, repeatDelay: 1, ease: "easeInOut" }}
-                            className="absolute -top-3 -right-3 z-20 bg-gradient-to-br from-white via-slate-50 to-slate-200 text-blue-600 text-[9px] font-black px-1.5 py-0.5 rounded-md shadow-[0_3px_6px_rgba(0,0,0,0.15),inset_0_1px_0_rgba(255,255,255,1),inset_0_-2px_4px_rgba(0,0,0,0.05)] ring-1 ring-white/80"
+                            className="absolute -top-3 -right-1 z-20 text-[9px] font-black px-1.5 py-0.5 rounded-md shadow-[0_3px_6px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.15),inset_0_-2px_4px_rgba(0,0,0,0.2)] ring-1 ring-slate-600/50"
+                            style={{ background: 'linear-gradient(180deg, #475569 0%, #1e293b 40%, #0f172a 100%)' }}
                         >
-                            PRO
+                            <span className="bg-gradient-to-r from-white via-blue-200 to-white bg-[length:200%_100%] bg-clip-text text-transparent animate-[shimmer_2s_ease-in-out_infinite] drop-shadow-[0_0_3px_rgba(147,197,253,0.5)]">PRO</span>
                         </motion.div>
                     </div>
                 </div>

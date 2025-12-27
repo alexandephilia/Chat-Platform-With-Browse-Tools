@@ -139,20 +139,18 @@ function AppContent() {
 
                     {/* Sidebar Component */}
                     <Sidebar
-                        isOpen={isSidebarOpen}
-                        isMinimized={isSidebarMinimized}
-                        onClose={handleCloseSidebar}
-                        onNewChat={handleNewChat}
-                        onSelectChat={handleSelectChat}
-                        onDeleteChat={handleDeleteChat}
-                        chatHistory={chatHistory}
-                        activeChatId={activeChatId || undefined}
-                        onOpenProfile={() => {
-                            setIsProfileOpen(true);
-                            // Don't close sidebar - profile portal will appear on top
-                        }}
-                        onOpenHelp={() => setIsOnboardingOpen(true)}
-                    />
+                    isOpen={isSidebarOpen}
+                    isMinimized={isSidebarMinimized}
+                    onClose={() => setIsSidebarOpen(false)}
+                    onNewChat={handleNewChat}
+                    onSelectChat={selectChat}
+                    onDeleteChat={deleteChat}
+                    chatHistory={chatHistory}
+                    activeChatId={activeChatId}
+                    isInitialLoad={activeChatId === null}
+                    onOpenProfile={() => setIsProfileOpen(true)}
+                    onOpenHelp={() => setIsOnboardingOpen(true)}
+                />
 
                     {/* Main Content */}
                     <div className="flex-1 flex flex-col min-w-0 h-full min-h-0 p-0 md:p-[10px]">
@@ -187,9 +185,9 @@ function AppContent() {
                             </div>
 
                             <ChatInterface
-                                key={activeChatId || 'new'}
                                 isSidebarMinimized={isSidebarMinimized}
                                 initialMessages={getCurrentMessages()}
+                                activeChatId={activeChatId || 'new'}
                                 onMessagesChange={handleMessagesChange}
                             />
 

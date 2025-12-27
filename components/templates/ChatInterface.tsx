@@ -19,6 +19,7 @@ import { WelcomeScreen } from '../organisms/WelcomeScreen';
 interface ChatInterfaceProps {
     isSidebarMinimized?: boolean;
     initialMessages?: Message[];
+    activeChatId?: string;
     onMessagesChange?: (messages: Message[], isStreamingComplete?: boolean) => void;
 }
 
@@ -46,6 +47,7 @@ const getStoredValue = <T,>(key: string, defaultValue: T, validator?: (val: any)
 const ChatInterface: React.FC<ChatInterfaceProps> = ({
     isSidebarMinimized = false,
     initialMessages = [],
+    activeChatId = 'new',
     onMessagesChange
 }) => {
     // Model and search state - initialized from localStorage
@@ -103,15 +105,26 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     const isInitializedRef = useRef(false);
     const prevMessagesLengthRef = useRef(0);
 
-    // Initialize messages from props (only once on mount)
+    // Initialize messages from props
     useEffect(() => {
-        if (initialMessages.length > 0 && !isInitializedRef.current) {
+        // Stop any active streaming before switching sessions
+        stopStreaming();
+
+        // Only update if messages are different (prevents loop with onMessagesChange)
+        const messagesChanged =
+            initialMessages.length !== messages.length ||
+            (initialMessages.length > 0 &&
+                (initialMessages[0].id !== messages[0]?.id ||
+                    initialMessages[initialMessages.length - 1].content !== messages[messages.length - 1]?.content));
+
+        if (messagesChanged || activeChatId === 'new') {
             setMessages(initialMessages);
-            setHasConversationStarted(true);
+            setHasConversationStarted(initialMessages.length > 0);
             prevMessagesLengthRef.current = initialMessages.length;
         }
+
         isInitializedRef.current = true;
-    }, []);
+    }, [initialMessages, activeChatId, stopStreaming]);
 
     // Track previous loading state to detect streaming completion
     const prevIsLoadingRef = useRef(false);
@@ -277,28 +290,43 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                     className={`flex-1 flex flex-col min-h-0 relative ${isWelcomeMode ? 'overflow-y-auto custom-scrollbar-hide lg:justify-center lg:items-center lg:px-4 lg:pt-8 lg:pb-12' : ''}`}
                 >
                     {/* Welcome Screen */}
-                    {isWelcomeMode && (
-                        <WelcomeScreen
-                            selectedModel={selectedModel}
-                            onSelectModel={setSelectedModel}
-                            onSendMessage={sendMessage}
-                            onStopStreaming={stopStreaming}
-                            isLoading={isLoading}
-                            webSearchEnabled={webSearchEnabled}
-                            onWebSearchToggle={setWebSearchEnabled}
-                            searchType={searchType}
-                            onSearchTypeChange={setSearchType}
-                            reasoningEnabled={reasoningEnabled}
-                            onReasoningToggle={setReasoningEnabled}
-                            hasAttachments={hasAttachments}
-                            isSidebarMinimized={isSidebarMinimized}
-                        />
-                    )}
+                    <AnimatePresence mode="wait">
+                        {isWelcomeMode && (
+                            <motion.div
+                                key="welcome-screen-container"
+                                initial={{ opacity: 0, scale: 0.98, filter: 'blur(20px)' }}
+                                animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+                                exit={{ opacity: 0, y: 80, filter: 'blur(20px)' }}
+                                transition={{
+                                    duration: 0.8,
+                                    ease: [0.22, 1, 0.36, 1],
+                                }}
+                                className="w-full h-full flex flex-col justify-center items-center"
+                            >
+                                <WelcomeScreen
+                                    selectedModel={selectedModel}
+                                    onSelectModel={setSelectedModel}
+                                    onSendMessage={sendMessage}
+                                    onStopStreaming={stopStreaming}
+                                    isLoading={isLoading}
+                                    webSearchEnabled={webSearchEnabled}
+                                    onWebSearchToggle={setWebSearchEnabled}
+                                    searchType={searchType}
+                                    onSearchTypeChange={setSearchType}
+                                    reasoningEnabled={reasoningEnabled}
+                                    onReasoningToggle={setReasoningEnabled}
+                                    hasAttachments={hasAttachments}
+                                    isSidebarMinimized={isSidebarMinimized}
+                                />
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
 
                     {/* Messages Area */}
-                    <AnimatePresence mode="wait">
+                    <AnimatePresence mode="wait" initial={false}>
                         {!isWelcomeMode && (
                             <MessageList
+                                key={activeChatId}
                                 messages={messages}
                                 isLoading={isLoading}
                                 onCopy={handleCopy}
@@ -332,7 +360,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                         initial={!hasInitialized.current && isWelcomeMode ? {
                             y: 'calc(-41vh + 100% + 80px)',
                             opacity: 0,
-                            filter: 'blur(16px)'
+                            filter: 'blur(20px)'
                         } : false}
                         animate={{
                             y: isWelcomeMode ? 'calc(-50vh + 40% + 6rem)' : 0,
@@ -341,12 +369,19 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                         }}
                         transition={{
                             type: "spring",
-                            stiffness: 140,
+                            stiffness: 240,
                             damping: 30,
-                            mass: 3,
-                            delay: !hasInitialized.current && isWelcomeMode ? 0.9 : 0,
-                            opacity: { duration: 0.6, delay: !hasInitialized.current && isWelcomeMode ? 0.9 : 0 },
-                            filter: { duration: 1, delay: !hasInitialized.current && isWelcomeMode ? 0.9 : 0 }
+                            mass: 2,
+                            // Only use long delay on initial mount, not session switches
+                            delay: !isInitializedRef.current && isWelcomeMode ? 0.9 : 0.05,
+                            opacity: { 
+                                duration: 0.6, 
+                                delay: !isInitializedRef.current && isWelcomeMode ? 0.9 : 0.05 
+                            },
+                            filter: { 
+                                duration: 1, 
+                                delay: !isInitializedRef.current && isWelcomeMode ? 0.9 : 0.05 
+                            }
                         }}
                     >
                         {/* Architectural Layer - Multi-rim depth effect (only in welcome mode) */}
@@ -374,8 +409,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                                                 animate={{ opacity: 1, height: 'auto' }}
                                                 exit={{ opacity: 0, height: 0 }}
                                                 transition={{
-                                                    opacity: { duration: 0.1 },
-                                                    height: { duration: 0.2, ease: [0.2, 0, 0.2, 1] }
+                                                    opacity: { duration: 0.4 },
+                                                    height: { duration: 0.6, ease: [0.4, 0, 0.2, 1] }
                                                 }}
                                             >
                                                 <div className="bg-[#FAFAFA] px-3 pt-3 pb-2 lg:px-3 lg:pt-4 lg:pb-2 flex items-center justify-between">

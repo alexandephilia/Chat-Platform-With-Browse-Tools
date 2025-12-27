@@ -95,16 +95,15 @@ export const CustomInstructionsModal: React.FC<CustomInstructionsModalProps> = (
                     transition={{ duration: 0.15 }}
                     className={`fixed inset-0 z-[10002] flex ${isMobile ? 'items-end' : 'items-center'} justify-center`}
                 >
-                    {/* Backdrop */}
+                    {/* Backdrop - no click to dismiss */}
                     <motion.div
                         key="modal-backdrop"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
+                        exit={{ opacity: 0, pointerEvents: 'none' }}
                         transition={{ duration: 0.2 }}
                         style={isMobile ? { opacity: backdropOpacity } : undefined}
-                        onClick={onClose}
-                        className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+                        className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm pointer-events-auto"
                     />
 
                     {/* Modal Content with Multi-rim depth effect */}
@@ -154,7 +153,7 @@ export const CustomInstructionsModal: React.FC<CustomInstructionsModalProps> = (
                                                 </div>
                                             </div>
                                             <div className="flex flex-col">
-                                                <h2 className="text-[15px] sm:text-base font-bold text-slate-800">Custom Instructions</h2>
+                                                <h2 className="text-[15px] sm:text-base font-bold text-slate-800" style={{ fontFamily: 'Instrument Serif, Georgia, serif' }}>Custom Instructions</h2>
                                                 <span className="text-[10px] text-slate-400">Personalize Zeta's responses</span>
                                             </div>
                                         </div>
@@ -177,25 +176,28 @@ export const CustomInstructionsModal: React.FC<CustomInstructionsModalProps> = (
                                         </p>
 
                                         {/* Textarea with proper inset styling */}
-                                        <div className="relative group">
+                                        <div className="relative group overflow-hidden rounded-2xl">
                                             <textarea
                                                 value={instructions}
                                                 onChange={(e) => setInstructions(e.target.value)}
                                                 placeholder="e.g. 'I prefer concise answers', 'Always provide code examples in TypeScript'..."
                                                 className="w-full h-36 sm:h-48 p-4 sm:p-5 text-sm bg-slate-50/80 border border-slate-200/60 rounded-2xl focus:outline-none transition-all resize-none text-slate-700 placeholder:text-slate-400 shadow-[inset_0_2px_4px_rgba(0,0,0,0.06),inset_0_1px_2px_rgba(0,0,0,0.04),0_1px_0_rgba(255,255,255,0.8)] focus:shadow-[inset_0_2px_4px_rgba(0,0,0,0.08),0_0_0_2px_rgba(36,89,133,0.15)] focus:border-[rgba(36,89,133,0.3)]"
                                             />
-                                            {/* Overlay icon inside textarea */}
-                                            <div className="absolute right-3 sm:right-4 bottom-3 sm:bottom-4 pointer-events-none">
-                                                <AtomOutline className="w-8 h-8 opacity-10 group-focus-within:opacity-25 transition-opacity" style={{ color: 'rgb(36 89 133)' }} />
+                                            {/* Overlay icon inside textarea - corner cut-off effect */}
+                                            <div className="absolute -right-3 -bottom-0 pointer-events-none opacity-[0.04] group-focus-within:opacity-[0.08] transition-opacity">
+                                                <AtomOutline className="w-28 h-28 sm:w-32 sm:h-32" style={{ color: 'rgb(36 89 133)' }} />
                                             </div>
                                         </div>
 
                                         {/* Info box - raised style with orange color */}
                                         <div
-                                            className="flex items-start gap-2 px-3.5 py-2.5 rounded-xl shadow-[0_2px_4px_rgba(251,146,60,0.15),0_1px_2px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.8)] border border-orange-200/60 bg-gradient-to-b from-orange-50 to-orange-100/50"
+                                            className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl shadow-[0_2px_4px_rgba(251,146,60,0.15),0_1px_2px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.8)] border border-orange-200/40 bg-gradient-to-b from-orange-50/40 to-orange-100/30"
                                         >
-                                            <div className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 bg-gradient-to-b from-white to-orange-50 shadow-[0_1px_3px_rgba(251,146,60,0.2),inset_0_1px_0_rgba(255,255,255,1)] text-orange-500">
-                                                <AlertCircle size={12} />
+                                            <div className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 bg-gradient-to-b from-white to-orange-100 shadow-[0_1px_3px_rgba(251,146,60,0.25),inset_0_1px_0_rgba(255,255,255,1)] text-orange-500 relative overflow-hidden">
+                                                <AlertCircle size={14} />
+                                                {/* Glare effect */}
+                                                <div className="absolute inset-0 bg-gradient-to-br from-white/40 via-transparent to-transparent pointer-events-none" />
+                                                <div className="absolute -top-0.5 -left-0.5 w-[120%] h-[50%] bg-gradient-to-br from-white/50 via-white/10 to-transparent rotate-[-10deg] pointer-events-none" />
                                             </div>
                                             <span className="text-[11px] font-medium leading-relaxed text-orange-700/90">
                                                 Applied to all new conversations with Zeta and influences behavior matching your preferences.
@@ -215,7 +217,7 @@ export const CustomInstructionsModal: React.FC<CustomInstructionsModalProps> = (
                                                 <div className="p-[1px] rounded-[10px] bg-slate-200/80 shadow-[inset_0_1px_2px_rgba(0,0,0,0.08)]">
                                                     <div className="relative px-4 py-2 rounded-lg bg-gradient-to-b from-white to-slate-50 text-slate-600 hover:text-slate-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.25)]">
                                                         <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/90 to-transparent" />
-                                                        <span className="relative z-10 text-[13px] font-semibold">Cancel</span>
+                                                        <span className="relative z-10 text-[13px] font-semibold flex items-center justify-center">Cancel</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -230,13 +232,13 @@ export const CustomInstructionsModal: React.FC<CustomInstructionsModalProps> = (
                                                 <div className="p-[1px] rounded-[10px] bg-[rgb(36,89,133)]/50 shadow-[inset_0_1px_2px_rgba(0,0,0,0.08)]">
                                                     <div className="relative px-4 py-2 rounded-lg bg-gradient-to-b from-[rgb(50,110,160)] to-[rgb(36,89,133)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.25)]">
                                                         <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/40 to-transparent" />
-                                                        <span className="relative z-10 text-[13px] font-semibold flex items-center justify-center gap-2">
+                                                        <span className="relative z-10 text-[13px] font-semibold flex items-center justify-center">
                                                             {isSaving ? (
                                                                 <>
                                                                     <motion.div
                                                                         animate={{ rotate: 360 }}
                                                                         transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
-                                                                        className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full"
+                                                                        className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full mr-2"
                                                                     />
                                                                     Saving...
                                                                 </>

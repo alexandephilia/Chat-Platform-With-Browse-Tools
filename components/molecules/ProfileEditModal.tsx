@@ -340,7 +340,7 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onCl
                     className={`fixed inset-0 z-[10003] flex ${isMobile ? 'items-end' : 'items-center'} justify-center pointer-events-none`}
                     style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
                 >
-                    {/* Backdrop - Explicit pointer-events handling */}
+                    {/* Backdrop - no click to dismiss, explicit pointer-events handling */}
                     <motion.div
                         key="modal-backdrop"
                         initial={{ opacity: 0 }}
@@ -348,11 +348,6 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onCl
                         exit={{ opacity: 0, pointerEvents: 'none' }} // FORCE pointer-events none on exit
                         transition={{ duration: 0.2 }}
                         style={isMobile ? { opacity: backdropOpacity } : undefined}
-                        onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            onClose();
-                        }}
                         className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm pointer-events-auto"
                     />
 
@@ -444,7 +439,7 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onCl
                                                         </div>
                                                     </div>
                                                     <div className="flex flex-col">
-                                                        <h2 className="text-[15px] sm:text-base font-bold text-slate-800">Profile</h2>
+                                                        <h2 className="text-[15px] sm:text-base font-bold text-slate-800" style={{ fontFamily: 'Instrument Serif, Georgia, serif' }}>Profile</h2>
                                                         <span className="text-[10px] text-slate-400">Manage your account</span>
                                                     </div>
                                                 </div>

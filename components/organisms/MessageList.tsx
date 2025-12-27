@@ -266,12 +266,20 @@ export const MessageList: React.FC<MessageListProps> = ({
             }}
             initial={{ opacity: 0, y: 60, filter: 'blur(20px)' }}
             animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-            exit={{ opacity: 0 }}
+            exit={{ 
+                opacity: 0, 
+                y: 80, 
+                filter: 'blur(20px)',
+                transition: { 
+                    duration: 0.6, 
+                    ease: [0.32, 0, 0.67, 0] // Ease in for exit
+                } 
+            }}
             transition={{
                 duration: 0.8,
-                delay: 0.3,
+                delay: 0.1,
                 ease: [0.22, 1, 0.36, 1],
-                filter: { duration: 0.6, delay: 0.3 }
+                filter: { duration: 0.6, delay: 0.1 }
             }}
             className="absolute inset-0 overflow-y-auto overflow-x-hidden pt-16 pb-44 md:pt-20 md:pb-40 custom-scrollbar overscroll-contain"
             style={{

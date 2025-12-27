@@ -820,6 +820,28 @@
             }
         }
 
+        @keyframes shimmer {
+            0% {
+                background-position: 200% 0;
+            }
+
+            100% {
+                background-position: -200% 0;
+            }
+        }
+
+        @keyframes icon-glow {
+
+            0%,
+            100% {
+                filter: drop-shadow(0 0 2px rgba(147, 197, 253, 0.3));
+            }
+
+            50% {
+                filter: drop-shadow(0 0 5px rgba(147, 197, 253, 0.5));
+            }
+        }
+
         :root {
             --ft-marker-animation: none;
         }
