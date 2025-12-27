@@ -202,8 +202,12 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onCl
         const distance = Math.sqrt(normalizedX * normalizedX + normalizedY * normalizedY);
         const intensity = Math.min(distance, 1); // Cap at 1
 
-        // Stronger tilt at corners/edges - max 10 degrees
-        const maxTilt = 10;
+        // CSS rotateX: positive = top tilts away (bottom toward viewer)
+        // CSS rotateY: positive = left tilts away (right toward viewer)
+        // For natural "tilt toward cursor" effect:
+        // - Cursor at bottom (normalizedY > 0) → bottom toward viewer → NEGATIVE rotateX
+        // - Cursor at right (normalizedX > 0) → right toward viewer → NEGATIVE rotateY
+        const maxTilt = 12;
         const tiltX = -normalizedY * maxTilt * intensity;
         const tiltY = normalizedX * maxTilt * intensity;
 
@@ -233,8 +237,8 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onCl
         const distance = Math.sqrt(normalizedX * normalizedX + normalizedY * normalizedY);
         const intensity = Math.min(distance, 1);
 
-        // Stronger tilt at corners/edges - max 10 degrees
-        const maxTilt = 10;
+        // Same logic as mouse - tilt toward touch position
+        const maxTilt = 12;
         const tiltX = -normalizedY * maxTilt * intensity;
         const tiltY = normalizedX * maxTilt * intensity;
 
@@ -456,191 +460,193 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onCl
                                                 />
 
                                                 {/* ID Card Container with 3D tilt */}
-                                                <motion.div
-                                                    ref={cardRef}
-                                                    onMouseMove={handleCardMouseMove}
-                                                    onMouseLeave={handleCardMouseLeave}
-                                                    onTouchMove={handleCardTouchMove}
-                                                    onTouchEnd={handleCardTouchEnd}
-                                                    style={{
-                                                        rotateX,
-                                                        rotateY,
-                                                        transformStyle: 'preserve-3d',
-                                                    }}
-                                                    className="p-0.5 bg-gradient-to-b from-white to-slate-200 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.08),0_2px_4px_rgba(0,0,0,0.04)] cursor-default"
-                                                >
-                                                    <div className="p-0.5 bg-slate-100 rounded-[14px] shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)]">
-                                                        <div className="bg-gradient-to-br from-white via-white to-slate-50/80 rounded-xl p-4 sm:p-5 overflow-hidden relative">
-                                                            {/* Planet watermark */}
-                                                            <div className="absolute -right-6 -bottom-6 opacity-[0.04] pointer-events-none">
-                                                                <Globe2 size={140} strokeWidth={0.8} />
-                                                            </div>
-
-                                                            {/* Card Title - Zetanian */}
-                                                            <div className="text-center mb-4 relative z-10">
-                                                                <h4 className="text-2xl sm:text-3xl text-slate-700/90 tracking-wide" style={{ fontFamily: 'Instrument Serif, Georgia, serif', fontStyle: 'italic' }}>
-                                                                    Zetanian
-                                                                </h4>
-                                                                <div className="flex items-center justify-center gap-2 mt-1">
-                                                                    <div className="h-px w-8 bg-gradient-to-r from-transparent to-slate-300" />
-                                                                    <span className="text-[9px] uppercase tracking-[0.2em] text-slate-400 font-medium">Citizen ID</span>
-                                                                    <div className="h-px w-8 bg-gradient-to-l from-transparent to-slate-300" />
-                                                                </div>
-                                                            </div>
-
-                                                            {/* Card Content - Horizontal Layout */}
-                                                            <div className="flex gap-4 sm:gap-5 relative z-10">
-                                                                {/* Left: Avatar */}
-                                                                <div className="shrink-0">
-                                                                    <button
-                                                                        onClick={() => fileInputRef.current?.click()}
-                                                                        className="group relative p-1 bg-gradient-to-b from-white to-slate-200 rounded-2xl shadow-[0_3px_10px_rgba(0,0,0,0.1),0_1px_3px_rgba(0,0,0,0.06)] hover:shadow-[0_5px_14px_rgba(0,0,0,0.12)] hover:scale-[1.02] transition-all duration-200 active:scale-[0.98] focus:outline-none"
-                                                                    >
-                                                                        <div className="p-0.5 bg-slate-100 rounded-[14px] shadow-[inset_0_2px_4px_rgba(0,0,0,0.08)] relative overflow-hidden">
-                                                                            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center shadow-[inset_0_2px_6px_rgba(0,0,0,0.06)] overflow-hidden relative">
-                                                                                {(pendingAvatar || user?.avatar) ? (
-                                                                                    <img src={pendingAvatar || user?.avatar} alt="Avatar" className="w-full h-full object-cover" />
-                                                                                ) : (
-                                                                                    <UserCircle size={40} className="text-[rgb(36,89,133)]/70" strokeWidth={1.5} />
-                                                                                )}
-                                                                                {/* Film laminate glare effect - multi-layer */}
-                                                                                {/* Base glossy layer */}
-                                                                                <div className="absolute inset-0 bg-gradient-to-br from-white/25 via-white/5 to-transparent pointer-events-none" />
-                                                                                {/* Top highlight streak */}
-                                                                                <div className="absolute -top-1 -left-1 w-[120%] h-[40%] bg-gradient-to-br from-white/35 via-white/10 to-transparent rotate-[-8deg] pointer-events-none" />
-                                                                                {/* Subtle diagonal shine line */}
-                                                                                <div className="absolute top-[15%] -left-[10%] w-[60%] h-[2px] bg-gradient-to-r from-transparent via-white/40 to-transparent rotate-[35deg] pointer-events-none blur-[0.5px]" />
-                                                                                {/* Secondary softer shine */}
-                                                                                <div className="absolute top-[25%] left-[5%] w-[40%] h-[1px] bg-gradient-to-r from-transparent via-white/25 to-transparent rotate-[35deg] pointer-events-none" />
-                                                                                {/* Edge reflection */}
-                                                                                <div className="absolute inset-0 rounded-xl shadow-[inset_1px_1px_0_rgba(255,255,255,0.3),inset_-1px_-1px_0_rgba(0,0,0,0.05)] pointer-events-none" />
-                                                                            </div>
-
-                                                                            {/* Hover Overlay */}
-                                                                            <div className="absolute inset-0.5 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-xl">
-                                                                                <Camera size={20} className="text-white drop-shadow-md" />
-                                                                            </div>
-                                                                        </div>
-                                                                        {/* Edit badge */}
-                                                                        <div className="absolute -bottom-1 -right-1 p-1.5 bg-white rounded-lg shadow-[0_2px_6px_rgba(0,0,0,0.12)] border border-slate-100 text-slate-400 group-hover:text-[rgb(36,89,133)] transition-colors">
-                                                                            <Pencil size={10} />
-                                                                        </div>
-                                                                    </button>
+                                                <div style={{ perspective: '1000px' }}>
+                                                    <motion.div
+                                                        ref={cardRef}
+                                                        onMouseMove={handleCardMouseMove}
+                                                        onMouseLeave={handleCardMouseLeave}
+                                                        onTouchMove={handleCardTouchMove}
+                                                        onTouchEnd={handleCardTouchEnd}
+                                                        style={{
+                                                            rotateX,
+                                                            rotateY,
+                                                            transformStyle: 'preserve-3d',
+                                                        }}
+                                                        className="p-0.5 bg-gradient-to-b from-white to-slate-200 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.08),0_2px_4px_rgba(0,0,0,0.04)] cursor-default"
+                                                    >
+                                                        <div className="p-0.5 bg-slate-100 rounded-[14px] shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)]">
+                                                            <div className="bg-gradient-to-br from-white via-white to-slate-50/80 rounded-xl p-4 sm:p-5 overflow-hidden relative">
+                                                                {/* Planet watermark */}
+                                                                <div className="absolute -right-6 -bottom-6 opacity-[0.04] pointer-events-none">
+                                                                    <Globe2 size={140} strokeWidth={0.8} />
                                                                 </div>
 
-                                                                {/* Right: Info */}
-                                                                <div className="flex-1 min-w-0 flex flex-col justify-center gap-1">
-                                                                    {/* Name - Editable */}
-                                                                    <div>
-                                                                        {isEditing ? (
-                                                                            <div className="flex items-center gap-2">
-                                                                                <input
-                                                                                    ref={inputRef}
-                                                                                    type="text"
-                                                                                    value={firstName}
-                                                                                    onChange={(e) => setFirstName(e.target.value)}
-                                                                                    onKeyDown={handleKeyDown}
-                                                                                    onBlur={handleSave}
-                                                                                    className="flex-1 min-w-0 px-3 py-1.5 text-xl sm:text-2xl font-semibold bg-slate-50/80 border border-slate-200/60 rounded-lg focus:outline-none text-slate-800 shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)] focus:shadow-[inset_0_2px_4px_rgba(0,0,0,0.08),0_0_0_2px_rgba(36,89,133,0.15)] focus:border-[rgba(36,89,133,0.3)]"
-                                                                                    style={{ fontFamily: 'Instrument Serif, Georgia, serif' }}
-                                                                                    maxLength={20}
-                                                                                />
-                                                                                <button
-                                                                                    onClick={handleSave}
-                                                                                    className="p-2 rounded-lg text-white transition-all bg-gradient-to-b from-[rgb(50,110,160)] to-[rgb(36,89,133)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.25),0_2px_6px_rgba(36,89,133,0.35)] hover:shadow-[0_4px_10px_rgba(36,89,133,0.4)] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.15)] focus:outline-none"
-                                                                                >
-                                                                                    <Check size={14} strokeWidth={2.5} />
-                                                                                </button>
-                                                                            </div>
-                                                                        ) : (
-                                                                            <div className="flex items-center gap-2 group/name">
-                                                                                <h3 className="text-xl sm:text-2xl font-semibold text-slate-800 truncate" style={{ fontFamily: 'Instrument Serif, Georgia, serif' }}>{pendingName || user?.firstName || 'Unknown'}</h3>
-                                                                                <button
-                                                                                    onClick={() => setIsEditing(true)}
-                                                                                    className="p-1 rounded-md text-slate-300 hover:text-slate-500 opacity-0 group-hover/name:opacity-100 transition-all hover:bg-slate-100 focus:outline-none"
-                                                                                >
-                                                                                    <Pencil size={12} />
-                                                                                </button>
-                                                                            </div>
-                                                                        )}
-                                                                    </div>
-
-                                                                    {/* Email */}
-                                                                    <div className="flex items-center gap-2 text-slate-400">
-                                                                        <span className="text-xs sm:text-xs truncate" style={{ fontFamily: 'Geist Mono, monospace' }}>{user?.email || 'No email'}</span>
+                                                                {/* Card Title - Zetanian */}
+                                                                <div className="text-center mb-4 relative z-10">
+                                                                    <h4 className="text-2xl sm:text-3xl text-slate-700/90 tracking-wide" style={{ fontFamily: 'Instrument Serif, Georgia, serif', fontStyle: 'italic' }}>
+                                                                        Zetanian
+                                                                    </h4>
+                                                                    <div className="flex items-center justify-center gap-2 mt-1">
+                                                                        <div className="h-px w-8 bg-gradient-to-r from-transparent to-slate-300" />
+                                                                        <span className="text-[9px] uppercase tracking-[0.2em] text-slate-400 font-medium">Citizen ID</span>
+                                                                        <div className="h-px w-8 bg-gradient-to-l from-transparent to-slate-300" />
                                                                     </div>
                                                                 </div>
-                                                            </div>
 
-                                                            {/* Divider */}
-                                                            <div className="my-4 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent relative z-10" />
+                                                                {/* Card Content - Horizontal Layout */}
+                                                                <div className="flex gap-4 sm:gap-5 relative z-10">
+                                                                    {/* Left: Avatar */}
+                                                                    <div className="shrink-0">
+                                                                        <button
+                                                                            onClick={() => fileInputRef.current?.click()}
+                                                                            className="group relative p-1 bg-gradient-to-b from-white to-slate-200 rounded-2xl shadow-[0_3px_10px_rgba(0,0,0,0.1),0_1px_3px_rgba(0,0,0,0.06)] hover:shadow-[0_5px_14px_rgba(0,0,0,0.12)] hover:scale-[1.02] transition-all duration-200 active:scale-[0.98] focus:outline-none"
+                                                                        >
+                                                                            <div className="p-0.5 bg-slate-100 rounded-[14px] shadow-[inset_0_2px_4px_rgba(0,0,0,0.08)] relative overflow-hidden">
+                                                                                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center shadow-[inset_0_2px_6px_rgba(0,0,0,0.06)] overflow-hidden relative">
+                                                                                    {(pendingAvatar || user?.avatar) ? (
+                                                                                        <img src={pendingAvatar || user?.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                                                                                    ) : (
+                                                                                        <UserCircle size={40} className="text-[rgb(36,89,133)]/70" strokeWidth={1.5} />
+                                                                                    )}
+                                                                                    {/* Film laminate glare effect - multi-layer */}
+                                                                                    {/* Base glossy layer */}
+                                                                                    <div className="absolute inset-0 bg-gradient-to-br from-white/25 via-white/5 to-transparent pointer-events-none" />
+                                                                                    {/* Top highlight streak */}
+                                                                                    <div className="absolute -top-1 -left-1 w-[120%] h-[40%] bg-gradient-to-br from-white/35 via-white/10 to-transparent rotate-[-8deg] pointer-events-none" />
+                                                                                    {/* Subtle diagonal shine line */}
+                                                                                    <div className="absolute top-[15%] -left-[10%] w-[60%] h-[2px] bg-gradient-to-r from-transparent via-white/40 to-transparent rotate-[35deg] pointer-events-none blur-[0.5px]" />
+                                                                                    {/* Secondary softer shine */}
+                                                                                    <div className="absolute top-[25%] left-[5%] w-[40%] h-[1px] bg-gradient-to-r from-transparent via-white/25 to-transparent rotate-[35deg] pointer-events-none" />
+                                                                                    {/* Edge reflection */}
+                                                                                    <div className="absolute inset-0 rounded-xl shadow-[inset_1px_1px_0_rgba(255,255,255,0.3),inset_-1px_-1px_0_rgba(0,0,0,0.05)] pointer-events-none" />
+                                                                                </div>
 
-                                                            {/* Bottom: Citizen Info */}
-                                                            <div className="flex items-center justify-between text-[11px] sm:text-xs text-slate-400 relative z-10">
-                                                                <span className="uppercase tracking-wider font-medium">Citizen Since</span>
-                                                                <span className="font-medium text-slate-500" style={{ fontFamily: 'Geist Mono, monospace' }}>
-                                                                    {user?.createdAt ? new Date(user.createdAt).toLocaleDateString(undefined, {
-                                                                        year: 'numeric',
-                                                                        month: 'short',
-                                                                        day: 'numeric'
-                                                                    }) : 'Unknown'}
-                                                                </span>
-                                                            </div>
+                                                                                {/* Hover Overlay */}
+                                                                                <div className="absolute inset-0.5 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-xl">
+                                                                                    <Camera size={20} className="text-white drop-shadow-md" />
+                                                                                </div>
+                                                                            </div>
+                                                                            {/* Edit badge */}
+                                                                            <div className="absolute -bottom-1 -right-1 p-1.5 bg-white rounded-lg shadow-[0_2px_6px_rgba(0,0,0,0.12)] border border-slate-100 text-slate-400 group-hover:text-[rgb(36,89,133)] transition-colors">
+                                                                                <Pencil size={10} />
+                                                                            </div>
+                                                                        </button>
+                                                                    </div>
 
-                                                            {/* Striped corner brackets */}
-                                                            {/* Top-left */}
-                                                            <div className="absolute top-3 left-3 flex flex-col gap-[2px]">
-                                                                <div className="flex gap-[2px]">
-                                                                    <div className="w-1 h-1 bg-slate-300/60 rounded-full" />
+                                                                    {/* Right: Info */}
+                                                                    <div className="flex-1 min-w-0 flex flex-col justify-center gap-1">
+                                                                        {/* Name - Editable */}
+                                                                        <div>
+                                                                            {isEditing ? (
+                                                                                <div className="flex items-center gap-2">
+                                                                                    <input
+                                                                                        ref={inputRef}
+                                                                                        type="text"
+                                                                                        value={firstName}
+                                                                                        onChange={(e) => setFirstName(e.target.value)}
+                                                                                        onKeyDown={handleKeyDown}
+                                                                                        onBlur={handleSave}
+                                                                                        className="flex-1 min-w-0 px-3 py-1.5 text-xl sm:text-2xl font-semibold bg-slate-50/80 border border-slate-200/60 rounded-lg focus:outline-none text-slate-800 shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)] focus:shadow-[inset_0_2px_4px_rgba(0,0,0,0.08),0_0_0_2px_rgba(36,89,133,0.15)] focus:border-[rgba(36,89,133,0.3)]"
+                                                                                        style={{ fontFamily: 'Instrument Serif, Georgia, serif' }}
+                                                                                        maxLength={20}
+                                                                                    />
+                                                                                    <button
+                                                                                        onClick={handleSave}
+                                                                                        className="p-2 rounded-lg text-white transition-all bg-gradient-to-b from-[rgb(50,110,160)] to-[rgb(36,89,133)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.25),0_2px_6px_rgba(36,89,133,0.35)] hover:shadow-[0_4px_10px_rgba(36,89,133,0.4)] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.15)] focus:outline-none"
+                                                                                    >
+                                                                                        <Check size={14} strokeWidth={2.5} />
+                                                                                    </button>
+                                                                                </div>
+                                                                            ) : (
+                                                                                <div className="flex items-center gap-2 group/name">
+                                                                                    <h3 className="text-xl sm:text-2xl font-semibold text-slate-800 truncate" style={{ fontFamily: 'Instrument Serif, Georgia, serif' }}>{pendingName || user?.firstName || 'Unknown'}</h3>
+                                                                                    <button
+                                                                                        onClick={() => setIsEditing(true)}
+                                                                                        className="p-1 rounded-md text-slate-300 hover:text-slate-500 opacity-0 group-hover/name:opacity-100 transition-all hover:bg-slate-100 focus:outline-none"
+                                                                                    >
+                                                                                        <Pencil size={12} />
+                                                                                    </button>
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+
+                                                                        {/* Email */}
+                                                                        <div className="flex items-center gap-2 text-slate-400">
+                                                                            <span className="text-xs sm:text-xs truncate" style={{ fontFamily: 'Geist Mono, monospace' }}>{user?.email || 'No email'}</span>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Divider */}
+                                                                <div className="my-4 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent relative z-10" />
+
+                                                                {/* Bottom: Citizen Info */}
+                                                                <div className="flex items-center justify-between text-[11px] sm:text-xs text-slate-400 relative z-10">
+                                                                    <span className="uppercase tracking-wider font-medium">Citizen Since</span>
+                                                                    <span className="font-medium text-slate-500" style={{ fontFamily: 'Geist Mono, monospace' }}>
+                                                                        {user?.createdAt ? new Date(user.createdAt).toLocaleDateString(undefined, {
+                                                                            year: 'numeric',
+                                                                            month: 'short',
+                                                                            day: 'numeric'
+                                                                        }) : 'Unknown'}
+                                                                    </span>
+                                                                </div>
+
+                                                                {/* Striped corner brackets */}
+                                                                {/* Top-left */}
+                                                                <div className="absolute top-3 left-3 flex flex-col gap-[2px]">
+                                                                    <div className="flex gap-[2px]">
+                                                                        <div className="w-1 h-1 bg-slate-300/60 rounded-full" />
+                                                                        <div className="w-1 h-1 bg-slate-300/40 rounded-full" />
+                                                                        <div className="w-1 h-1 bg-slate-300/20 rounded-full" />
+                                                                    </div>
                                                                     <div className="w-1 h-1 bg-slate-300/40 rounded-full" />
                                                                     <div className="w-1 h-1 bg-slate-300/20 rounded-full" />
                                                                 </div>
-                                                                <div className="w-1 h-1 bg-slate-300/40 rounded-full" />
-                                                                <div className="w-1 h-1 bg-slate-300/20 rounded-full" />
-                                                            </div>
-                                                            {/* Top-right */}
-                                                            <div className="absolute top-3 right-3 flex flex-col gap-[2px] items-end">
-                                                                <div className="flex gap-[2px]">
-                                                                    <div className="w-1 h-1 bg-slate-300/20 rounded-full" />
-                                                                    <div className="w-1 h-1 bg-slate-300/40 rounded-full" />
-                                                                    <div className="w-1 h-1 bg-slate-300/60 rounded-full" />
-                                                                </div>
-                                                                <div className="w-1 h-1 bg-slate-300/40 rounded-full" />
-                                                                <div className="w-1 h-1 bg-slate-300/20 rounded-full" />
-                                                            </div>
-                                                            {/* Bottom-left */}
-                                                            <div className="absolute bottom-3 left-3 flex flex-col gap-[2px]">
-                                                                <div className="w-1 h-1 bg-slate-300/20 rounded-full" />
-                                                                <div className="w-1 h-1 bg-slate-300/40 rounded-full" />
-                                                                <div className="flex gap-[2px]">
-                                                                    <div className="w-1 h-1 bg-slate-300/60 rounded-full" />
+                                                                {/* Top-right */}
+                                                                <div className="absolute top-3 right-3 flex flex-col gap-[2px] items-end">
+                                                                    <div className="flex gap-[2px]">
+                                                                        <div className="w-1 h-1 bg-slate-300/20 rounded-full" />
+                                                                        <div className="w-1 h-1 bg-slate-300/40 rounded-full" />
+                                                                        <div className="w-1 h-1 bg-slate-300/60 rounded-full" />
+                                                                    </div>
                                                                     <div className="w-1 h-1 bg-slate-300/40 rounded-full" />
                                                                     <div className="w-1 h-1 bg-slate-300/20 rounded-full" />
                                                                 </div>
-                                                            </div>
-                                                            {/* Bottom-right */}
-                                                            <div className="absolute bottom-3 right-3 flex flex-col gap-[2px] items-end">
-                                                                <div className="w-1 h-1 bg-slate-300/20 rounded-full" />
-                                                                <div className="w-1 h-1 bg-slate-300/40 rounded-full" />
-                                                                <div className="flex gap-[2px]">
+                                                                {/* Bottom-left */}
+                                                                <div className="absolute bottom-3 left-3 flex flex-col gap-[2px]">
                                                                     <div className="w-1 h-1 bg-slate-300/20 rounded-full" />
                                                                     <div className="w-1 h-1 bg-slate-300/40 rounded-full" />
-                                                                    <div className="w-1 h-1 bg-slate-300/60 rounded-full" />
+                                                                    <div className="flex gap-[2px]">
+                                                                        <div className="w-1 h-1 bg-slate-300/60 rounded-full" />
+                                                                        <div className="w-1 h-1 bg-slate-300/40 rounded-full" />
+                                                                        <div className="w-1 h-1 bg-slate-300/20 rounded-full" />
+                                                                    </div>
+                                                                </div>
+                                                                {/* Bottom-right */}
+                                                                <div className="absolute bottom-3 right-3 flex flex-col gap-[2px] items-end">
+                                                                    <div className="w-1 h-1 bg-slate-300/20 rounded-full" />
+                                                                    <div className="w-1 h-1 bg-slate-300/40 rounded-full" />
+                                                                    <div className="flex gap-[2px]">
+                                                                        <div className="w-1 h-1 bg-slate-300/20 rounded-full" />
+                                                                        <div className="w-1 h-1 bg-slate-300/40 rounded-full" />
+                                                                        <div className="w-1 h-1 bg-slate-300/60 rounded-full" />
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                    </div>
-                                                </motion.div>
-                                            </div>
+                                                    </motion.div>
+                                                </div>
 
-                                            {/* Footer */}
-                                            <div className="px-5 sm:px-6 py-4 flex justify-end gap-3 shrink-0 border-t border-slate-100/80 bg-slate-50/30">
-                                                <ClayButton onClick={onClose} variant="secondary">
-                                                    Cancel
-                                                </ClayButton>
-                                                <ClayButton onClick={handleDone} variant="primary">
-                                                    Save
-                                                </ClayButton>
+                                                {/* Footer */}
+                                                <div className="mt-4 flex justify-end gap-3 shrink-0">
+                                                    <ClayButton onClick={onClose} variant="secondary">
+                                                        Cancel
+                                                    </ClayButton>
+                                                    <ClayButton onClick={handleDone} variant="primary">
+                                                        Save
+                                                    </ClayButton>
+                                                </div>
                                             </div>
                                         </div>
                                     )}
@@ -649,9 +655,8 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onCl
                         </div>
                     </motion.div>
                 </motion.div>
-            )
-            }
-        </AnimatePresence >,
+            )}
+        </AnimatePresence>,
         document.body
     );
 };
