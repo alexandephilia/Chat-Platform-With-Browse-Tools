@@ -36,17 +36,17 @@ const ClayButton: React.FC<ClayButtonProps> = ({ children, onClick, variant = 's
         >
             {/* Outer rim */}
             <div className={`p-[2px] rounded-xl ${isPrimary
-                ? 'bg-gradient-to-b from-blue-300 to-blue-600'
+                ? 'bg-gradient-to-b from-[rgb(70,130,180)] to-[rgb(30,75,115)]'
                 : 'bg-gradient-to-b from-white to-slate-300'
                 } shadow-[0_2px_6px_rgba(0,0,0,0.1)]`}>
                 {/* Inset track */}
                 <div className={`p-[1px] rounded-[10px] ${isPrimary
-                    ? 'bg-blue-500/50'
+                    ? 'bg-[rgb(36,89,133)]/50'
                     : 'bg-slate-200/80'
                     } shadow-[inset_0_1px_2px_rgba(0,0,0,0.08)]`}>
                     {/* Inner button surface */}
                     <div className={`relative px-4 py-2 rounded-lg ${isPrimary
-                        ? 'bg-gradient-to-b from-blue-400 to-blue-500 text-white'
+                        ? 'bg-gradient-to-b from-[rgb(50,110,160)] to-[rgb(36,89,133)] text-white'
                         : 'bg-gradient-to-b from-white to-slate-50 text-slate-600 hover:text-slate-700'
                         } shadow-[inset_0_1px_0_rgba(255,255,255,0.25)]`}>
                         {/* Top highlight line */}
@@ -408,7 +408,8 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onCl
                                                         step={0.1}
                                                         aria-labelledby="Zoom"
                                                         onChange={(e) => setZoom(Number(e.target.value))}
-                                                        className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-500 hover:accent-blue-600 transition-all"
+                                                        className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer transition-all"
+                                                        style={{ accentColor: 'rgb(36, 89, 133)' }}
                                                     />
                                                     <ZoomIn size={16} className="text-slate-400" />
                                                 </div>
@@ -433,13 +434,13 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onCl
                                             {/* Header */}
                                             <div className="px-5 sm:px-6 py-4 sm:py-5 flex items-center justify-between shrink-0">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-11 h-11 rounded-xl flex items-center justify-center shadow-[inset_0_2px_4px_rgba(0,0,0,0.08),0_1px_0_rgba(255,255,255,0.8)] bg-white">
-                                                        <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-b from-white to-slate-50 shadow-[0_2px_4px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,1)] text-blue-500">
-                                                            <BlackHoleIcon size={20} />
+                                                    <div className="w-12 h-12 rounded-xl flex items-center justify-center shadow-[inset_0_2px_4px_rgba(0,0,0,0.08),0_1px_0_rgba(255,255,255,0.8)] bg-white">
+                                                        <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-gradient-to-b from-white to-slate-50 shadow-[0_2px_4px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,1)]" style={{ color: 'rgb(36 89 133 / 95%)' }}>
+                                                            <BlackHoleIcon size={22} />
                                                         </div>
                                                     </div>
                                                     <div className="flex flex-col">
-                                                        <h2 className="text-[15px] sm:text-base font-bold text-slate-800" style={{ fontFamily: 'Instrument Serif, Georgia, serif' }}>Profile</h2>
+                                                        <h2 className="text-xl sm:text-[22px] font-bold text-slate-800" style={{ fontFamily: 'Instrument Serif, Georgia, serif' }}>Profile</h2>
                                                         <span className="text-[10px] text-slate-400">Manage your account</span>
                                                     </div>
                                                 </div>
@@ -508,7 +509,7 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onCl
                                                                                 {(pendingAvatar || user?.avatar) ? (
                                                                                     <img src={pendingAvatar || user?.avatar} alt="Avatar" className="w-full h-full object-cover" />
                                                                                 ) : (
-                                                                                    <UserCircle size={40} className="text-blue-400/80" strokeWidth={1.5} />
+                                                                                    <UserCircle size={40} className="text-[rgb(36,89,133)]/70" strokeWidth={1.5} />
                                                                                 )}
                                                                                 {/* Film laminate glare effect - multi-layer */}
                                                                                 {/* Base glossy layer */}
@@ -529,7 +530,7 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onCl
                                                                             </div>
                                                                         </div>
                                                                         {/* Edit badge */}
-                                                                        <div className="absolute -bottom-1 -right-1 p-1.5 bg-white rounded-lg shadow-[0_2px_6px_rgba(0,0,0,0.12)] border border-slate-100 text-slate-400 group-hover:text-blue-500 transition-colors">
+                                                                        <div className="absolute -bottom-1 -right-1 p-1.5 bg-white rounded-lg shadow-[0_2px_6px_rgba(0,0,0,0.12)] border border-slate-100 text-slate-400 group-hover:text-[rgb(36,89,133)] transition-colors">
                                                                             <Pencil size={10} />
                                                                         </div>
                                                                     </button>
@@ -548,13 +549,13 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onCl
                                                                                     onChange={(e) => setFirstName(e.target.value)}
                                                                                     onKeyDown={handleKeyDown}
                                                                                     onBlur={handleSave}
-                                                                                    className="flex-1 min-w-0 px-3 py-1.5 text-xl sm:text-2xl font-semibold bg-slate-50/80 border border-slate-200/60 rounded-lg focus:outline-none text-slate-800 shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)] focus:shadow-[inset_0_2px_4px_rgba(0,0,0,0.08),0_0_0_2px_rgba(59,130,246,0.15)] focus:border-blue-300"
+                                                                                    className="flex-1 min-w-0 px-3 py-1.5 text-xl sm:text-2xl font-semibold bg-slate-50/80 border border-slate-200/60 rounded-lg focus:outline-none text-slate-800 shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)] focus:shadow-[inset_0_2px_4px_rgba(0,0,0,0.08),0_0_0_2px_rgba(36,89,133,0.15)] focus:border-[rgba(36,89,133,0.3)]"
                                                                                     style={{ fontFamily: 'Instrument Serif, Georgia, serif' }}
                                                                                     maxLength={20}
                                                                                 />
                                                                                 <button
                                                                                     onClick={handleSave}
-                                                                                    className="p-2 rounded-lg text-white transition-all bg-gradient-to-b from-blue-400 to-blue-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.25),0_2px_6px_rgba(59,130,246,0.35)] hover:shadow-[0_4px_10px_rgba(59,130,246,0.4)] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.15)] focus:outline-none"
+                                                                                    className="p-2 rounded-lg text-white transition-all bg-gradient-to-b from-[rgb(50,110,160)] to-[rgb(36,89,133)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.25),0_2px_6px_rgba(36,89,133,0.35)] hover:shadow-[0_4px_10px_rgba(36,89,133,0.4)] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.15)] focus:outline-none"
                                                                                 >
                                                                                     <Check size={14} strokeWidth={2.5} />
                                                                                 </button>

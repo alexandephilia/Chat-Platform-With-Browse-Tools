@@ -142,18 +142,18 @@ export const CustomInstructionsModal: React.FC<CustomInstructionsModalProps> = (
                                     <div className="px-5 sm:px-6 py-4 sm:py-5 flex items-center justify-between shrink-0">
                                         <div className="flex items-center gap-3">
                                             {/* Icon with knob-in-track style */}
-                                            <div className="w-9 h-9 rounded-xl flex items-center justify-center shadow-[inset_0_2px_4px_rgba(0,0,0,0.08),0_1px_0_rgba(255,255,255,0.8)] bg-white">
+                                            <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-[inset_0_2px_4px_rgba(0,0,0,0.08),0_1px_0_rgba(255,255,255,0.8)] bg-white">
 
                                                 <div
-                                                    className="w-6 h-6 rounded-lg flex items-center justify-center bg-gradient-to-b from-white to-slate-50 shadow-[0_2px_4px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,1)]"
+                                                    className="w-7 h-7 rounded-lg flex items-center justify-center bg-gradient-to-b from-white to-slate-50 shadow-[0_2px_4px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,1)]"
                                                     style={{ color: 'rgb(36 89 133 / 95%)' }}
                                                 >
-                                                    <AtomOutline className="w-4 h-4" />
+                                                    <AtomOutline className="w-5 h-5" />
 
                                                 </div>
                                             </div>
                                             <div className="flex flex-col">
-                                                <h2 className="text-[15px] sm:text-base font-bold text-slate-800" style={{ fontFamily: 'Instrument Serif, Georgia, serif' }}>Custom Instructions</h2>
+                                                <h2 className="text-xl sm:text-[22px] font-bold text-slate-800" style={{ fontFamily: 'Instrument Serif, Georgia, serif' }}>Custom Instructions</h2>
                                                 <span className="text-[10px] text-slate-400">Personalize Zeta's responses</span>
                                             </div>
                                         </div>
