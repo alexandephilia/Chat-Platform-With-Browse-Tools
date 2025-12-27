@@ -1,10 +1,20 @@
-import { AnimatePresence, motion, PanInfo, useMotionValue, useTransform } from 'framer-motion';
-import { Camera, Check, Pencil, UserCircle, X, ZoomIn, ZoomOut } from 'lucide-react';
+import { AnimatePresence, motion, PanInfo, useMotionValue, useSpring, useTransform } from 'framer-motion';
+import { Camera, Check, Globe2, Pencil, UserCircle, X, ZoomIn, ZoomOut } from 'lucide-react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Cropper from 'react-easy-crop';
 import { useAuth } from '../../contexts/AuthContext';
 import getCroppedImg from '../../utils/cropImage';
+
+// Custom BlackHole icon for profile
+const BlackHoleIcon: React.FC<{ size?: number; className?: string }> = ({ size = 24, className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" className={className}>
+        <g fill="currentColor">
+            <path d="M12.735 14.654a.75.75 0 0 1-.23-1.44c.224-.094.441-.237.645-.44a.75.75 0 0 1 .996-.058a.751.751 0 0 1 .705.954c-.21.746-.6 1.477-1.105 2.147a.75.75 0 0 1-1.197-.903c.065-.087.127-.173.186-.26Zm-2.248.041a.75.75 0 0 0 .953-.707a.75.75 0 0 0-.058-.994a2.017 2.017 0 0 1-.442-.646a.75.75 0 0 0-1.438.23a6.448 6.448 0 0 1-.26-.186a.75.75 0 0 0-.903 1.198c.67.505 1.4.894 2.148 1.105Zm-3.811-2.749a.75.75 0 0 0 1.18-.925a7.882 7.882 0 0 1-1.01-1.677a.75.75 0 1 0-1.372.604c.317.72.728 1.394 1.202 1.998ZM4.84 7.672a.75.75 0 0 0 1.49-.178a5.115 5.115 0 0 1 .108-1.862a.75.75 0 0 0-1.454-.366a6.615 6.615 0 0 0-.144 2.406ZM6.008 3.08a.75.75 0 1 0 1.218.875c.177-.246.383-.49.62-.727a.75.75 0 0 0-1.06-1.061a7.396 7.396 0 0 0-.778.912Zm5.755 6.006a6.492 6.492 0 0 0-.187.26a.75.75 0 0 1 .23 1.439a2.018 2.018 0 0 0-.645.441a.75.75 0 0 1-.995.058a.752.752 0 0 1-.706-.954c.211-.746.6-1.477 1.105-2.147a.75.75 0 0 1 1.198.903Zm2.062.219a.75.75 0 0 0-.954.707a.75.75 0 0 0 .059.994c.204.204.347.421.441.645a.75.75 0 0 0 1.439-.23c.086.06.173.122.26.187a.75.75 0 0 0 .902-1.198c-.67-.505-1.4-.894-2.147-1.105Zm3.81 2.749a.75.75 0 1 0-1.18.925c.4.511.746 1.079 1.01 1.677a.75.75 0 0 0 1.372-.604a9.379 9.379 0 0 0-1.202-1.998Zm1.836 4.274a.75.75 0 1 0-1.489.178a5.114 5.114 0 0 1-.109 1.862a.75.75 0 0 0 1.455.366a6.612 6.612 0 0 0 .143-2.406Zm-1.168 4.592a.75.75 0 0 0-1.218-.875a5.9 5.9 0 0 1-.62.727a.75.75 0 0 0 1.06 1.06c.294-.292.553-.597.779-.911ZM12.082 7.573a.75.75 0 0 1 .127-1.053a9.384 9.384 0 0 1 1.998-1.202a.75.75 0 0 1 .604 1.373a7.881 7.881 0 0 0-1.677 1.01a.75.75 0 0 1-1.053-.128Zm3.746-2.056a.75.75 0 0 1 .655-.833a6.615 6.615 0 0 1 2.406.143a.75.75 0 1 1-.366 1.455a5.115 5.115 0 0 0-1.862-.109a.75.75 0 0 1-.834-.656Zm4.202.506a.75.75 0 0 1 1.046-.171c.314.226.619.485.912.778a.75.75 0 1 1-1.06 1.06a5.888 5.888 0 0 0-.728-.62a.75.75 0 0 1-.17-1.047ZM12.102 17.48a.75.75 0 0 0-.925-1.18A7.92 7.92 0 0 1 9.5 17.31a.75.75 0 1 0 .604 1.372a9.382 9.382 0 0 0 1.998-1.202Zm-4.274 1.836a.75.75 0 1 0-.178-1.49a5.119 5.119 0 0 1-1.862-.108a.75.75 0 1 0-.366 1.454a6.612 6.612 0 0 0 2.406.144Zm-4.592-1.168a.75.75 0 1 0 .875-1.218a5.9 5.9 0 0 1-.727-.62a.75.75 0 0 0-1.06 1.06c.292.293.597.552.912.778Z" opacity=".5"></path>
+            <path d="M8.928 12.453c.406.836 1.016 1.541 1.825 1.942c-.793.183-1.71.22-2.648.087C5.315 14.087 2.75 12.284 2.75 9a.75.75 0 0 0-1.5 0c0 4.316 3.436 6.513 6.645 6.968c1.612.228 3.27.042 4.558-.584c.868-.422 1.596-1.065 1.988-1.921c.142.741.162 1.578.041 2.432c-.395 2.79-2.198 5.355-5.482 5.355a.75.75 0 0 0 0 1.5c4.316 0 6.513-3.436 6.968-6.645c.228-1.612.042-3.27-.584-4.558c-.346-.712-.84-1.33-1.48-1.745a7.677 7.677 0 0 1 1.99.027c2.792.396 5.356 2.198 5.356 5.482a.75.75 0 0 0 1.5 0c0-4.315-3.436-6.512-6.645-6.967c-1.612-.228-3.27-.043-4.558.584c-.692.336-1.294.812-1.709 1.425a7.565 7.565 0 0 1-.009-2.248c.396-2.79 2.198-5.355 5.482-5.355a.75.75 0 0 0 0-1.5c-4.315 0-6.512 3.436-6.967 6.645c-.228 1.612-.043 3.27.584 4.558Z"></path>
+        </g>
+    </svg>
+);
 
 interface ProfileEditModalProps {
     isOpen: boolean;
@@ -32,6 +42,14 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onCl
 
     // Pending changes - only saved when user clicks "Done"
     const [pendingAvatar, setPendingAvatar] = useState<string | null>(null);
+
+    // 3D Card tilt effect
+    const cardRef = useRef<HTMLDivElement>(null);
+    const rotateXRaw = useMotionValue(0);
+    const rotateYRaw = useMotionValue(0);
+    // Smooth spring animation for tilt
+    const rotateX = useSpring(rotateXRaw, { stiffness: 150, damping: 20 });
+    const rotateY = useSpring(rotateYRaw, { stiffness: 150, damping: 20 });
 
     // Track isMobile state - lock when modal opens
     const [isMobile, setIsMobile] = useState(false);
@@ -115,6 +133,68 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onCl
             dragY.set(0);
         }
     }, [onClose, dragY, imageSrc]);
+
+    // 3D Card tilt handlers - responsive to corner/edge position
+    const handleCardMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+        if (!cardRef.current) return;
+        const rect = cardRef.current.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+
+        // Normalize position from -1 to 1
+        const normalizedX = (x - centerX) / centerX;
+        const normalizedY = (y - centerY) / centerY;
+
+        // Calculate distance from center for intensity scaling
+        const distance = Math.sqrt(normalizedX * normalizedX + normalizedY * normalizedY);
+        const intensity = Math.min(distance, 1); // Cap at 1
+
+        // Stronger tilt at corners/edges - max 10 degrees
+        const maxTilt = 10;
+        const tiltX = -normalizedY * maxTilt * intensity;
+        const tiltY = normalizedX * maxTilt * intensity;
+
+        rotateXRaw.set(tiltX);
+        rotateYRaw.set(tiltY);
+    }, [rotateXRaw, rotateYRaw]);
+
+    const handleCardMouseLeave = useCallback(() => {
+        rotateXRaw.set(0);
+        rotateYRaw.set(0);
+    }, [rotateXRaw, rotateYRaw]);
+
+    const handleCardTouchMove = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
+        if (!cardRef.current || e.touches.length === 0) return;
+        const touch = e.touches[0];
+        const rect = cardRef.current.getBoundingClientRect();
+        const x = touch.clientX - rect.left;
+        const y = touch.clientY - rect.top;
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+
+        // Normalize position from -1 to 1
+        const normalizedX = (x - centerX) / centerX;
+        const normalizedY = (y - centerY) / centerY;
+
+        // Calculate distance from center for intensity scaling
+        const distance = Math.sqrt(normalizedX * normalizedX + normalizedY * normalizedY);
+        const intensity = Math.min(distance, 1);
+
+        // Stronger tilt at corners/edges - max 10 degrees
+        const maxTilt = 10;
+        const tiltX = -normalizedY * maxTilt * intensity;
+        const tiltY = normalizedX * maxTilt * intensity;
+
+        rotateXRaw.set(tiltX);
+        rotateYRaw.set(tiltY);
+    }, [rotateXRaw, rotateYRaw]);
+
+    const handleCardTouchEnd = useCallback(() => {
+        rotateXRaw.set(0);
+        rotateYRaw.set(0);
+    }, [rotateXRaw, rotateYRaw]);
 
     // Image Upload Handlers
     const onSelectFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -293,14 +373,14 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onCl
                                                 <div className="flex gap-3 pt-1">
                                                     <button
                                                         onClick={() => setImageSrc(null)}
-                                                        className="flex-1 px-4 py-2.5 text-[13px] font-medium text-slate-500 hover:text-slate-700 rounded-xl transition-all bg-slate-50/80 hover:bg-slate-100/80 shadow-[inset_0_1px_1px_rgba(255,255,255,1),0_1px_2px_rgba(0,0,0,0.04),0_0_0_1px_rgba(0,0,0,0.02)] hover:shadow-[inset_0_1px_1px_rgba(255,255,255,1),0_2px_4px_rgba(0,0,0,0.06)] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.08)]"
+                                                        className="flex-1 px-4 py-2.5 text-[13px] font-medium text-slate-500 hover:text-slate-700 rounded-xl transition-all bg-slate-50/80 hover:bg-slate-100/80 shadow-[inset_0_1px_1px_rgba(255,255,255,1),0_1px_2px_rgba(0,0,0,0.04),0_0_0_1px_rgba(0,0,0,0.02)] hover:shadow-[inset_0_1px_1px_rgba(255,255,255,1),0_2px_4px_rgba(0,0,0,0.06)] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.08)] focus:outline-none"
                                                     >
                                                         Cancel
                                                     </button>
                                                     <button
                                                         onClick={saveCroppedImage}
                                                         disabled={isProcessingImage}
-                                                        className="relative flex-1 px-5 py-2.5 rounded-xl text-white text-[13px] font-semibold overflow-hidden flex items-center gap-2 justify-center transition-all duration-200 bg-gradient-to-b from-blue-400 to-blue-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.25),inset_0_-1px_1px_rgba(0,0,0,0.1),0_4px_12px_rgba(59,130,246,0.35),0_1px_3px_rgba(59,130,246,0.2)] hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),0_6px_16px_rgba(59,130,246,0.4)] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.15)] disabled:opacity-70 disabled:cursor-not-allowed"
+                                                        className="relative flex-1 px-5 py-2.5 rounded-xl text-white text-[13px] font-semibold overflow-hidden flex items-center gap-2 justify-center transition-all duration-200 bg-gradient-to-b from-blue-400 to-blue-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.25),inset_0_-1px_1px_rgba(0,0,0,0.1),0_4px_12px_rgba(59,130,246,0.35),0_1px_3px_rgba(59,130,246,0.2)] hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),0_6px_16px_rgba(59,130,246,0.4)] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.15)] disabled:opacity-70 disabled:cursor-not-allowed focus:outline-none"
                                                     >
                                                         <span className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/40 to-transparent" />
                                                         {isProcessingImage ? 'Saving...' : 'Set Avatar'}
@@ -319,9 +399,9 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onCl
                                             {/* Header */}
                                             <div className="px-5 sm:px-6 py-4 sm:py-5 flex items-center justify-between shrink-0">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-9 h-9 rounded-xl flex items-center justify-center shadow-[inset_0_2px_4px_rgba(0,0,0,0.08),0_1px_0_rgba(255,255,255,0.8)] bg-white">
-                                                        <div className="w-6 h-6 rounded-lg flex items-center justify-center bg-gradient-to-b from-white to-slate-50 shadow-[0_2px_4px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,1)] text-blue-500">
-                                                            <UserCircle size={14} />
+                                                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-[inset_0_2px_4px_rgba(0,0,0,0.08),0_1px_0_rgba(255,255,255,0.8)] bg-white">
+                                                        <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-gradient-to-b from-white to-slate-50 shadow-[0_2px_4px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,1)] text-blue-500">
+                                                            <BlackHoleIcon size={16} />
                                                         </div>
                                                     </div>
                                                     <div className="flex flex-col">
@@ -331,14 +411,14 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onCl
                                                 </div>
                                                 <button
                                                     onClick={onClose}
-                                                    className="p-2 rounded-xl text-slate-400 hover:text-slate-600 transition-all bg-slate-50/80 hover:bg-slate-100/80 shadow-[inset_0_1px_1px_rgba(255,255,255,1),0_1px_2px_rgba(0,0,0,0.04),0_0_0_1px_rgba(0,0,0,0.02)] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.08)] active:bg-slate-100"
+                                                    className="p-2 rounded-xl text-slate-400 hover:text-slate-600 transition-all bg-slate-50/80 hover:bg-slate-100/80 shadow-[inset_0_1px_1px_rgba(255,255,255,1),0_1px_2px_rgba(0,0,0,0.04),0_0_0_1px_rgba(0,0,0,0.02)] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.08)] active:bg-slate-100 focus:outline-none"
                                                 >
                                                     <X size={16} strokeWidth={2.5} />
                                                 </button>
                                             </div>
 
-                                            {/* Body */}
-                                            <div className="px-5 sm:px-6 pb-6 space-y-5">
+                                            {/* Body - ID Card Style */}
+                                            <div className="px-5 sm:px-6 pb-6">
                                                 {/* Hidden File Input */}
                                                 <input
                                                     type="file"
@@ -348,93 +428,174 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onCl
                                                     className="hidden"
                                                 />
 
-                                                {/* Avatar - with clay styling */}
-                                                <div className="flex justify-center flex-col items-center gap-3">
-                                                    <button
-                                                        onClick={() => fileInputRef.current?.click()}
-                                                        className="group relative p-1 bg-gradient-to-b from-white to-slate-200 rounded-full shadow-sm hover:scale-105 transition-transform duration-200 active:scale-95"
-                                                    >
-                                                        <div className="p-0.5 bg-slate-100 rounded-full shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)] relative overflow-hidden">
-                                                            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center shadow-[0_4px_12px_rgba(59,130,246,0.15),inset_0_1px_0_rgba(255,255,255,0.8)] overflow-hidden">
-                                                                {(pendingAvatar || user?.avatar) ? (
-                                                                    <img src={pendingAvatar || user?.avatar} alt="Avatar" className="w-full h-full object-cover" />
-                                                                ) : (
-                                                                    <UserCircle size={48} className="text-blue-400/80" strokeWidth={1.5} />
-                                                                )}
+                                                {/* ID Card Container with 3D tilt */}
+                                                <motion.div
+                                                    ref={cardRef}
+                                                    onMouseMove={handleCardMouseMove}
+                                                    onMouseLeave={handleCardMouseLeave}
+                                                    onTouchMove={handleCardTouchMove}
+                                                    onTouchEnd={handleCardTouchEnd}
+                                                    style={{
+                                                        rotateX,
+                                                        rotateY,
+                                                        transformStyle: 'preserve-3d',
+                                                    }}
+                                                    className="p-0.5 bg-gradient-to-b from-white to-slate-200 rounded-2xl shadow-[0_4px_12px_rgba(0,0,0,0.08),0_2px_4px_rgba(0,0,0,0.04)] cursor-default"
+                                                >
+                                                    <div className="p-0.5 bg-slate-100 rounded-[14px] shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)]">
+                                                        <div className="bg-gradient-to-br from-white via-white to-slate-50/80 rounded-xl p-4 sm:p-5 overflow-hidden relative">
+                                                            {/* Planet watermark */}
+                                                            <div className="absolute -right-6 -bottom-6 opacity-[0.04] pointer-events-none">
+                                                                <Globe2 size={140} strokeWidth={0.8} />
                                                             </div>
 
-                                                            {/* Hover Overlay */}
-                                                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                                                                <Camera size={20} className="text-white drop-shadow-md" />
+                                                            {/* Card Title - Zetanian */}
+                                                            <div className="text-center mb-4 relative z-10">
+                                                                <h4 className="text-2xl sm:text-3xl text-slate-700/90 tracking-wide" style={{ fontFamily: 'Instrument Serif, Georgia, serif', fontStyle: 'italic' }}>
+                                                                    Zetanian
+                                                                </h4>
+                                                                <div className="flex items-center justify-center gap-2 mt-1">
+                                                                    <div className="h-px w-8 bg-gradient-to-r from-transparent to-slate-300" />
+                                                                    <span className="text-[9px] uppercase tracking-[0.2em] text-slate-400 font-medium">Citizen ID</span>
+                                                                    <div className="h-px w-8 bg-gradient-to-l from-transparent to-slate-300" />
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Card Content - Horizontal Layout */}
+                                                            <div className="flex gap-4 sm:gap-5 relative z-10">
+                                                                {/* Left: Avatar */}
+                                                                <div className="shrink-0">
+                                                                    <button
+                                                                        onClick={() => fileInputRef.current?.click()}
+                                                                        className="group relative p-1 bg-gradient-to-b from-white to-slate-200 rounded-2xl shadow-[0_3px_10px_rgba(0,0,0,0.1),0_1px_3px_rgba(0,0,0,0.06)] hover:shadow-[0_5px_14px_rgba(0,0,0,0.12)] hover:scale-[1.02] transition-all duration-200 active:scale-[0.98] focus:outline-none"
+                                                                    >
+                                                                        <div className="p-0.5 bg-slate-100 rounded-[14px] shadow-[inset_0_2px_4px_rgba(0,0,0,0.08)] relative overflow-hidden">
+                                                                            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center shadow-[inset_0_2px_6px_rgba(0,0,0,0.06)] overflow-hidden relative">
+                                                                                {(pendingAvatar || user?.avatar) ? (
+                                                                                    <img src={pendingAvatar || user?.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                                                                                ) : (
+                                                                                    <UserCircle size={40} className="text-blue-400/80" strokeWidth={1.5} />
+                                                                                )}
+                                                                                {/* Film plastic glare effect */}
+                                                                                <div className="absolute inset-0 bg-gradient-to-br from-white/30 via-transparent to-transparent pointer-events-none" />
+                                                                                <div className="absolute top-0 left-0 right-0 h-1/3 bg-gradient-to-b from-white/20 to-transparent pointer-events-none" />
+                                                                            </div>
+
+                                                                            {/* Hover Overlay */}
+                                                                            <div className="absolute inset-0.5 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-xl">
+                                                                                <Camera size={20} className="text-white drop-shadow-md" />
+                                                                            </div>
+                                                                        </div>
+                                                                        {/* Edit badge */}
+                                                                        <div className="absolute -bottom-1 -right-1 p-1.5 bg-white rounded-lg shadow-[0_2px_6px_rgba(0,0,0,0.12)] border border-slate-100 text-slate-400 group-hover:text-blue-500 transition-colors">
+                                                                            <Pencil size={10} />
+                                                                        </div>
+                                                                    </button>
+                                                                </div>
+
+                                                                {/* Right: Info */}
+                                                                <div className="flex-1 min-w-0 flex flex-col justify-center gap-1">
+                                                                    {/* Name - Editable */}
+                                                                    <div>
+                                                                        {isEditing ? (
+                                                                            <div className="flex items-center gap-2">
+                                                                                <input
+                                                                                    ref={inputRef}
+                                                                                    type="text"
+                                                                                    value={firstName}
+                                                                                    onChange={(e) => setFirstName(e.target.value)}
+                                                                                    onKeyDown={handleKeyDown}
+                                                                                    onBlur={handleSave}
+                                                                                    className="flex-1 min-w-0 px-3 py-1.5 text-xl sm:text-2xl font-semibold bg-slate-50/80 border border-slate-200/60 rounded-lg focus:outline-none text-slate-800 shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)] focus:shadow-[inset_0_2px_4px_rgba(0,0,0,0.08),0_0_0_2px_rgba(59,130,246,0.15)] focus:border-blue-300"
+                                                                                    style={{ fontFamily: 'Instrument Serif, Georgia, serif' }}
+                                                                                    maxLength={20}
+                                                                                />
+                                                                                <button
+                                                                                    onClick={handleSave}
+                                                                                    className="p-2 rounded-lg text-white transition-all bg-gradient-to-b from-blue-400 to-blue-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.25),0_2px_6px_rgba(59,130,246,0.35)] hover:shadow-[0_4px_10px_rgba(59,130,246,0.4)] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.15)] focus:outline-none"
+                                                                                >
+                                                                                    <Check size={14} strokeWidth={2.5} />
+                                                                                </button>
+                                                                            </div>
+                                                                        ) : (
+                                                                            <div className="flex items-center gap-2 group/name">
+                                                                                <h3 className="text-xl sm:text-2xl font-semibold text-slate-800 truncate" style={{ fontFamily: 'Instrument Serif, Georgia, serif' }}>{pendingName || user?.firstName || 'Unknown'}</h3>
+                                                                                <button
+                                                                                    onClick={() => setIsEditing(true)}
+                                                                                    className="p-1 rounded-md text-slate-300 hover:text-slate-500 opacity-0 group-hover/name:opacity-100 transition-all hover:bg-slate-100 focus:outline-none"
+                                                                                >
+                                                                                    <Pencil size={12} />
+                                                                                </button>
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+
+                                                                    {/* Email */}
+                                                                    <div className="flex items-center gap-2 text-slate-400">
+                                                                        <span className="text-xs sm:text-xs truncate" style={{ fontFamily: 'Geist Mono, monospace' }}>{user?.email || 'No email'}</span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Divider */}
+                                                            <div className="my-4 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent relative z-10" />
+
+                                                            {/* Bottom: Citizen Info */}
+                                                            <div className="flex items-center justify-between text-[11px] sm:text-xs text-slate-400 relative z-10">
+                                                                <span className="uppercase tracking-wider font-medium">Citizen Since</span>
+                                                                <span className="font-medium text-slate-500" style={{ fontFamily: 'Geist Mono, monospace' }}>
+                                                                    {user?.createdAt ? new Date(user.createdAt).toLocaleDateString(undefined, {
+                                                                        year: 'numeric',
+                                                                        month: 'short',
+                                                                        day: 'numeric'
+                                                                    }) : 'Unknown'}
+                                                                </span>
+                                                            </div>
+
+                                                            {/* Striped corner brackets */}
+                                                            {/* Top-left */}
+                                                            <div className="absolute top-3 left-3 flex flex-col gap-[2px]">
+                                                                <div className="flex gap-[2px]">
+                                                                    <div className="w-1 h-1 bg-slate-300/60 rounded-full" />
+                                                                    <div className="w-1 h-1 bg-slate-300/40 rounded-full" />
+                                                                    <div className="w-1 h-1 bg-slate-300/20 rounded-full" />
+                                                                </div>
+                                                                <div className="w-1 h-1 bg-slate-300/40 rounded-full" />
+                                                                <div className="w-1 h-1 bg-slate-300/20 rounded-full" />
+                                                            </div>
+                                                            {/* Top-right */}
+                                                            <div className="absolute top-3 right-3 flex flex-col gap-[2px] items-end">
+                                                                <div className="flex gap-[2px]">
+                                                                    <div className="w-1 h-1 bg-slate-300/20 rounded-full" />
+                                                                    <div className="w-1 h-1 bg-slate-300/40 rounded-full" />
+                                                                    <div className="w-1 h-1 bg-slate-300/60 rounded-full" />
+                                                                </div>
+                                                                <div className="w-1 h-1 bg-slate-300/40 rounded-full" />
+                                                                <div className="w-1 h-1 bg-slate-300/20 rounded-full" />
+                                                            </div>
+                                                            {/* Bottom-left */}
+                                                            <div className="absolute bottom-3 left-3 flex flex-col gap-[2px]">
+                                                                <div className="w-1 h-1 bg-slate-300/20 rounded-full" />
+                                                                <div className="w-1 h-1 bg-slate-300/40 rounded-full" />
+                                                                <div className="flex gap-[2px]">
+                                                                    <div className="w-1 h-1 bg-slate-300/60 rounded-full" />
+                                                                    <div className="w-1 h-1 bg-slate-300/40 rounded-full" />
+                                                                    <div className="w-1 h-1 bg-slate-300/20 rounded-full" />
+                                                                </div>
+                                                            </div>
+                                                            {/* Bottom-right */}
+                                                            <div className="absolute bottom-3 right-3 flex flex-col gap-[2px] items-end">
+                                                                <div className="w-1 h-1 bg-slate-300/20 rounded-full" />
+                                                                <div className="w-1 h-1 bg-slate-300/40 rounded-full" />
+                                                                <div className="flex gap-[2px]">
+                                                                    <div className="w-1 h-1 bg-slate-300/20 rounded-full" />
+                                                                    <div className="w-1 h-1 bg-slate-300/40 rounded-full" />
+                                                                    <div className="w-1 h-1 bg-slate-300/60 rounded-full" />
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                        {/* Edit badge */}
-                                                        <div className="absolute bottom-1 right-1 p-1.5 bg-white rounded-full shadow-[0_2px_4px_rgba(0,0,0,0.1)] border border-slate-100 text-slate-500 group-hover:text-blue-500 transition-colors">
-                                                            <Pencil size={10} />
-                                                        </div>
-                                                    </button>
-
-                                                    <p className="text-[10px] text-slate-400 font-medium">Tap to change avatar</p>
-                                                </div>
-
-                                                {/* Name Field */}
-                                                <div className="space-y-2">
-                                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1">Name</label>
-                                                    <div className="flex items-center gap-2">
-                                                        {isEditing ? (
-                                                            <div className="flex-1 flex items-center gap-2">
-                                                                <input
-                                                                    ref={inputRef}
-                                                                    type="text"
-                                                                    value={firstName}
-                                                                    onChange={(e) => setFirstName(e.target.value)}
-                                                                    onKeyDown={handleKeyDown}
-                                                                    onBlur={handleSave}
-                                                                    className="flex-1 px-3.5 py-2.5 text-sm bg-slate-50/80 border border-slate-200/60 rounded-xl focus:outline-none text-slate-700 shadow-[inset_0_2px_4px_rgba(0,0,0,0.06),inset_0_1px_2px_rgba(0,0,0,0.04),0_1px_0_rgba(255,255,255,0.8)] focus:shadow-[inset_0_2px_4px_rgba(0,0,0,0.08),0_0_0_2px_rgba(59,130,246,0.15)] focus:border-blue-300"
-                                                                    maxLength={20}
-                                                                />
-                                                                <button
-                                                                    onClick={handleSave}
-                                                                    className="p-2.5 rounded-xl text-white transition-all bg-gradient-to-b from-blue-400 to-blue-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.25),0_2px_6px_rgba(59,130,246,0.35)] hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),0_4px_10px_rgba(59,130,246,0.4)] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.15)]"
-                                                                >
-                                                                    <Check size={14} strokeWidth={2.5} />
-                                                                </button>
-                                                            </div>
-                                                        ) : (
-                                                            <div className="flex-1 flex items-center justify-between px-3.5 py-2.5 bg-slate-50/80 rounded-xl border border-slate-200/60 shadow-[inset_0_2px_4px_rgba(0,0,0,0.04),inset_0_1px_2px_rgba(0,0,0,0.02),0_1px_0_rgba(255,255,255,0.8)]">
-                                                                <span className="text-sm text-slate-700 font-medium">{pendingName || user?.firstName || 'Unknown'}</span>
-                                                                <button
-                                                                    onClick={() => setIsEditing(true)}
-                                                                    className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 transition-all bg-white/80 hover:bg-white shadow-[0_1px_3px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,1)] hover:shadow-[0_2px_4px_rgba(0,0,0,0.1)]"
-                                                                >
-                                                                    <Pencil size={12} />
-                                                                </button>
-                                                            </div>
-                                                        )}
                                                     </div>
-                                                </div>
-
-                                                {/* Email Field (read-only) */}
-                                                <div className="space-y-2">
-                                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1">Email</label>
-                                                    <div className="px-3.5 py-2.5 bg-slate-50/50 rounded-xl border border-slate-200/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.03),inset_0_1px_2px_rgba(0,0,0,0.02),0_1px_0_rgba(255,255,255,0.8)]">
-                                                        <span className="text-sm text-slate-500">{user?.email || 'No email'}</span>
-                                                    </div>
-                                                </div>
-
-                                                {/* Member Since */}
-                                                <div className="space-y-2">
-                                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1">Member Since</label>
-                                                    <div className="px-3.5 py-2.5 bg-slate-50/50 rounded-xl border border-slate-200/40 shadow-[inset_0_2px_4px_rgba(0,0,0,0.03),inset_0_1px_2px_rgba(0,0,0,0.02),0_1px_0_rgba(255,255,255,0.8)]">
-                                                        <span className="text-sm text-slate-500">
-                                                            {user?.createdAt ? new Date(user.createdAt).toLocaleDateString(undefined, {
-                                                                year: 'numeric',
-                                                                month: 'long',
-                                                                day: 'numeric'
-                                                            }) : 'Unknown'}
-                                                        </span>
-                                                    </div>
-                                                </div>
+                                                </motion.div>
                                             </div>
 
                                             {/* Footer */}
@@ -442,7 +603,7 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onCl
                                                 {/* Cancel button - raised soft style */}
                                                 <button
                                                     onClick={onClose}
-                                                    className="px-4 py-2.5 text-[13px] font-medium text-slate-500 hover:text-slate-700 rounded-xl transition-all bg-slate-50/80 hover:bg-slate-100/80 shadow-[inset_0_1px_1px_rgba(255,255,255,1),0_1px_2px_rgba(0,0,0,0.04),0_0_0_1px_rgba(0,0,0,0.02)] hover:shadow-[inset_0_1px_1px_rgba(255,255,255,1),0_2px_4px_rgba(0,0,0,0.06)] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.08)]"
+                                                    className="px-4 py-2.5 text-[13px] font-medium text-slate-500 hover:text-slate-700 rounded-xl transition-all bg-slate-50/80 hover:bg-slate-100/80 shadow-[inset_0_1px_1px_rgba(255,255,255,1),0_1px_2px_rgba(0,0,0,0.04),0_0_0_1px_rgba(0,0,0,0.02)] hover:shadow-[inset_0_1px_1px_rgba(255,255,255,1),0_2px_4px_rgba(0,0,0,0.06)] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.08)] focus:outline-none"
                                                 >
                                                     Cancel
                                                 </button>
@@ -450,7 +611,7 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onCl
                                                 <motion.button
                                                     whileTap={{ scale: 0.97 }}
                                                     onClick={handleDone}
-                                                    className="relative px-5 py-2.5 rounded-xl text-white text-[13px] font-semibold overflow-hidden flex items-center gap-2 min-w-[100px] justify-center transition-all duration-200 bg-gradient-to-b from-blue-400 to-blue-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.25),inset_0_-1px_1px_rgba(0,0,0,0.1),0_4px_12px_rgba(59,130,246,0.35),0_1px_3px_rgba(59,130,246,0.2)] hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),0_6px_16px_rgba(59,130,246,0.4)] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.15)]"
+                                                    className="relative px-5 py-2.5 rounded-xl text-white text-[13px] font-semibold overflow-hidden flex items-center gap-2 min-w-[100px] justify-center transition-all duration-200 bg-gradient-to-b from-blue-400 to-blue-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.25),inset_0_-1px_1px_rgba(0,0,0,0.1),0_4px_12px_rgba(59,130,246,0.35),0_1px_3px_rgba(59,130,246,0.2)] hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),0_6px_16px_rgba(59,130,246,0.4)] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.15)] focus:outline-none"
                                                 >
                                                     <span className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/40 to-transparent" />
                                                     Save
@@ -463,8 +624,9 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onCl
                         </div>
                     </motion.div>
                 </motion.div>
-            )}
-        </AnimatePresence>,
+            )
+            }
+        </AnimatePresence >,
         document.body
     );
 };
