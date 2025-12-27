@@ -10,12 +10,16 @@ export const WelcomeBackground: React.FC = () => {
             transition={{ duration: 0.8 }}
             className="absolute inset-0 overflow-hidden pointer-events-none"
         >
-            {/* Background Image - Stabilized with bg-cover and fixed attachment */}
+            {/* Background Image - Fixed size to prevent resize shifting */}
             <div
-                className="absolute inset-0 bg-cover bg-center blur-[2px] brightness-125 bg-scroll md:bg-relative"
+                className="absolute inset-0 blur-[3px] brightness-125"
                 style={{
-                    backgroundImage: `url("https://framerusercontent.com/images/DOosIX3YNl0CyN9un92iPre4.png")`,
-                    backgroundRepeat: 'no-repeat'
+                    backgroundImage: `url("/images/background.jpg")`,
+                    backgroundRepeat: 'no-repeat',
+                    backgroundPosition: 'center center',
+                    backgroundSize: '1920px auto',
+                    minWidth: '100%',
+                    minHeight: '100%',
                 }}
             />
 
