@@ -1,10 +1,10 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { Check, ChevronDown, ChevronRight } from 'lucide-react';
+import { Check, ChevronRight } from 'lucide-react';
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { menuContainerVariants, menuItemVariants } from '../../utils/menuAnimations';
 import { AIModel, AVAILABLE_MODELS, ModelProvider } from '../../services/modelConfig';
 import { ModelIcon, ProviderIcon, ProviderIconKey } from '../../services/modelIcons';
+import { menuContainerVariants, menuItemVariants } from '../../utils/menuAnimations';
 import { StatusPill } from '../atoms/StatusPill';
 
 // Re-export types and models for backward compatibility
@@ -235,14 +235,14 @@ const ModelPicker: React.FC<ModelPickerProps> = ({
                 `}
             >
                 <div className={`
-                    flex items-center justify-center rounded-full overflow-hidden bg-slate-100
-                    ${isSmall ? 'w-4 h-4' : 'w-6 h-6'}
-                    shadow-[inset_0_5px_2px_rgba(0,0,0,0.08)]
+                    flex items-center justify-center rounded-full overflow-hidden
+                    ${isSmall ? 'w-5 h-5' : 'w-7 h-7'}
+                    shadow-[inset_0_1px_3px_rgba(0,0,0,0.1),_0_1px_0_rgba(255,255,255,0.5)] bg-gradient-to-b from-slate-50 to-slate-100
                 `}>
                     <span style={{ flex: '0 0 auto', lineHeight: '1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <ModelIcon
                             iconKey={selectedModel.icon}
-                            size={isSmall ? 10 : 16}
+                            size={isSmall ? 14 : 20}
                         />
                     </span>
                 </div>
@@ -251,16 +251,16 @@ const ModelPicker: React.FC<ModelPickerProps> = ({
                     {selectedModel.name}
                 </span>
 
-                <svg 
-                    xmlns="http://www.w3.org/2000/svg" 
-                    width={isSmall ? "8" : "10"} 
-                    height={isSmall ? "8" : "10"} 
-                    viewBox="0 0 24 24" 
-                    fill="none" 
-                    stroke="currentColor" 
-                    strokeWidth="2" 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round" 
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width={isSmall ? "8" : "10"}
+                    height={isSmall ? "8" : "10"}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
                     className={`lucide lucide-chevron-down text-slate-400 transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180' : ''}`}
                     aria-hidden="true"
                 >

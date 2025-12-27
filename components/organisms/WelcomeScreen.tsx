@@ -178,7 +178,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
     // Initial scroll setup for mobile - runs on mount and when switching to mobile view
     useEffect(() => {
         const handleScroll = () => {
-             if (scrollContainerRef.current) {
+            if (scrollContainerRef.current) {
                 const cardWidth = 200;
                 const gap = 12;
                 const scrollTo = cardWidth + gap;
@@ -194,7 +194,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
 
         // Listen for resize changes (switching from desktop to mobile)
         const mediaQuery = window.matchMedia('(max-width: 1023px)');
-        
+
         const handleChange = (e: MediaQueryListEvent) => {
             if (e.matches) {
                 handleScroll();
@@ -222,7 +222,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
     return (
         <>
             {/* MOBILE Welcome Layout */}
-            <div className="lg:hidden flex flex-col h-full overflow-hidden">
+            <div className="lg:hidden flex flex-col h-full overflow-hidden w-full max-w-full">
                 {/* Top Section - Greeting */}
                 <div className={`flex flex-col items-center justify-start text-center px-4 shrink-0 transition-all duration-300 ${hasAttachments ? 'pt-10 pb-2' : 'pt-12 pb-4'}`}>
                     <motion.div
@@ -271,7 +271,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                             ease: [0.22, 1, 0.36, 1],
                         }}
                     >
-                       {/* Architectural Layer - Multi-rim depth effect for mobile */}
+                        {/* Architectural Layer - Multi-rim depth effect for mobile */}
                         <div className="p-1 bg-gradient-to-b from-white to-slate-300 rounded-[22px] shadow-sm">
                             <div className="p-1 bg-slate-100 rounded-[20px] shadow-inner">
                                 <div className="bg-gradient-to-b from-white to-[#F5F5F5] rounded-[18px] overflow-hidden border border-white" style={{ boxShadow: "0 8px 10px rgba(0, 0, 0, 0.1), 0 4px 4px rgba(0, 0, 0, 0.04)" }}>
@@ -321,10 +321,10 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                 </div>
 
                 {/* Mobile Suggestions */}
-                <div className={`flex flex-col gap-2 w-full flex-1 min-h-0 ${hasAttachments ? 'mt-4' : 'mt-3'}`}>
+                <div className={`flex flex-col gap-2 w-full flex-1 min-h-0 overflow-hidden ${hasAttachments ? 'mt-4' : 'mt-3'}`}>
                     <div
                         ref={scrollContainerRef}
-                        className="flex gap-3 overflow-x-auto py-4 scrollbar-hide snap-x snap-mandatory w-full"
+                        className="flex gap-3 overflow-x-auto py-4 scrollbar-hide snap-x snap-mandatory w-full touch-pan-x"
                         style={{
                             paddingLeft: 'calc(50vw - 100px)',
                             paddingRight: 'calc(50vw - 100px)',

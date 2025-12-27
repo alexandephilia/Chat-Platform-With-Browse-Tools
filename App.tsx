@@ -90,7 +90,7 @@ function AppContent() {
         <>
             <GlobalTheme isDarkMode={isDarkMode} />
             <Toaster
-                position="bottom-right"
+                position="bottom-center"
                 expand={false}
                 richColors
                 closeButton
@@ -101,12 +101,11 @@ function AppContent() {
                         minHeight: 'auto',
                         maxWidth: '280px',
                         width: 'auto',
-                        right: '12px',
                     },
-                    className: "sonner-toast-right-close"
+                    className: "sonner-toast-mobile-center"
                 }}
             />
-            <div className="flex flex-col h-screen bg-[#F8F9FB] overflow-hidden font-sans text-slate-800" style={{ height: '100dvh' }}>
+            <div className="flex flex-col h-screen bg-[#F8F9FB] overflow-x-hidden overflow-y-hidden font-sans text-slate-800" style={{ height: '100dvh' }}>
                 {/* Global Header - hidden on mobile */}
                 <div className="hidden md:block">
                     <GlobalHeader
@@ -139,18 +138,18 @@ function AppContent() {
 
                     {/* Sidebar Component */}
                     <Sidebar
-                    isOpen={isSidebarOpen}
-                    isMinimized={isSidebarMinimized}
-                    onClose={() => setIsSidebarOpen(false)}
-                    onNewChat={handleNewChat}
-                    onSelectChat={selectChat}
-                    onDeleteChat={deleteChat}
-                    chatHistory={chatHistory}
-                    activeChatId={activeChatId}
-                    isInitialLoad={activeChatId === null}
-                    onOpenProfile={() => setIsProfileOpen(true)}
-                    onOpenHelp={() => setIsOnboardingOpen(true)}
-                />
+                        isOpen={isSidebarOpen}
+                        isMinimized={isSidebarMinimized}
+                        onClose={() => setIsSidebarOpen(false)}
+                        onNewChat={handleNewChat}
+                        onSelectChat={selectChat}
+                        onDeleteChat={deleteChat}
+                        chatHistory={chatHistory}
+                        activeChatId={activeChatId}
+                        isInitialLoad={activeChatId === null}
+                        onOpenProfile={() => setIsProfileOpen(true)}
+                        onOpenHelp={() => setIsOnboardingOpen(true)}
+                    />
 
                     {/* Main Content */}
                     <div className="flex-1 flex flex-col min-w-0 h-full min-h-0 p-0 md:p-[10px]">

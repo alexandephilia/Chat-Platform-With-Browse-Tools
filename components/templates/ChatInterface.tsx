@@ -374,24 +374,24 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                             mass: 2,
                             // Only use long delay on initial mount, not session switches
                             delay: !isInitializedRef.current && isWelcomeMode ? 0.9 : 0.05,
-                            opacity: { 
-                                duration: 0.6, 
-                                delay: !isInitializedRef.current && isWelcomeMode ? 0.9 : 0.05 
+                            opacity: {
+                                duration: 0.6,
+                                delay: !isInitializedRef.current && isWelcomeMode ? 0.9 : 0.05
                             },
-                            filter: { 
-                                duration: 1, 
-                                delay: !isInitializedRef.current && isWelcomeMode ? 0.9 : 0.05 
+                            filter: {
+                                duration: 1,
+                                delay: !isInitializedRef.current && isWelcomeMode ? 0.9 : 0.05
                             }
                         }}
                     >
                         {/* Architectural Layer - Multi-rim depth effect (only in welcome mode) */}
-                            <div className={isWelcomeMode ? "p-1 bg-gradient-to-b from-white to-[#ecedeeba var(--tw-gradient-to-position)] rounded-[16px] lg:rounded-[18px] shadow-sm" : ""}>
-                                <div className={isWelcomeMode ? "p-1.5 bg-slate-100 rounded-[14px] lg:rounded-[16px] shadow-inner" : ""}>
-                                    <motion.div
-                                        className={isWelcomeMode
-                                            ? "bg-gradient-to-b from-white to-[#F5F5F5] rounded-[12px] lg:rounded-[14px] shadow-md mx-auto overflow-hidden border border-white"
-                                            : "bg-white rounded-[16px] lg:rounded-[20px] shadow-md mx-auto overflow-hidden border border-slate-100"
-                                        }
+                        <div className={isWelcomeMode ? "p-1 bg-gradient-to-b from-white to-[#ecedeeba var(--tw-gradient-to-position)] rounded-[16px] lg:rounded-[18px] shadow-sm" : ""}>
+                            <div className={isWelcomeMode ? "p-1.5 bg-slate-100 rounded-[14px] lg:rounded-[16px] shadow-inner" : ""}>
+                                <motion.div
+                                    className={isWelcomeMode
+                                        ? "bg-gradient-to-b from-white to-[#F5F5F5] rounded-[12px] lg:rounded-[14px] shadow-md mx-auto overflow-hidden border border-white"
+                                        : "bg-white rounded-[16px] lg:rounded-[20px] shadow-md mx-auto overflow-hidden border border-slate-100"
+                                    }
                                     style={{
                                         maxWidth: isWelcomeMode && isSidebarMinimized
                                             ? 'min(672px, calc(100vw - 70px - 80px))' // Sidebar minimized: can be wider

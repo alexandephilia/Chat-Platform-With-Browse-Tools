@@ -9,12 +9,11 @@ import { useVoiceRecorder } from '../../hooks/useVoiceRecorder';
 import { extractTextFromDocument } from '../../services/documentService';
 import { isElevenLabsConfigured } from '../../services/elevenLabsService';
 import { Attachment } from '../../types';
+import { menuContainerVariants, menuItemVariants } from '../../utils/menuAnimations';
 import { GlobalLinear, LightbulbLineDuotone } from '../atoms/Icons';
-import { InfoPill } from '../atoms/InfoPill';
 import { LazyImage } from '../atoms/LazyImage';
 import ModelPicker, { AIModel, AVAILABLE_MODELS } from '../molecules/ModelPicker';
 import VoicePicker from '../molecules/VoicePicker';
-import { menuContainerVariants, menuItemVariants } from '../../utils/menuAnimations';
 
 interface ChatInputProps {
     onSend: (message: string, attachments?: Attachment[], webSearchEnabled?: boolean, searchType?: 'auto' | 'fast' | 'deep') => void;

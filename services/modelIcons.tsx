@@ -22,7 +22,7 @@ import {
 import React from 'react';
 
 // Default icon size - increased for better visibility
-const DEFAULT_SIZE = 32;
+const DEFAULT_SIZE = 56;
 
 // Model Icons as React components
 // Using .Color where available, .Avatar for avatar style, base for mono
@@ -38,17 +38,17 @@ export const ModelIconComponents = {
         />
     ),
     // Kimi - has .Color variant (dedicated Kimi icon)
-    Kimi: (size: number) => <Kimi.Color size={size} />,
+    Kimi: (size: number) => <Kimi.Color size={size * 1.2} />,
     // Groq - has .Avatar variant
-    Groq: (size: number) => <Groq.Avatar size={size} />,
+    Groq: (size: number) => <Groq.Avatar size={size * 1.2} />,
     // DeepSeek - has .Color variant
-    DeepSeek: (size: number) => <DeepSeek.Color size={size} />,
+    DeepSeek: (size: number) => <DeepSeek.Color size={size * 1.2} />,
     // Z.AI/GLM - has .Avatar variant
-    GLM: (size: number) => <ZAI.Avatar size={size} />,
+    GLM: (size: number) => <ZAI.Avatar size={size * 1.2} />,
     // NousResearch - has .Avatar variant
-    NousResearch: (size: number) => <NousResearch.Avatar size={size} />,
+    NousResearch: (size: number) => <NousResearch.Avatar size={size * 1.3} />,
     // Minimax - has .Avatar variant
-    Minimax: (size: number) => <Minimax.Avatar size={size} />,
+    Minimax: (size: number) => <Minimax.Avatar size={size * 1.2} />,
 } as const;
 
 // Provider Icons as React components
