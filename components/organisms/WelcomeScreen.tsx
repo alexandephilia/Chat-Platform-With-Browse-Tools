@@ -175,16 +175,34 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
     const { user } = useAuth();
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-    // Initial scroll setup for mobile - runs only once
+    // Initial scroll setup for mobile - runs on mount and when switching to mobile view
     useEffect(() => {
-        if (scrollContainerRef.current) {
-            const cardWidth = 200;
-            const gap = 12;
-            const scrollTo = cardWidth + gap;
-            setTimeout(() => {
-                scrollContainerRef.current?.scrollTo({ left: scrollTo, behavior: 'instant' });
-            }, 100);
-        }
+        const handleScroll = () => {
+             if (scrollContainerRef.current) {
+                const cardWidth = 200;
+                const gap = 12;
+                const scrollTo = cardWidth + gap;
+                // Small timeout to ensure DOM is ready/visible
+                setTimeout(() => {
+                    scrollContainerRef.current?.scrollTo({ left: scrollTo, behavior: 'instant' });
+                }, 100);
+            }
+        };
+
+        // Run on mount
+        handleScroll();
+
+        // Listen for resize changes (switching from desktop to mobile)
+        const mediaQuery = window.matchMedia('(max-width: 1023px)');
+        
+        const handleChange = (e: MediaQueryListEvent) => {
+            if (e.matches) {
+                handleScroll();
+            }
+        };
+
+        mediaQuery.addEventListener('change', handleChange);
+        return () => mediaQuery.removeEventListener('change', handleChange);
     }, []);
 
     // Memoize greeting to prevent recalculation on every render
@@ -204,7 +222,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
     return (
         <>
             {/* MOBILE Welcome Layout */}
-            <div className="md:hidden flex flex-col h-full overflow-hidden">
+            <div className="lg:hidden flex flex-col h-full overflow-hidden">
                 {/* Top Section - Greeting */}
                 <div className={`flex flex-col items-center justify-start text-center px-4 shrink-0 transition-all duration-300 ${hasAttachments ? 'pt-10 pb-2' : 'pt-12 pb-4'}`}>
                     <motion.div
@@ -364,7 +382,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                 variants={greetingVariants}
                 initial="hidden"
                 animate="visible"
-                className="flex-col items-center text-center shrink-0 hidden md:flex"
+                className="flex-col items-center text-center shrink-0 hidden lg:flex"
             >
                 <div className="relative mb-6 w-[96px] h-[96px]">
                     <motion.img
@@ -392,14 +410,14 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
 
             {/* Desktop Suggestions - positioned below the input card */}
             <div
-                className={`w-full flex-col gap-1 shrink-0 px-1 mb-1 z-0 hidden md:flex transition-all duration-300 ease-out ${hasAttachments ? 'mt-[19rem]' : 'mt-[16rem]'}`}
+                className={`w-full flex-col gap-1 shrink-0 px-1 mb-1 z-0 hidden lg:flex transition-all duration-300 ease-out ${hasAttachments ? 'mt-[19rem]' : 'mt-[16rem]'}`}
                 style={{
                     maxWidth: isSidebarMinimized
                         ? 'min(675px, calc(100vw - 70px - 80px))'
                         : 'min(600px, calc(100vw - 240px - 80px))'
                 }}
             >
-                <div className="grid grid-cols-3 gap-2 md:gap-4 w-full">
+                <div className="grid grid-cols-3 gap-2 lg:gap-4 w-full">
                     <AnimatePresence mode="popLayout">
                         {memoizedSuggestions.map((card, index) => (
                             <motion.div
@@ -416,7 +434,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                                     description={card.description}
                                     icon={card.icon}
                                     onClick={() => onSendMessage(card.prompt)}
-                                    className="w-full h-full text-xs md:text-sm"
+                                    className="w-full h-full text-xs lg:text-sm"
                                 />
                             </motion.div>
                         ))}
@@ -435,7 +453,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
                         <ClayButton
                             label="Need an Idea starters?"
                             onClick={refreshSuggestions}
-                            className="text-[10px] md:text-xs !py-2 !px-4"
+                            className="text-[10px] lg:text-xs !py-2 !px-4"
                         />
                     </motion.div>
                 </div>

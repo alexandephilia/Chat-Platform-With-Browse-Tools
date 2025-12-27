@@ -210,7 +210,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     };
 
     return (
-        <div className="flex flex-col h-full relative overflow-hidden bg-white/60 md:rounded-[32px] shadow-[0_5px_15px_-5px_rgba(0,0,0,0.2),inset_0_1px_0_0_rgba(255,255,255,1),inset_0_100px_80px_-20px_rgba(255,255,255,0.9)] ring-1 ring-slate-100/50">
+        <div className="flex flex-col h-full relative overflow-hidden bg-white/60 lg:rounded-[32px] shadow-[0_5px_15px_-5px_rgba(0,0,0,0.2),inset_0_1px_0_0_rgba(255,255,255,1),inset_0_100px_80px_-20px_rgba(255,255,255,0.9)] ring-1 ring-slate-100/50">
             {/* Background Layer */}
             <AnimatePresence mode="wait">
                 {isWelcomeMode ? (
@@ -248,7 +248,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                         >
                             {/* Single gradient overlay - smoother progressive fade */}
                             <div
-                                className="w-full h-32 md:h-36"
+                                className="w-full h-32 lg:h-36"
                                 style={{
                                     background: `linear-gradient(to top,
                                     rgba(255, 255, 255, 1) 0%,
@@ -274,7 +274,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
                 {/* Unified Layout Container */}
                 <div
-                    className={`flex-1 flex flex-col min-h-0 relative ${isWelcomeMode ? 'overflow-y-auto custom-scrollbar-hide md:justify-center md:items-center md:px-4 md:pt-8 md:pb-12' : ''}`}
+                    className={`flex-1 flex flex-col min-h-0 relative ${isWelcomeMode ? 'overflow-y-auto custom-scrollbar-hide lg:justify-center lg:items-center lg:px-4 lg:pt-8 lg:pb-12' : ''}`}
                 >
                     {/* Welcome Screen */}
                     {isWelcomeMode && (
@@ -321,7 +321,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
                     {/* Input Card */}
                     <motion.div
-                        className={`z-20 md:px-0 w-full absolute left-0 right-0 mx-auto bottom-4 ${isWelcomeMode ? 'hidden md:block' : 'px-5 md:px-4'}`}
+                        className={`z-20 lg:px-0 w-full absolute left-0 right-0 mx-auto bottom-4 ${isWelcomeMode ? 'hidden lg:block' : 'px-5 lg:px-4'}`}
                         style={isWelcomeMode ? {
                             maxWidth: isSidebarMinimized
                                 ? 'min(600px, calc(100vw - 70px - 80px))' // Sidebar minimized: 70px + padding
@@ -350,13 +350,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                         }}
                     >
                         {/* Architectural Layer - Multi-rim depth effect (only in welcome mode) */}
-                        <div className={isWelcomeMode ? "p-1 bg-gradient-to-b from-white to-[#ecedeeba var(--tw-gradient-to-position)] rounded-[16px] md:rounded-[18px] shadow-sm" : ""}>
-                            <div className={isWelcomeMode ? "p-1.5 bg-slate-100 rounded-[14px] md:rounded-[16px] shadow-inner" : ""}>
-                                <motion.div
-                                    className={isWelcomeMode
-                                        ? "bg-gradient-to-b from-white to-[#F5F5F5] rounded-[12px] md:rounded-[14px] shadow-md mx-auto overflow-hidden border border-white"
-                                        : "bg-white rounded-[16px] md:rounded-[20px] shadow-md mx-auto overflow-hidden border border-slate-100"
-                                    }
+                            <div className={isWelcomeMode ? "p-1 bg-gradient-to-b from-white to-[#ecedeeba var(--tw-gradient-to-position)] rounded-[16px] lg:rounded-[18px] shadow-sm" : ""}>
+                                <div className={isWelcomeMode ? "p-1.5 bg-slate-100 rounded-[14px] lg:rounded-[16px] shadow-inner" : ""}>
+                                    <motion.div
+                                        className={isWelcomeMode
+                                            ? "bg-gradient-to-b from-white to-[#F5F5F5] rounded-[12px] lg:rounded-[14px] shadow-md mx-auto overflow-hidden border border-white"
+                                            : "bg-white rounded-[16px] lg:rounded-[20px] shadow-md mx-auto overflow-hidden border border-slate-100"
+                                        }
                                     style={{
                                         maxWidth: isWelcomeMode && isSidebarMinimized
                                             ? 'min(672px, calc(100vw - 70px - 80px))' // Sidebar minimized: can be wider
@@ -374,13 +374,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                                                 animate={{ opacity: 1, height: 'auto' }}
                                                 exit={{ opacity: 0, height: 0 }}
                                                 transition={{
-                                                    opacity: { duration: 0.2 },
-                                                    height: { duration: 0.2, ease: [0.4, 0, 0.2, 1] }
+                                                    opacity: { duration: 0.1 },
+                                                    height: { duration: 0.2, ease: [0.2, 0, 0.2, 1] }
                                                 }}
                                             >
-                                                <div className="bg-[#FAFAFA] px-3 pt-3 pb-2 md:px-3 md:pt-4 md:pb-2 flex items-center justify-between">
-                                                    <div className="flex items-center gap-3 md:gap-4">
-                                                        <div className="w-10 h-10 md:w-11 md:h-11 rounded-full bg-transparent flex items-center justify-center flex-shrink-0 relative shadow-[0_3px_5px_rgba(0,0,0,0.35),0_2px_5px_rgba(0,0,0,0.15)]">
+                                                <div className="bg-[#FAFAFA] px-3 pt-3 pb-2 lg:px-3 lg:pt-4 lg:pb-2 flex items-center justify-between">
+                                                    <div className="flex items-center gap-3 lg:gap-4">
+                                                        <div className="w-10 h-10 lg:w-11 lg:h-11 rounded-full bg-transparent flex items-center justify-center flex-shrink-0 relative shadow-[0_3px_5px_rgba(0,0,0,0.35),0_2px_5px_rgba(0,0,0,0.15)]">
                                                             <img
                                                                 src={new URL('../atoms/branding/orb.png', import.meta.url).href}
                                                                 alt="AI"
@@ -389,8 +389,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                                                             />
                                                         </div>
                                                         <div className="flex flex-col">
-                                                            <span className="text-xs md:text-sm font-bold text-slate-700">We are Live!</span>
-                                                            <span className="text-[10px] md:text-[11px] text-slate-400">Work with Gemini and Groq</span>
+                                                            <span className="text-xs lg:text-sm font-bold text-slate-700">We are Live!</span>
+                                                            <span className="text-[10px] lg:text-[11px] text-slate-400">Work with Gemini and Groq</span>
                                                         </div>
                                                     </div>
                                                     <ModelPicker
@@ -407,7 +407,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                                     {/* Input Area */}
                                     <div
                                         className={isWelcomeMode
-                                            ? "px-1 py-1 bg-white rounded-[16px] md:rounded-[24px] shadow-sm border border-slate-100 m-1"
+                                            ? "px-1 py-1 bg-white rounded-[16px] lg:rounded-[24px] shadow-sm border border-slate-100 m-1"
                                             : "bg-transparent m-0"}
                                         style={isWelcomeMode ? { boxShadow: "rgba(195, 198, 201, 0.46) 0px 10px 14px, rgba(243, 243, 243, 0.49) 0px 8px 12px, rgba(255, 255, 255, 0.07) 0px 1px 0px inset" } : {}}
                                     >

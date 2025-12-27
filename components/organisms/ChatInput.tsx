@@ -418,8 +418,14 @@ const ChatInput: React.FC<ChatInputProps> = ({
                             />
                             {isElevenLabsConfigured() && <VoicePicker size="small" />}
                         </div>
-                        <div className="hidden md:block">
-                            <InfoPill variant="white" size="sm">Voice Update is here</InfoPill>
+                        <div className="hidden lg:block">
+                            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100/50 shadow-[inset_0_1px_2px_rgba(0,0,0,0.06),0_1px_0_rgba(255,255,255,0.8)] border border-slate-200/50">
+                                <div className="relative flex h-2 w-2">
+                                    <span className="absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75 animate-ping duration-[2s]"></span>
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-gradient-to-tr from-sky-400 to-blue-600 shadow-[0_0_8px_rgba(56,189,248,0.6)]"></span>
+                                </div>
+                                <span className="text-[10px] font-medium text-slate-500 tracking-tight">Voice update is here</span>
+                            </div>
                         </div>
                     </div>
                 )}
