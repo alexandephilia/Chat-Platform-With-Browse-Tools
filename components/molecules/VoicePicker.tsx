@@ -480,7 +480,7 @@ const VoicePicker: React.FC<VoicePickerProps> = ({
                             {/* Voice Submenu (Second Level) */}
                             {activeModel && submenuPosition && (
                                 <motion.div
-                                    key="voice-submenu"
+                                    key={`voice-submenu-${activeModel}`}
                                     variants={menuContainerVariants}
                                     initial="hidden"
                                     animate="visible"
