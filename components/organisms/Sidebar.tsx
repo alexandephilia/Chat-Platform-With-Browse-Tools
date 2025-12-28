@@ -534,8 +534,11 @@ const Sidebar: React.FC<SidebarProps> = ({
 }) => {
     const { isAuthenticated, user, logout, openLoginModal, openSignupModal } = useAuth();
     const navRef = useRef<HTMLDivElement>(null);
+    const mobileNavRef = useRef<HTMLDivElement>(null);
     const [canScrollUp, setCanScrollUp] = useState(false);
     const [canScrollDown, setCanScrollDown] = useState(false);
+    const [mobileCanScrollUp, setMobileCanScrollUp] = useState(false);
+    const [mobileCanScrollDown, setMobileCanScrollDown] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [isChatButtonPressed, setIsChatButtonPressed] = useState(false);
 
@@ -550,6 +553,14 @@ const Sidebar: React.FC<SidebarProps> = ({
         }
     }, []);
 
+    const handleMobileScroll = useCallback(() => {
+        if (mobileNavRef.current) {
+            const { scrollTop, scrollHeight, clientHeight } = mobileNavRef.current;
+            setMobileCanScrollUp(scrollTop > 2);
+            setMobileCanScrollDown(scrollTop < scrollHeight - clientHeight - 2);
+        }
+    }, []);
+
     React.useEffect(() => {
         handleScroll();
         const navEl = navRef.current;
@@ -559,6 +570,16 @@ const Sidebar: React.FC<SidebarProps> = ({
             return () => resizeObserver.disconnect();
         }
     }, [handleScroll]);
+
+    React.useEffect(() => {
+        handleMobileScroll();
+        const mobileNavEl = mobileNavRef.current;
+        if (mobileNavEl) {
+            const resizeObserver = new ResizeObserver(handleMobileScroll);
+            resizeObserver.observe(mobileNavEl);
+            return () => resizeObserver.disconnect();
+        }
+    }, [handleMobileScroll]);
 
     const filteredChats = useMemo(() => {
         if (!searchQuery.trim()) return chatHistory;
@@ -650,37 +671,56 @@ const Sidebar: React.FC<SidebarProps> = ({
                             </div>
                         </div>
                         <div
-                            className="flex-1 overflow-y-auto px-4 py-2"
+                            className="flex-1 overflow-y-auto px-4 py-2 relative"
                             style={{ contain: 'content' }}
                         >
-                            {Object.entries(groupedChats).map(([group, chats]) => (
-                                <div key={group} className="mb-4">
-                                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2 mb-2">{group}</div>
-                                    <div className="space-y-2">
-                                        {chats.map((chat) => (
-                                            <div
-                                                key={chat.id}
-                                                className="p-[3px] rounded-[10px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.06)] relative overflow-hidden bg-slate-100/60"
-                                                style={{ contain: 'layout style' }}
-                                            >
-                                                <MobileChatHistoryItemComponent
-                                                    chat={chat}
-                                                    isActive={activeChatId === chat.id}
-                                                    isNew={chat.isNew}
-                                                    onSelect={() => handleSelectChat(chat.id)}
-                                                    onDelete={() => handleDeleteChatCallback(chat.id)}
-                                                />
-                                            </div>
-                                        ))}
+                            {/* Fade gradients for mobile scroll */}
+                            <motion.div
+                                className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-b from-[var(--color-bg-sidebar)] via-[var(--color-bg-sidebar)]/80 to-transparent z-10 pointer-events-none"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: mobileCanScrollUp ? 1 : 0 }}
+                                transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                            />
+                            <motion.div
+                                className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-[var(--color-bg-sidebar)] via-[var(--color-bg-sidebar)]/80 to-transparent z-10 pointer-events-none"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: mobileCanScrollDown ? 1 : 0 }}
+                                transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                            />
+                            <div
+                                ref={mobileNavRef}
+                                onScroll={handleMobileScroll}
+                                className="h-full overflow-y-auto scrollbar-hide"
+                            >
+                                {Object.entries(groupedChats).map(([group, chats]) => (
+                                    <div key={group} className="mb-4">
+                                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2 mb-2">{group}</div>
+                                        <div className="space-y-2">
+                                            {chats.map((chat) => (
+                                                <div
+                                                    key={chat.id}
+                                                    className="p-[3px] rounded-[10px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.06)] relative overflow-hidden bg-slate-100/60"
+                                                    style={{ contain: 'layout style' }}
+                                                >
+                                                    <MobileChatHistoryItemComponent
+                                                        chat={chat}
+                                                        isActive={activeChatId === chat.id}
+                                                        isNew={chat.isNew}
+                                                        onSelect={() => handleSelectChat(chat.id)}
+                                                        onDelete={() => handleDeleteChatCallback(chat.id)}
+                                                    />
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
-                            {filteredChats.length === 0 && (
-                                <div className="flex flex-col items-center justify-center py-8 text-slate-400">
-                                    <ExpressionlessSquareLinear className="w-7 h-7 mb-2 opacity-50" />
-                                    <span className="text-sm">{searchQuery ? "No chats found" : "No chat history yet"}</span>
-                                </div>
-                            )}
+                                ))}
+                                {filteredChats.length === 0 && (
+                                    <div className="flex flex-col items-center justify-center py-8 text-slate-400">
+                                        <ExpressionlessSquareLinear className="w-7 h-7 mb-2 opacity-50" />
+                                        <span className="text-sm">{searchQuery ? "No chats found" : "No chat history yet"}</span>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                         <div className="px-4 py-3">
                             <ClayPromoCard isMinimized={false} animateOnMount={true} title="Zeta Trial" icon={<UfoIcon size={18} />} description={<span>There are <span className="text-slate-800 font-bold">12 days left</span> for you to enjoy the various features.</span>} action={<div className="w-full p-[1.5px] rounded-[10px] bg-gradient-to-b from-slate-400/60 via-slate-600/40 to-slate-800/60"><button className="relative w-full text-[10px] font-bold text-white py-2 px-3 rounded-[8.5px] overflow-hidden shadow-md active:scale-[0.98] transition-transform duration-150 flex items-center justify-center gap-1.5" style={{ background: 'linear-gradient(180deg, #475569 0%, #1e293b 25%, #0f172a 100%)' }}><span className="relative z-10 text-white">Upgrade to Pro</span><TrendingUp size={10} className="relative z-10 text-cyan-200" /></button></div>} />
