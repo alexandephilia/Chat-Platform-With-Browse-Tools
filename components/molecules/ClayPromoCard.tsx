@@ -82,15 +82,14 @@ const ExpandedCard: React.FC<{ title: string; description: React.ReactNode; icon
     action
 }) => (
     <div className="relative w-full rounded-[24px]">
-        {/* Shine effect */}
+        {/* Animated Shine Border */}
         <div className="absolute inset-0 rounded-[24px] overflow-hidden">
             <div
-                className="absolute inset-[-100%] bg-[conic-gradient(from_0deg_at_50%_50%,transparent_0deg,transparent_60deg,#60a5fa_120deg,#818cf8_180deg,#60a5fa_240deg,transparent_300deg,transparent_360deg)] opacity-50 blur-md animate-spin"
-                style={{ animationDuration: '3s' }}
-            />
-            <div
-                className="absolute inset-[-100%] bg-[conic-gradient(from_0deg_at_50%_50%,transparent_0deg,transparent_70deg,#93c5fd_110deg,#ffffff_180deg,#93c5fd_250deg,transparent_290deg,transparent_360deg)] opacity-80 animate-spin"
-                style={{ animationDuration: '3s' }}
+                className="absolute inset-[-100%]"
+                style={{
+                    background: 'conic-gradient(from 0deg at 50% 50%, transparent 0deg, transparent 60deg, #7dd3fc 120deg, #38bdf8 180deg, #0ea5e9 240deg, transparent 300deg, transparent 360deg)',
+                    animation: 'spin 3s linear infinite'
+                }}
             />
         </div>
         {/* Card Shell */}
@@ -110,15 +109,8 @@ const ExpandedCard: React.FC<{ title: string; description: React.ReactNode; icon
                     <div className="absolute -bottom-10 -left-10 w-32 h-32 rounded-full bg-gradient-to-tr from-sky-400/15 to-indigo-400/15 blur-[30px]" />
                 </div>
                 {/* Content */}
-                <div className="relative z-10 flex flex-col gap-2 p-3">
-                    <div className="flex items-center gap-3">
-                        {icon && (
-                            <div className="w-8 h-8 rounded-xl bg-white/60 ring-1 ring-cyan-100/50 text-cyan-500 flex items-center justify-center animate-[container-glow_2s_ease-in-out_infinite]">
-                                {icon}
-                            </div>
-                        )}
-                        <h4 className="font-bold text-slate-800 text-xs leading-tight tracking-tight">{title}</h4>
-                    </div>
+                <div className="relative z-10 flex flex-col gap-1 p-3">
+                    <h4 className="font-bold text-slate-800 text-sm leading-tight tracking-tight">{title}</h4>
                     <div className="text-[10px] text-slate-500 font-medium leading-relaxed">
                         {description}
                     </div>
