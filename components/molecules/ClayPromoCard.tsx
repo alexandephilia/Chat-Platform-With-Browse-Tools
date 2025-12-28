@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import React from 'react';
 
 // Gift/Present icon for minimized promo card
@@ -18,6 +18,7 @@ interface ClayPromoCardProps {
     action?: React.ReactNode;
     className?: string;
     isMinimized?: boolean;
+    animateOnMount?: boolean;
 }
 
 // Shared card shell styles
@@ -79,47 +80,51 @@ const ExpandedCard: React.FC<{ title: string; description: React.ReactNode; icon
     title,
     description,
     action
-}) => (
-    <div className="relative w-full rounded-[24px]">
-        {/* Animated Shine Border */}
-        <div className="absolute inset-0 rounded-[24px] overflow-hidden">
-            <div
-                className="absolute inset-[-100%]"
-                style={{
-                    background: 'conic-gradient(from 0deg at 50% 50%, transparent 0deg, transparent 60deg, #7dd3fc 120deg, #38bdf8 180deg, #0ea5e9 240deg, transparent 300deg, transparent 360deg)',
-                    animation: 'spin 3s linear infinite'
-                }}
-            />
-        </div>
-        {/* Card Shell */}
-        <div className="group relative w-full rounded-[24px] p-[5px]" style={cardShellStyle}>
-            <div className="relative w-full rounded-[20px] bg-white/60 border border-blue-50/50 flex flex-col overflow-hidden">
-                {/* Background - same as main container */}
-                <div className="absolute inset-0 overflow-hidden rounded-[20px]">
-                    <div
-                        className="absolute inset-0 blur-[2px] brightness-100"
-                        style={{
-                            backgroundImage: `url("https://r2.flowith.net/gemini-proxy-go/1766818558795/0cbc2f7b-28ee-4c48-b05a-cfc0eb3c0617.jpg")`,
-                            backgroundRepeat: 'no-repeat',
-                            backgroundPosition: 'center center',
-                            backgroundSize: 'cover'
-                        }}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/60 via-50% to-white/100" />
-                    <div className="absolute inset-0 bg-gradient-to-b from-white/5 via-transparent to-transparent" />
-                </div>
-                {/* Content */}
-                <div className="relative z-10 flex flex-col gap-1 p-3">
-                    <h4 className="font-bold text-slate-800 text-sm leading-tight tracking-tight">{title}</h4>
-                    <div className="text-[10px] text-slate-500 font-medium leading-relaxed">
-                        {description}
+}) => {
+    return (
+        <div className="relative w-full rounded-[24px]">
+            {/* Animated Shine Border - Always running */}
+            <div className="absolute inset-0 rounded-[24px] overflow-hidden">
+                <div
+                    className="absolute inset-[-100%] animate-spin"
+                    style={{
+                        background: 'conic-gradient(from 0deg at 50% 50%, transparent 0deg, transparent 60deg, #66a0bbff 120deg, #66a0bbff 180deg, #66a0bbff 240deg, transparent 300deg, transparent 360deg)',
+                        animationDuration: '3s',
+                        animationTimingFunction: 'linear',
+                        animationIterationCount: 'infinite'
+                    }}
+                />
+            </div>
+            {/* Card Shell */}
+            <div className="group relative w-full rounded-[24px] p-[5px]" style={cardShellStyle}>
+                <div className="relative w-full rounded-[20px] bg-white/60 border border-blue-50/50 flex flex-col overflow-hidden">
+                    {/* Background - same as main container */}
+                    <div className="absolute inset-0 overflow-hidden rounded-[20px]">
+                        <div
+                            className="absolute inset-0 blur-[2px] brightness-100"
+                            style={{
+                                backgroundImage: `url("https://r2.flowith.net/gemini-proxy-go/1766818558795/0cbc2f7b-28ee-4c48-b05a-cfc0eb3c0617.jpg")`,
+                                backgroundRepeat: 'no-repeat',
+                                backgroundPosition: 'center center',
+                                backgroundSize: 'cover'
+                            }}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/60 via-50% to-white/100" />
+                        <div className="absolute inset-0 bg-gradient-to-b from-white/5 via-transparent to-transparent" />
                     </div>
-                    {action && <div className="mt-1">{action}</div>}
+                    {/* Content */}
+                    <div className="relative z-10 flex flex-col gap-1 p-3">
+                        <h4 className="font-bold text-slate-800 text-sm leading-tight tracking-tight">{title}</h4>
+                        <div className="text-[10px] text-slate-500 font-medium leading-relaxed">
+                            {description}
+                        </div>
+                        {action && <div className="mt-1">{action}</div>}
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-);
+    );
+}
 
 export const ClayPromoCard: React.FC<ClayPromoCardProps> = ({
     title,
@@ -127,46 +132,59 @@ export const ClayPromoCard: React.FC<ClayPromoCardProps> = ({
     icon,
     action,
     className = "",
-    isMinimized = false
+    isMinimized = false,
+    animateOnMount = false
 }) => {
     return (
-        <div
+        <motion.div
             className={`relative w-full ${className}`}
             style={{ contain: 'layout style paint' }}
+            initial={animateOnMount ? { opacity: 0, filter: 'blur(10px)', scale: 0.95 } : false}
+            animate={{ opacity: 1, filter: 'blur(0px)', scale: 1 }}
+            transition={{
+                duration: 0.6,
+                ease: [0.22, 1, 0.36, 1],
+                delay: animateOnMount ? 0.3 : 0
+            }}
         >
             <div className="relative w-full rounded-[26px] p-[1.5px]">
-                <AnimatePresence mode="wait" initial={false}>
-                    {isMinimized ? (
-                        <motion.div
-                            key="minimized"
-                            initial={{ opacity: 0, filter: 'blur(10px)', scale: 0.9 }}
-                            animate={{ opacity: 1, filter: 'blur(0px)', scale: 1 }}
-                            exit={{ opacity: 0, filter: 'blur(10px)', scale: 0.9 }}
-                            transition={{
-                                duration: 0.42,
-                                ease: [0.36, 1, 0.3, 1] // Matches sidebar easing
-                            }}
-                            className="w-full"
-                        >
-                            <MinimizedCard />
-                        </motion.div>
-                    ) : (
-                        <motion.div
-                            key="expanded"
-                            initial={{ opacity: 0, filter: 'blur(10px)', scale: 1.05 }}
-                            animate={{ opacity: 1, filter: 'blur(0px)', scale: 1 }}
-                            exit={{ opacity: 0, filter: 'blur(10px)', scale: 1.05 }}
-                            transition={{
-                                duration: 0.12,
-                                ease: [0.26, 0.1, 0.3, 1]
-                            }}
-                            className="w-full"
-                        >
-                            <ExpandedCard title={title} description={description} icon={icon} action={action} />
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                {/* Minimized card with transition */}
+                <motion.div
+                    initial={false}
+                    animate={{
+                        opacity: isMinimized ? 1 : 0,
+                        filter: isMinimized ? 'blur(0px)' : 'blur(10px)',
+                        scale: isMinimized ? 1 : 0.9
+                    }}
+                    transition={{
+                        duration: isMinimized ? 0.42 : 0.12,
+                        ease: isMinimized ? [0.36, 1, 0.3, 1] : [0.4, 0, 1, 1],
+                        delay: isMinimized ? 0.15 : 0
+                    }}
+                    className={`${isMinimized ? 'block' : 'hidden pointer-events-none'}`}
+                    style={{ position: isMinimized ? 'relative' : 'absolute', inset: 0 }}
+                >
+                    <MinimizedCard />
+                </motion.div>
+                {/* Expanded card with transition */}
+                <motion.div
+                    initial={false}
+                    animate={{
+                        opacity: isMinimized ? 0 : 1,
+                        filter: isMinimized ? 'blur(10px)' : 'blur(0px)',
+                        scale: isMinimized ? 1.05 : 1
+                    }}
+                    transition={{
+                        duration: isMinimized ? 0.12 : 0.42,
+                        ease: isMinimized ? [0.4, 0, 1, 1] : [0.36, 1, 0.3, 1],
+                        delay: isMinimized ? 0 : 0.15
+                    }}
+                    className={`${isMinimized ? 'hidden pointer-events-none' : 'block'}`}
+                    style={{ position: isMinimized ? 'absolute' : 'relative', inset: 0 }}
+                >
+                    <ExpandedCard title={title} description={description} icon={icon} action={action} />
+                </motion.div>
             </div>
-        </div>
+        </motion.div>
     );
 };

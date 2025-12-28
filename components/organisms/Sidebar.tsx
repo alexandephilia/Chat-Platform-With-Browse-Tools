@@ -453,18 +453,14 @@ const MobileChatHistoryItemComponent: React.FC<{
                 onClick={onSelect}
                 onTouchStart={handleTouchStart}
                 onTouchEnd={handleTouchEnd}
-                className={`relative w-full flex items-center gap-2 px-2 py-1 rounded-[8px] text-[13px] transition-all duration-150 overflow-hidden border border-transparent ${isActive ? "bg-gradient-to-b from-white to-slate-50 text-slate-800 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_2px_rgba(0,0,0,0.06)] !border-slate-200/60" : isNew ? "text-blue-600 active:bg-gradient-to-b active:from-white active:to-slate-50 active:shadow-[0_2px_4px_rgba(0,0,0,0.1)]" : "text-slate-600 active:bg-gradient-to-b active:from-white active:to-slate-50 active:shadow-[0_2px_4px_rgba(0,0,0,0.1)]"}`}
-                style={{ transform: 'translateZ(0)' }}
+                className={`relative w-full flex items-center gap-2 px-2 py-1 rounded-[8px] text-[13px] transition-colors duration-150 overflow-hidden border border-transparent ${isActive ? "bg-gradient-to-b from-white to-slate-50 text-slate-800 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_2px_rgba(0,0,0,0.06)] !border-slate-200/60" : isNew ? "text-blue-600 active:bg-slate-50" : "text-slate-600 active:bg-slate-50"}`}
+                style={{ transform: 'translateZ(0)', contain: 'layout style' }}
             >
                 <div className="relative flex-shrink-0">
                     <ChatRoundLineLinear size={16} className={isNew ? "text-blue-500" : "text-slate-400"} />
                     {isNew && (
                         <span
-                            className="absolute -top-1 -right-1 w-2 h-2 rounded-full"
-                            style={{
-                                background: 'linear-gradient(135deg, #60a5fa 0%, #3b82f6 50%, #2563eb 100%)',
-                                boxShadow: '0 2px 4px rgba(59, 130, 246, 0.5), 0 1px 2px rgba(59, 130, 246, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.4)'
-                            }}
+                            className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-blue-500"
                         />
                     )}
                 </div>
@@ -475,7 +471,7 @@ const MobileChatHistoryItemComponent: React.FC<{
                     ref={menuButtonRef}
                     onClick={handleMenuClick}
                     onTouchEnd={handleMenuClick}
-                    className="p-1 rounded-lg bg-white/20 backdrop-blur-md shadow-[0_2px_8px_rgba(0,0,0,0.06)] border border-slate-200/20 text-slate-400 active:scale-95 active:bg-white/40 transition-all duration-150"
+                    className="p-1 rounded-lg bg-white/80 shadow-sm border border-slate-200/20 text-slate-400 active:scale-95 active:bg-white transition-transform duration-150"
                     style={{ transform: 'translateZ(0)' }}
                 >
                     <MoreHorizontal size={12} />
@@ -498,7 +494,7 @@ const MobileChatHistoryItemComponent: React.FC<{
                             zIndex: 9999,
                             transform: 'translateZ(0)'
                         }}
-                        className="bg-white rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.15),0_2px_4px_rgba(0,0,0,0.08)] border border-slate-200/40 overflow-hidden"
+                        className="bg-white rounded-xl shadow-lg border border-slate-200/40 overflow-hidden"
                     >
                         <button
                             onClick={handleDeleteClick}
@@ -513,20 +509,28 @@ const MobileChatHistoryItemComponent: React.FC<{
             )}
         </div>
     );
+}, (prevProps, nextProps) => {
+    // Custom comparison to prevent unnecessary re-renders
+    return (
+        prevProps.chat.id === nextProps.chat.id &&
+        prevProps.chat.title === nextProps.chat.title &&
+        prevProps.isActive === nextProps.isActive &&
+        prevProps.isNew === nextProps.isNew
+    );
 });
 
-const Sidebar: React.FC<SidebarProps> = ({ 
-    isOpen, 
-    isMinimized = false, 
-    onClose, 
-    onNewChat, 
-    onSelectChat, 
-    onDeleteChat, 
-    chatHistory = [], 
-    activeChatId, 
+const Sidebar: React.FC<SidebarProps> = ({
+    isOpen,
+    isMinimized = false,
+    onClose,
+    onNewChat,
+    onSelectChat,
+    onDeleteChat,
+    chatHistory = [],
+    activeChatId,
     isInitialLoad = false,
-    onOpenProfile, 
-    onOpenHelp 
+    onOpenProfile,
+    onOpenHelp
 }) => {
     const { isAuthenticated, user, logout, openLoginModal, openSignupModal } = useAuth();
     const navRef = useRef<HTMLDivElement>(null);
@@ -534,6 +538,9 @@ const Sidebar: React.FC<SidebarProps> = ({
     const [canScrollDown, setCanScrollDown] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [isChatButtonPressed, setIsChatButtonPressed] = useState(false);
+
+    // Track if mobile sidebar has been opened before to skip animations on subsequent opens
+    const hasMobileOpenedRef = useRef(false);
 
     const handleScroll = useCallback(() => {
         if (navRef.current) {
@@ -560,12 +567,22 @@ const Sidebar: React.FC<SidebarProps> = ({
 
     const groupedChats = useMemo(() => groupChatsByTimeline(filteredChats), [filteredChats]);
 
-    const handleNewChat = () => {
+    // Memoize callbacks to prevent re-renders in child components
+    const handleSelectChat = useCallback((chatId: string) => {
+        onSelectChat?.(chatId);
+        onClose?.();
+    }, [onSelectChat, onClose]);
+
+    const handleDeleteChatCallback = useCallback((chatId: string) => {
+        onDeleteChat?.(chatId);
+    }, [onDeleteChat]);
+
+    const handleNewChat = useCallback(() => {
         setIsChatButtonPressed(true);
-        setTimeout(() => setIsChatButtonPressed(false), 150); // Reset after animation
+        setTimeout(() => setIsChatButtonPressed(false), 150);
         onNewChat?.();
         onClose?.();
-    };
+    }, [onNewChat, onClose]);
 
     const isInitializedInternalRef = useRef(false);
     const shouldShowPageLoadAnimation = isInitialLoad && !isInitializedInternalRef.current;
@@ -573,6 +590,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     React.useEffect(() => {
         if (isOpen) {
             isInitializedInternalRef.current = true;
+            hasMobileOpenedRef.current = true;
         }
     }, [isOpen]);
 
@@ -586,19 +604,13 @@ const Sidebar: React.FC<SidebarProps> = ({
                         animate={{ x: 0 }}
                         exit={{ x: "-100%" }}
                         transition={{
-                            duration: 0.4,
+                            duration: 0.3,
                             ease: [0.32, 0.72, 0, 1]
                         }}
                         className="fixed inset-y-0 left-0 z-50 w-[240px] bg-[var(--color-bg-sidebar)] flex flex-col overflow-hidden shadow-xl md:hidden rounded-r-3xl"
                         style={{ willChange: 'transform', transform: 'translateZ(0)', contain: 'layout style paint' }}
                     >
-                        <motion.div 
-                            className="flex items-center justify-between px-4 py-3 border-b border-slate-100"
-                            custom={0}
-                            variants={pageLoadVariants}
-                            initial={shouldShowPageLoadAnimation ? "hidden" : false}
-                            animate="visible"
-                        >
+                        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
                             <div className="flex items-center gap-3">
                                 {isAuthenticated ? (
                                     <div
@@ -624,38 +636,22 @@ const Sidebar: React.FC<SidebarProps> = ({
                                 </button>
                             </div>
                             <button onClick={onClose} className="p-2 -mr-2 hover:bg-slate-100 active:bg-slate-200 rounded-xl text-slate-500 transition-colors"><X size={20} /></button>
-                        </motion.div>
-                        <motion.div 
-                            className="px-4 py-3"
-                            custom={1}
-                            variants={pageLoadVariants}
-                            initial={shouldShowPageLoadAnimation ? "hidden" : false}
-                            animate="visible"
-                        >
+                        </div>
+                        <div className="px-4 py-3">
                             <ClayInput icon={<Search size={16} />} placeholder="Search chats..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-                        </motion.div>
-                        <motion.div 
-                            className="px-4 pb-2"
-                            custom={2}
-                            variants={pageLoadVariants}
-                            initial={shouldShowPageLoadAnimation ? "hidden" : false}
-                            animate="visible"
-                        >
+                        </div>
+                        <div className="px-4 pb-2">
                             <div className="p-[3px] rounded-[14px] bg-gradient-to-b from-white via-slate-50/50 to-slate-100/80 shadow-[inset_0_1px_2px_rgba(0,0,0,0.02),0_1px_0_rgba(255,255,255,0.8)]">
-                                <button onClick={handleNewChat} className={`relative w-full flex items-center gap-2 px-2.5 py-2 rounded-xl text-[13px] font-medium transition-all duration-300 overflow-hidden bg-gradient-to-b from-white to-slate-100 border border-slate-200/40 ${isChatButtonPressed ? 'shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]' : 'shadow-[0_4px_12px_rgba(0,0,0,0.08),0_2px_4px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,1)]'} hover:shadow-[0_8px_24px_rgba(0,0,0,0.12),0_4px_8px_rgba(0,0,0,0.06)] hover:border-slate-300/60 active:scale-[0.98]`}>
+                                <button onClick={handleNewChat} className={`relative w-full flex items-center gap-2 px-2.5 py-2 rounded-xl text-[13px] font-medium transition-shadow duration-150 overflow-hidden bg-gradient-to-b from-white to-slate-100 border border-slate-200/40 ${isChatButtonPressed ? 'shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]' : 'shadow-[0_4px_12px_rgba(0,0,0,0.08),0_2px_4px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,1)]'} active:scale-[0.98]`}>
                                     <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white to-transparent pointer-events-none" />
                                     <UfoIcon size={16} className="text-slate-700" />
                                     <span className="text-slate-700">New Chat</span>
                                 </button>
                             </div>
-                        </motion.div>
-                        <motion.div 
-                            className="flex-1 overflow-y-auto px-4 py-2" 
+                        </div>
+                        <div
+                            className="flex-1 overflow-y-auto px-4 py-2"
                             style={{ contain: 'content' }}
-                            custom={3}
-                            variants={pageLoadVariants}
-                            initial={shouldShowPageLoadAnimation ? "hidden" : false}
-                            animate="visible"
                         >
                             {Object.entries(groupedChats).map(([group, chats]) => (
                                 <div key={group} className="mb-4">
@@ -664,20 +660,15 @@ const Sidebar: React.FC<SidebarProps> = ({
                                         {chats.map((chat) => (
                                             <div
                                                 key={chat.id}
-                                                className="p-[3px] rounded-[10px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.08),inset_0_0_0_1px_rgba(0,0,0,0.02)] relative overflow-hidden"
-                                                style={{
-                                                    background: 'linear-gradient(145deg, rgba(241,245,249,0.8) 0%, rgba(226,232,240,0.6) 100%)',
-                                                    contain: 'layout style',
-                                                }}
+                                                className="p-[3px] rounded-[10px] shadow-[inset_0_1px_2px_rgba(0,0,0,0.06)] relative overflow-hidden bg-slate-100/60"
+                                                style={{ contain: 'layout style' }}
                                             >
-                                                {/* Top inset gradient - subtle highlight */}
-                                                <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/70 to-transparent pointer-events-none" />
                                                 <MobileChatHistoryItemComponent
                                                     chat={chat}
                                                     isActive={activeChatId === chat.id}
                                                     isNew={chat.isNew}
-                                                    onSelect={() => { onSelectChat?.(chat.id); onClose?.(); }}
-                                                    onDelete={() => onDeleteChat?.(chat.id)}
+                                                    onSelect={() => handleSelectChat(chat.id)}
+                                                    onDelete={() => handleDeleteChatCallback(chat.id)}
                                                 />
                                             </div>
                                         ))}
@@ -690,40 +681,22 @@ const Sidebar: React.FC<SidebarProps> = ({
                                     <span className="text-sm">{searchQuery ? "No chats found" : "No chat history yet"}</span>
                                 </div>
                             )}
-                        </motion.div>
-                        <motion.div 
-                            className="px-4 py-3"
-                            custom={4}
-                            variants={pageLoadVariants}
-                            initial={shouldShowPageLoadAnimation ? "hidden" : false}
-                            animate="visible"
-                        >
-                            <ClayPromoCard isMinimized={false} title="Zeta Trial" icon={<UfoIcon size={18} />} description={<span>There are <span className="text-slate-800 font-bold">12 days left</span> for you to enjoy the various features.</span>} action={<div className="w-full p-[1.5px] rounded-[10px] bg-gradient-to-b from-slate-400/60 via-slate-600/40 to-slate-800/60"><button className="relative w-full text-[10px] font-bold text-white py-2 px-3 rounded-[8.5px] overflow-hidden shadow-[0_4px_12px_rgba(59,130,246,0.35),0_2px_4px_rgba(0,0,0,0.2),inset_0_-2px_6px_rgba(0,0,0,0.3)] hover:shadow-[0_6px_20px_rgba(59,130,246,0.45),0_3px_6px_rgba(0,0,0,0.25),inset_0_-2px_6px_rgba(0,0,0,0.25)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] active:shadow-[inset_0_2px_8px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(0,0,0,0.3)] transition-all duration-200 flex items-center justify-center gap-1.5" style={{ background: 'linear-gradient(180deg, #475569 0%, #1e293b 25%, #0f172a 100%)' }}><div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/50 to-transparent pointer-events-none" /><span className="relative z-10 bg-gradient-to-r from-white via-slate-400 to-white bg-[length:400%_100%] bg-clip-text text-transparent animate-shimmer-pro drop-shadow-[0_0_12px_rgba(255,255,255,0.6)]">Upgrade to Pro</span><TrendingUp size={10} className="relative z-10 text-cyan-200 animate-icon-glow-pro" /></button></div>} />
-                        </motion.div>
-                        <motion.div 
-                            className="px-4 pb-2 flex justify-center"
-                            custom={5}
-                            variants={pageLoadVariants}
-                            initial={shouldShowPageLoadAnimation ? "hidden" : false}
-                            animate="visible"
-                        >
+                        </div>
+                        <div className="px-4 py-3">
+                            <ClayPromoCard isMinimized={false} animateOnMount={true} title="Zeta Trial" icon={<UfoIcon size={18} />} description={<span>There are <span className="text-slate-800 font-bold">12 days left</span> for you to enjoy the various features.</span>} action={<div className="w-full p-[1.5px] rounded-[10px] bg-gradient-to-b from-slate-400/60 via-slate-600/40 to-slate-800/60"><button className="relative w-full text-[10px] font-bold text-white py-2 px-3 rounded-[8.5px] overflow-hidden shadow-md active:scale-[0.98] transition-transform duration-150 flex items-center justify-center gap-1.5" style={{ background: 'linear-gradient(180deg, #475569 0%, #1e293b 25%, #0f172a 100%)' }}><span className="relative z-10 text-white">Upgrade to Pro</span><TrendingUp size={10} className="relative z-10 text-cyan-200" /></button></div>} />
+                        </div>
+                        <div className="px-4 pb-2 flex justify-center">
                             <ClayPill size="sm" onClick={() => { onOpenHelp?.(); onClose?.(); }}>Need Help?</ClayPill>
-                        </motion.div>
+                        </div>
                         {!isAuthenticated && (
-                            <motion.div 
-                                className="border-t border-slate-100 px-4 py-3 flex justify-center"
-                                custom={6}
-                                variants={pageLoadVariants}
-                                initial={shouldShowPageLoadAnimation ? "hidden" : false}
-                                animate="visible"
-                            >
+                            <div className="border-t border-slate-100 px-4 py-3 flex justify-center">
                                 <button
                                     onClick={openSignupModal}
-                                    className="px-10 py-1.5 text-[13px] font-medium text-white bg-gradient-to-b from-slate-700 to-slate-900 rounded-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.15),inset_0_-1px_3px_rgba(0,0,0,0.2),0_2px_4px_rgba(0,0,0,0.1)] border border-slate-600/50 hover:from-slate-600 hover:to-slate-800 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_4px_8px_rgba(0,0,0,0.15)] transition-all duration-200 active:scale-[0.98]"
+                                    className="px-10 py-1.5 text-[13px] font-medium text-white bg-gradient-to-b from-slate-700 to-slate-900 rounded-xl shadow-md border border-slate-600/50 active:scale-[0.98] transition-transform duration-150"
                                 >
                                     Sign up
                                 </button>
-                            </motion.div>
+                            </div>
                         )}
                     </motion.div>
                 )}
@@ -755,34 +728,34 @@ const Sidebar: React.FC<SidebarProps> = ({
                         animate="visible"
                     >
                         <AnimatePresence mode="wait" initial={false}>
-                        {!isMinimized ? (
-                            <motion.div
-                                key="search-expanded"
-                                variants={searchPopVariants}
-                                initial="hidden"
-                                animate="visible"
-                                exit={{ opacity: 0, scale: 0.95, transition: { duration: ANIMATION_CONFIG.duration.fast } }}
-                                layout="position"
-                            >
-                                <ClayInput icon={<Search size={16} />} placeholder="Search chats..." shortcut="/" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-                            </motion.div>
-                        ) : (
-                            <motion.button
-                                key="search-minimized"
-                                variants={elementVariants}
-                                initial="minimized"
-                                animate="minimized"
-                                exit={{ opacity: 0, scale: 0.9, transition: { duration: ANIMATION_CONFIG.duration.fast } }}
-                                transition={{ duration: ANIMATION_CONFIG.duration.fast, ease: ANIMATION_CONFIG.easing.smooth }}
-                                className="w-full flex items-center justify-center p-2.5 bg-white rounded-xl shadow-[0_1px_2px_rgba(0,0,0,0.03)] hover:shadow-[0_2px_6px_rgba(0,0,0,0.05)] transition-shadow"
-                            >
-                                <motion.div variants={iconVariants} animate="minimized">
-                                    <Search size={18} className="text-slate-400" />
+                            {!isMinimized ? (
+                                <motion.div
+                                    key="search-expanded"
+                                    variants={searchPopVariants}
+                                    initial="hidden"
+                                    animate="visible"
+                                    exit={{ opacity: 0, scale: 0.95, transition: { duration: ANIMATION_CONFIG.duration.fast } }}
+                                    layout="position"
+                                >
+                                    <ClayInput icon={<Search size={16} />} placeholder="Search chats..." shortcut="/" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
                                 </motion.div>
-                            </motion.button>
-                        )}
-                    </AnimatePresence>
-                </motion.div>
+                            ) : (
+                                <motion.button
+                                    key="search-minimized"
+                                    variants={elementVariants}
+                                    initial="minimized"
+                                    animate="minimized"
+                                    exit={{ opacity: 0, scale: 0.9, transition: { duration: ANIMATION_CONFIG.duration.fast } }}
+                                    transition={{ duration: ANIMATION_CONFIG.duration.fast, ease: ANIMATION_CONFIG.easing.smooth }}
+                                    className="w-full flex items-center justify-center p-2.5 bg-white rounded-xl shadow-[0_1px_2px_rgba(0,0,0,0.03)] hover:shadow-[0_2px_6px_rgba(0,0,0,0.05)] transition-shadow"
+                                >
+                                    <motion.div variants={iconVariants} animate="minimized">
+                                        <Search size={18} className="text-slate-400" />
+                                    </motion.div>
+                                </motion.button>
+                            )}
+                        </AnimatePresence>
+                    </motion.div>
                 </motion.div>
                 <motion.div
                     className={`pb-3 ${isMinimized ? "px-3" : "px-4"}`}
@@ -798,79 +771,79 @@ const Sidebar: React.FC<SidebarProps> = ({
                         custom={1}
                     >
                         <AnimatePresence mode="wait" initial={false}>
-                        {!isMinimized ? (
-                            <motion.div
-                                key="new-chat-expanded-wrapper"
-                                layout="position"
-                                className="p-[3px] rounded-[14px] bg-gradient-to-b from-white via-slate-50/50 to-slate-100/80 shadow-[inset_0_1px_2px_rgba(0,0,0,0.02),0_1px_0_rgba(255,255,255,0.8)]"
-                                variants={elementVariants}
-                                initial="hidden"
-                                animate="visible"
-                                exit={{ opacity: 0, scale: 0.85, transition: { duration: ANIMATION_CONFIG.duration.fast } }}
-                            >
-                                <motion.button
-                                    layoutId="new-chat-button"
-                                    onClick={handleNewChat}
-                                    className={`relative w-full flex items-center rounded-xl text-sm font-medium transition-all duration-300 justify-start px-3 py-2 gap-2.5 overflow-hidden bg-gradient-to-b from-white to-slate-100 border border-slate-200/40 ${isChatButtonPressed ? 'shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]' : 'shadow-[0_4px_12px_rgba(0,0,0,0.08),0_2px_4px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,1)]'} hover:shadow-[0_8px_24px_rgba(0,0,0,0.12),0_4px_8px_rgba(0,0,0,0.06)] hover:border-slate-300/60 active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]`}
-                                    whileTap={{ scale: 0.98 }}
-                                    transition={{
-                                        layout: { duration: ANIMATION_CONFIG.duration.medium, ease: ANIMATION_CONFIG.easing.smooth },
-                                        scale: { duration: ANIMATION_CONFIG.duration.fast, ease: ANIMATION_CONFIG.easing.smooth }
-                                    }}
+                            {!isMinimized ? (
+                                <motion.div
+                                    key="new-chat-expanded-wrapper"
+                                    layout="position"
+                                    className="p-[3px] rounded-[14px] bg-gradient-to-b from-white via-slate-50/50 to-slate-100/80 shadow-[inset_0_1px_2px_rgba(0,0,0,0.02),0_1px_0_rgba(255,255,255,0.8)]"
+                                    variants={elementVariants}
+                                    initial="hidden"
+                                    animate="visible"
+                                    exit={{ opacity: 0, scale: 0.85, transition: { duration: ANIMATION_CONFIG.duration.fast } }}
                                 >
-                                    {/* Top shine inset */}
-                                    <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white to-transparent pointer-events-none" />
-                                    <motion.div
-                                        layout="position"
-                                        className="flex-shrink-0"
-                                        variants={iconVariants}
-                                        transition={{ layout: { duration: ANIMATION_CONFIG.duration.medium, ease: ANIMATION_CONFIG.easing.smooth } }}
+                                    <motion.button
+                                        layoutId="new-chat-button"
+                                        onClick={handleNewChat}
+                                        className={`relative w-full flex items-center rounded-xl text-sm font-medium transition-all duration-300 justify-start px-3 py-2 gap-2.5 overflow-hidden bg-gradient-to-b from-white to-slate-100 border border-slate-200/40 ${isChatButtonPressed ? 'shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]' : 'shadow-[0_4px_12px_rgba(0,0,0,0.08),0_2px_4px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,1)]'} hover:shadow-[0_8px_24px_rgba(0,0,0,0.12),0_4px_8px_rgba(0,0,0,0.06)] hover:border-slate-300/60 active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]`}
+                                        whileTap={{ scale: 0.98 }}
+                                        transition={{
+                                            layout: { duration: ANIMATION_CONFIG.duration.medium, ease: ANIMATION_CONFIG.easing.smooth },
+                                            scale: { duration: ANIMATION_CONFIG.duration.fast, ease: ANIMATION_CONFIG.easing.smooth }
+                                        }}
                                     >
-                                        <UfoIcon size={18} className="text-slate-700" />
-                                    </motion.div>
-                                    <motion.span
-                                        variants={textVariants}
-                                        initial="minimized"
-                                        animate="expanded"
-                                        exit="minimized"
-                                        className="whitespace-nowrap text-slate-700 font-semibold"
-                                        layout="position"
-                                        transition={{ layout: { duration: ANIMATION_CONFIG.duration.medium, ease: ANIMATION_CONFIG.easing.smooth } }}
-                                    >
-                                        New Chat
-                                    </motion.span>
-                                </motion.button>
-                            </motion.div>
-                        ) : (
-                            <motion.div
-                                key="new-chat-minimized-wrapper"
-                                layout="position"
-                                className="p-[3px] rounded-[14px] bg-gradient-to-b from-white via-slate-50/50 to-slate-100/80 shadow-[inset_0_1px_2px_rgba(0,0,0,0.02),0_1px_0_rgba(255,255,255,0.8)]"
-                                variants={elementVariants}
-                                initial="expanded"
-                                animate="minimized"
-                                exit={{ opacity: 0, scale: 0.9, transition: { duration: ANIMATION_CONFIG.duration.fast } }}
-                            >
-                                <motion.button
-                                    layoutId="new-chat-button"
-                                    onClick={handleNewChat}
-                                    title="New Chat"
-                                    className={`relative w-full flex items-center justify-center rounded-xl text-sm font-medium transition-all duration-300 p-2 overflow-hidden bg-gradient-to-b from-white to-slate-100 border border-slate-200/40 ${isChatButtonPressed ? 'shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]' : 'shadow-[0_4px_12px_rgba(0,0,0,0.08),0_2px_4px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,1)]'} hover:shadow-[0_8px_24px_rgba(0,0,0,0.12),0_4px_8px_rgba(0,0,0,0.06)] hover:border-slate-300/60 active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]`}
-                                    transition={{ duration: ANIMATION_CONFIG.duration.fast, ease: ANIMATION_CONFIG.easing.smooth }}
-                                    whileTap={{ scale: 0.98 }}
+                                        {/* Top shine inset */}
+                                        <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white to-transparent pointer-events-none" />
+                                        <motion.div
+                                            layout="position"
+                                            className="flex-shrink-0"
+                                            variants={iconVariants}
+                                            transition={{ layout: { duration: ANIMATION_CONFIG.duration.medium, ease: ANIMATION_CONFIG.easing.smooth } }}
+                                        >
+                                            <UfoIcon size={18} className="text-slate-700" />
+                                        </motion.div>
+                                        <motion.span
+                                            variants={textVariants}
+                                            initial="minimized"
+                                            animate="expanded"
+                                            exit="minimized"
+                                            className="whitespace-nowrap text-slate-700 font-semibold"
+                                            layout="position"
+                                            transition={{ layout: { duration: ANIMATION_CONFIG.duration.medium, ease: ANIMATION_CONFIG.easing.smooth } }}
+                                        >
+                                            New Chat
+                                        </motion.span>
+                                    </motion.button>
+                                </motion.div>
+                            ) : (
+                                <motion.div
+                                    key="new-chat-minimized-wrapper"
+                                    layout="position"
+                                    className="p-[3px] rounded-[14px] bg-gradient-to-b from-white via-slate-50/50 to-slate-100/80 shadow-[inset_0_1px_2px_rgba(0,0,0,0.02),0_1px_0_rgba(255,255,255,0.8)]"
+                                    variants={elementVariants}
+                                    initial="expanded"
+                                    animate="minimized"
+                                    exit={{ opacity: 0, scale: 0.9, transition: { duration: ANIMATION_CONFIG.duration.fast } }}
                                 >
-                                    {/* Top shine inset */}
-                                    <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white to-transparent pointer-events-none" />
-                                    <motion.div variants={iconVariants} animate="minimized">
-                                        <UfoIcon size={18} className="text-slate-700" />
-                                    </motion.div>
-                                </motion.button>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
+                                    <motion.button
+                                        layoutId="new-chat-button"
+                                        onClick={handleNewChat}
+                                        title="New Chat"
+                                        className={`relative w-full flex items-center justify-center rounded-xl text-sm font-medium transition-all duration-300 p-2 overflow-hidden bg-gradient-to-b from-white to-slate-100 border border-slate-200/40 ${isChatButtonPressed ? 'shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]' : 'shadow-[0_4px_12px_rgba(0,0,0,0.08),0_2px_4px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,1)]'} hover:shadow-[0_8px_24px_rgba(0,0,0,0.12),0_4px_8px_rgba(0,0,0,0.06)] hover:border-slate-300/60 active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]`}
+                                        transition={{ duration: ANIMATION_CONFIG.duration.fast, ease: ANIMATION_CONFIG.easing.smooth }}
+                                        whileTap={{ scale: 0.98 }}
+                                    >
+                                        {/* Top shine inset */}
+                                        <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white to-transparent pointer-events-none" />
+                                        <motion.div variants={iconVariants} animate="minimized">
+                                            <UfoIcon size={18} className="text-slate-700" />
+                                        </motion.div>
+                                    </motion.button>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </motion.div>
                 </motion.div>
-                </motion.div>
-                <motion.div 
+                <motion.div
                     className="flex-1 relative min-h-0"
                     custom={2}
                     variants={pageLoadVariants}
@@ -925,14 +898,14 @@ const Sidebar: React.FC<SidebarProps> = ({
                         )}
                     </div>
                 </motion.div>
-                <motion.div 
+                <motion.div
                     className={`py-4 w-full ${isMinimized ? "px-3" : "px-4"}`}
                     custom={3}
                     variants={pageLoadVariants}
                     initial={shouldShowPageLoadAnimation ? "hidden" : false}
                     animate="visible"
                 >
-                    <ClayPromoCard isMinimized={isMinimized} title="Zeta Trial" icon={<UfoIcon size={18} />} description={<span>There are <span className="text-slate-800 font-bold">12 days left</span> for you to enjoy the various features.</span>} action={<div className="w-full p-[1.5px] rounded-[10px] bg-gradient-to-b from-slate-400/60 via-slate-600/40 to-slate-800/60"><button className="relative w-full text-[10px] font-bold text-white py-2 px-3 rounded-[8.5px] overflow-hidden shadow-[0_4px_12px_rgba(59,130,246,0.35),0_2px_4px_rgba(0,0,0,0.2),inset_0_-2px_6px_rgba(0,0,0,0.3)] hover:shadow-[0_6px_20px_rgba(59,130,246,0.45),0_3px_6px_rgba(0,0,0,0.25),inset_0_-2px_6px_rgba(0,0,0,0.25)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] active:shadow-[inset_0_2px_8px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(0,0,0,0.3)] transition-all duration-200 flex items-center justify-center gap-1.5" style={{ background: 'linear-gradient(180deg, #475569 0%, #1e293b 25%, #0f172a 100%)' }}><div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/50 to-transparent pointer-events-none" /><span className="relative z-10 bg-gradient-to-r from-white via-slate-400 to-white bg-[length:400%_100%] bg-clip-text text-transparent animate-shimmer-pro drop-shadow-[0_0_12px_rgba(255,255,255,0.6)]">Upgrade to Pro</span><TrendingUp size={10} className="relative z-10 text-cyan-200 animate-icon-glow-pro" /></button></div>} />
+                    <ClayPromoCard isMinimized={isMinimized} animateOnMount={shouldShowPageLoadAnimation} title="Zeta Trial" icon={<UfoIcon size={18} />} description={<span>There are <span className="text-slate-800 font-bold">12 days left</span> for you to enjoy the various features.</span>} action={<div className="w-full p-[1.5px] rounded-[10px] bg-gradient-to-b from-slate-400/60 via-slate-600/40 to-slate-800/60"><button className="relative w-full text-[10px] font-bold text-white py-2 px-3 rounded-[8.5px] overflow-hidden shadow-[0_4px_12px_rgba(59,130,246,0.35),0_2px_4px_rgba(0,0,0,0.2),inset_0_-2px_6px_rgba(0,0,0,0.3)] hover:shadow-[0_6px_20px_rgba(59,130,246,0.45),0_3px_6px_rgba(0,0,0,0.25),inset_0_-2px_6px_rgba(0,0,0,0.25)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] active:shadow-[inset_0_2px_8px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(0,0,0,0.3)] transition-all duration-200 flex items-center justify-center gap-1.5" style={{ background: 'linear-gradient(180deg, #475569 0%, #1e293b 25%, #0f172a 100%)' }}><div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/50 to-transparent pointer-events-none" /><span className="relative z-10 bg-gradient-to-r from-white via-slate-400 to-white bg-[length:400%_100%] bg-clip-text text-transparent animate-shimmer-pro drop-shadow-[0_0_12px_rgba(255,255,255,0.6)]">Upgrade to Pro</span><TrendingUp size={10} className="relative z-10 text-cyan-200 animate-icon-glow-pro" /></button></div>} />
                 </motion.div>
                 <motion.div
                     className={`pb-4 flex justify-center ${isMinimized ? "px-3" : "px-4"}`}
