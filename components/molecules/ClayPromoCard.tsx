@@ -78,7 +78,6 @@ const MinimizedCard: React.FC = () => (
 const ExpandedCard: React.FC<{ title: string; description: React.ReactNode; icon?: React.ReactNode; action?: React.ReactNode }> = ({
     title,
     description,
-    icon,
     action
 }) => (
     <div className="relative w-full rounded-[24px]">
@@ -94,19 +93,20 @@ const ExpandedCard: React.FC<{ title: string; description: React.ReactNode; icon
         </div>
         {/* Card Shell */}
         <div className="group relative w-full rounded-[24px] p-[5px]" style={cardShellStyle}>
-            <div className="relative w-full rounded-[20px] bg-white border border-blue-50/50 flex flex-col">
-                {/* Background */}
+            <div className="relative w-full rounded-[20px] bg-white/60 border border-blue-50/50 flex flex-col overflow-hidden">
+                {/* Background - same as main container */}
                 <div className="absolute inset-0 overflow-hidden rounded-[20px]">
                     <div
-                        className="absolute inset-0 bg-cover bg-center blur-[2px] brightness-110"
+                        className="absolute inset-0 blur-[2px] brightness-100"
                         style={{
-                            backgroundImage: `url("https://framerusercontent.com/images/DOosIX3YNl0CyN9un92iPre4.png")`,
-                            backgroundRepeat: 'no-repeat'
+                            backgroundImage: `url("https://r2.flowith.net/gemini-proxy-go/1766818558795/0cbc2f7b-28ee-4c48-b05a-cfc0eb3c0617.jpg")`,
+                            backgroundRepeat: 'no-repeat',
+                            backgroundPosition: 'center center',
+                            backgroundSize: 'cover'
                         }}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/60 via-50% to-white/80" />
-                    <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-gradient-to-br from-cyan-400/15 to-blue-400/15 blur-[40px]" />
-                    <div className="absolute -bottom-10 -left-10 w-32 h-32 rounded-full bg-gradient-to-tr from-sky-400/15 to-indigo-400/15 blur-[30px]" />
+                    <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/60 via-50% to-white/100" />
+                    <div className="absolute inset-0 bg-gradient-to-b from-white/5 via-transparent to-transparent" />
                 </div>
                 {/* Content */}
                 <div className="relative z-10 flex flex-col gap-1 p-3">
