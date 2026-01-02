@@ -170,7 +170,7 @@ export const UserMessageBubble: React.FC<UserMessageBubbleProps> = memo(
                                     exit={{ opacity: 0, filter: 'blur(4px)' }}
                                     transition={{ duration: 0.2 }}
                                     ref={contentRef}
-                                    className="py-3 px-4 text-slate-700 break-words"
+                                    className="py-3 px-4 text-slate-700 break-words chat-message-user"
                                     style={{
                                         fontSize: "var(--text-chat)",
                                         lineHeight: "var(--text-chat-line-height)",

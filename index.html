@@ -21,7 +21,7 @@
         };
     </script>
     <link
-        href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,500;0,8..60,600;0,8..60,700;1,8..60,400;1,8..60,500&display=swap"
         rel="stylesheet" />
     <!-- KaTeX for math rendering -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
@@ -44,6 +44,9 @@
             /* Fonts */
             --font-base: "Nunito", sans-serif;
             --font-display: "Instrument Serif", serif;
+            --font-chat: "Nunito", sans-serif;
+            /* Default chat font - can be changed to Source Serif 4 */
+            --font-serif: "Source Serif 4", Georgia, serif;
 
             /* Primary Colors */
             --color-primary-50: #eff6ff;
@@ -157,7 +160,7 @@
 
         /* ===== BASE CONTAINER ===== */
         .chat-message-ai {
-            font-family: var(--font-base) !important;
+            font-family: var(--font-chat) !important;
             font-size: var(--text-chat) !important;
             line-height: var(--text-chat-line-height) !important;
             color: var(--color-text-primary) !important;
@@ -174,6 +177,20 @@
         .chat-message-ai-container {
             max-width: 100% !important;
             overflow: hidden !important;
+        }
+
+        /* Chat font classes for dynamic switching */
+        .chat-font-nunito {
+            --font-chat: "Nunito", sans-serif;
+        }
+
+        .chat-font-serif {
+            --font-chat: "Source Serif 4", Georgia, serif;
+        }
+
+        /* User message font styling */
+        .chat-message-user {
+            font-family: var(--font-chat) !important;
         }
 
         /* Reset all elements to inherit base */
@@ -213,7 +230,7 @@
         .chat-message-ai h4,
         .chat-message-ai h5,
         .chat-message-ai h6 {
-            font-family: var(--font-base) !important;
+            font-family: var(--font-chat) !important;
             font-weight: 700 !important;
             color: var(--color-text-primary) !important;
             margin-top: 1.25rem !important;
@@ -1286,15 +1303,15 @@
         }
 
         /* Target flowtoken's line containers (divs) or spans */
-        .chat-message-ai pre code > div,
-        .chat-message-ai pre code > span {
+        .chat-message-ai pre code>div,
+        .chat-message-ai pre code>span {
             position: relative !important;
             padding-left: 3.5rem !important;
             min-height: 1.6em !important;
         }
 
-        .chat-message-ai pre code > div::before,
-        .chat-message-ai pre code > span::before {
+        .chat-message-ai pre code>div::before,
+        .chat-message-ai pre code>span::before {
             counter-increment: line-number !important;
             content: counter(line-number) !important;
             position: absolute !important;
@@ -1323,35 +1340,199 @@
             line-height: 1.6 !important;
         }
 
-        /* ===== SYNTAX HIGHLIGHTING COLORS (INDUSTRIAL INK - DARKER) ===== */
+        /* ===== SYNTAX HIGHLIGHTING - MATTE DARK PALETTE (NO REDS) ===== */
+        /* Keywords: if, else, return, const, let, var, function, class, import, export, etc. */
         .chat-message-ai pre code span.keyword,
-        .chat-message-ai pre code span.token.keyword { color: #cf222e !important; } /* Red-ish */
-        
+        .chat-message-ai pre code span.token.keyword,
+        .chat-message-ai pre code .token.keyword {
+            color: #5c6bc0 !important;
+        }
+
+        /* Matte Indigo */
+
+        /* Control flow keywords */
+        .chat-message-ai pre code span.token.control-flow,
+        .chat-message-ai pre code .token.control-flow {
+            color: #7e57c2 !important;
+        }
+
+        /* Matte Purple */
+
+        /* Strings */
         .chat-message-ai pre code span.string,
-        .chat-message-ai pre code span.token.string { color: #0a3069 !important; } /* Deep Navy/Blue for strings */
-        
+        .chat-message-ai pre code span.token.string,
+        .chat-message-ai pre code .token.string {
+            color: #26a69a !important;
+        }
+
+        /* Matte Teal */
+
+        /* Template literals */
+        .chat-message-ai pre code span.token.template-string,
+        .chat-message-ai pre code .token.template-string {
+            color: #26a69a !important;
+        }
+
+        /* Functions */
         .chat-message-ai pre code span.function,
-        .chat-message-ai pre code span.token.function { color: #6f42c1 !important; } /* Deep Purple */
-        
+        .chat-message-ai pre code span.token.function,
+        .chat-message-ai pre code .token.function {
+            color: #5c6bc0 !important;
+        }
+
+        /* Matte Indigo */
+
+        /* Function calls */
+        .chat-message-ai pre code span.token.function-variable,
+        .chat-message-ai pre code .token.function-variable {
+            color: #5c6bc0 !important;
+        }
+
+        /* Numbers & Booleans */
         .chat-message-ai pre code span.number,
         .chat-message-ai pre code span.boolean,
         .chat-message-ai pre code span.token.number,
-        .chat-message-ai pre code span.token.boolean { color: #0550ae !important; } /* Strong Blue */
-        
+        .chat-message-ai pre code span.token.boolean,
+        .chat-message-ai pre code .token.number,
+        .chat-message-ai pre code .token.boolean {
+            color: #8d6e63 !important;
+        }
+
+        /* Matte Brown */
+
+        /* Comments */
         .chat-message-ai pre code span.comment,
-        .chat-message-ai pre code span.token.comment { color: #6e7781 !important; font-style: italic !important; } /* Muted Slate */
-        
+        .chat-message-ai pre code span.token.comment,
+        .chat-message-ai pre code .token.comment {
+            color: #78909c !important;
+            font-style: italic !important;
+        }
+
+        /* Matte Blue-Grey */
+
+        /* Operators: =, +, -, *, /, etc. */
         .chat-message-ai pre code span.operator,
-        .chat-message-ai pre code span.token.operator { color: #24292f !important; } /* Near Black */
-        
+        .chat-message-ai pre code span.token.operator,
+        .chat-message-ai pre code .token.operator {
+            color: #546e7a !important;
+        }
+
+        /* Class names & Types */
         .chat-message-ai pre code span.class-name,
-        .chat-message-ai pre code span.token.class-name { color: #953800 !important; } /* Rust/Orange */
-        
+        .chat-message-ai pre code span.token.class-name,
+        .chat-message-ai pre code .token.class-name {
+            color: #00897b !important;
+        }
+
+        /* Matte Teal Dark */
+
+        /* Type annotations (TypeScript) */
+        .chat-message-ai pre code span.token.builtin,
+        .chat-message-ai pre code .token.builtin {
+            color: #00897b !important;
+        }
+
+        /* Properties & Object keys */
         .chat-message-ai pre code span.property,
-        .chat-message-ai pre code span.token.property { color: #0550ae !important; }
-        
+        .chat-message-ai pre code span.token.property,
+        .chat-message-ai pre code .token.property {
+            color: #455a64 !important;
+        }
+
+        /* Matte Slate */
+
+        /* Variables */
+        .chat-message-ai pre code span.token.variable,
+        .chat-message-ai pre code .token.variable {
+            color: #37474f !important;
+        }
+
+        /* Parameters */
+        .chat-message-ai pre code span.token.parameter,
+        .chat-message-ai pre code .token.parameter {
+            color: #546e7a !important;
+        }
+
+        /* Punctuation: brackets, commas, semicolons */
+        .chat-message-ai pre code span.token.punctuation,
+        .chat-message-ai pre code .token.punctuation {
+            color: #607d8b !important;
+        }
+
+        /* HTML/JSX Tags */
+        .chat-message-ai pre code span.token.tag,
+        .chat-message-ai pre code .token.tag {
+            color: #5c6bc0 !important;
+        }
+
+        /* Matte Indigo */
+
+        /* HTML/JSX Attributes */
+        .chat-message-ai pre code span.token.attr-name,
+        .chat-message-ai pre code .token.attr-name {
+            color: #7e57c2 !important;
+        }
+
+        /* Matte Purple */
+
+        /* HTML/JSX Attribute Values */
+        .chat-message-ai pre code span.token.attr-value,
+        .chat-message-ai pre code .token.attr-value {
+            color: #26a69a !important;
+        }
+
+        /* Regex */
+        .chat-message-ai pre code span.token.regex,
+        .chat-message-ai pre code .token.regex {
+            color: #8d6e63 !important;
+        }
+
+        /* Matte Brown */
+
+        /* Constants */
+        .chat-message-ai pre code span.token.constant,
+        .chat-message-ai pre code .token.constant {
+            color: #5c6bc0 !important;
+        }
+
+        /* Matte Indigo */
+
+        /* Decorators (@) */
+        .chat-message-ai pre code span.token.decorator,
+        .chat-message-ai pre code .token.decorator {
+            color: #7e57c2 !important;
+        }
+
+        /* Namespace/Module */
+        .chat-message-ai pre code span.token.namespace,
+        .chat-message-ai pre code .token.namespace {
+            color: #00897b !important;
+        }
+
+        /* CSS Selectors */
+        .chat-message-ai pre code span.token.selector,
+        .chat-message-ai pre code .token.selector {
+            color: #5c6bc0 !important;
+        }
+
+        /* CSS Property names */
+        .chat-message-ai pre code span.token.property-access,
+        .chat-message-ai pre code .token.property-access {
+            color: #455a64 !important;
+        }
+
+        /* Important (CSS !important) */
+        .chat-message-ai pre code span.token.important,
+        .chat-message-ai pre code .token.important {
+            color: #7e57c2 !important;
+            font-weight: 600 !important;
+        }
+
         /* Ensure normal text is DARK/INK - High Contrast */
-        .chat-message-ai pre code { color: #24292f !important; }
+        .chat-message-ai pre code {
+            color: #37474f !important;
+            background: transparent !important;
+        }
 
         /* ===== FLOWTOKEN CODE BLOCK FIXES ===== */
         /* Prevent markdown parsing inside code blocks - show raw content */
@@ -1410,7 +1591,7 @@
         /* Inline Code Styling - Paragraphs */
         .chat-message-ai p code,
         .chat-message-ai li code {
-            font-size: 11px !important;
+            font-size: 10px !important;
             font-family: "JetBrains Mono", "Menlo", "Consolas", "Monaco", monospace !important;
             background: rgba(241, 245, 249, 0.8) !important;
             border: 1px solid rgba(226, 232, 240, 1) !important;

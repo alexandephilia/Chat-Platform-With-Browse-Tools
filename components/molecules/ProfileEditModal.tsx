@@ -48,12 +48,7 @@ const ClayButton: React.FC<ClayButtonProps> = ({ children, onClick, variant = 's
                     <div className={`relative px-4 py-2 rounded-lg ${isPrimary
                         ? 'bg-gradient-to-b from-[rgb(50,110,160)] to-[rgb(36,89,133)] text-white'
                         : 'bg-gradient-to-b from-white to-slate-50 text-slate-600 hover:text-slate-700'
-                        } shadow-[inset_0_1px_0_rgba(255,255,255,0.25)]`}>
-                        {/* Top highlight line */}
-                        <div className={`absolute inset-x-0 top-0 h-[1px] ${isPrimary
-                            ? 'bg-gradient-to-r from-transparent via-white/40 to-transparent'
-                            : 'bg-gradient-to-r from-transparent via-white/90 to-transparent'
-                            }`} />
+                        }`}>
                         {/* Content */}
                         <span className="relative z-10 text-[13px] font-semibold flex items-center justify-center">{children}</span>
                     </div>
@@ -89,6 +84,14 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onCl
 
     // Pending changes - only saved when user clicks "Done"
     const [pendingAvatar, setPendingAvatar] = useState<string | null>(null);
+
+    // Font preference state
+    const [selectedFont, setSelectedFont] = useState<'nunito' | 'serif'>(() => {
+        if (typeof window !== 'undefined') {
+            return (localStorage.getItem('chatFont') as 'nunito' | 'serif') || 'nunito';
+        }
+        return 'nunito';
+    });
 
     // 3D Card tilt effect
     const cardRef = useRef<HTMLDivElement>(null);
@@ -636,6 +639,63 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onCl
                                                             </div>
                                                         </div>
                                                     </motion.div>
+                                                </div>
+
+                                                {/* Font Settings */}
+                                                <div className="mt-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Font</span>
+                                                        <div className="flex gap-1.5 relative">
+                                                            <button
+                                                                onClick={() => {
+                                                                    setSelectedFont('nunito');
+                                                                    localStorage.setItem('chatFont', 'nunito');
+                                                                    document.documentElement.classList.remove('chat-font-serif');
+                                                                    document.documentElement.classList.add('chat-font-nunito');
+                                                                }}
+                                                                title="Default (Nunito)"
+                                                                className={`relative px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-colors duration-200 flex items-center gap-1 ${selectedFont === 'nunito'
+                                                                    ? 'text-white'
+                                                                    : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                                                                    }`}
+                                                                style={{ fontFamily: 'Nunito, sans-serif' }}
+                                                            >
+                                                                {selectedFont === 'nunito' && (
+                                                                    <motion.div
+                                                                        layoutId="font-selector-bg"
+                                                                        className="absolute inset-0 bg-gradient-to-b from-[rgb(50,110,160)] to-[rgb(36,89,133)] rounded-lg shadow-[0_2px_4px_rgba(36,89,133,0.3)]"
+                                                                        transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                                                                    />
+                                                                )}
+                                                                <span className="relative z-10 text-[13px] font-bold">T</span>
+                                                                <span className="relative z-10">Default</span>
+                                                            </button>
+                                                            <button
+                                                                onClick={() => {
+                                                                    setSelectedFont('serif');
+                                                                    localStorage.setItem('chatFont', 'serif');
+                                                                    document.documentElement.classList.remove('chat-font-nunito');
+                                                                    document.documentElement.classList.add('chat-font-serif');
+                                                                }}
+                                                                title="Serif (Source Serif 4)"
+                                                                className={`relative px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-colors duration-200 flex items-center gap-1 ${selectedFont === 'serif'
+                                                                    ? 'text-white'
+                                                                    : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                                                                    }`}
+                                                                style={{ fontFamily: '"Source Serif 4", Georgia, serif' }}
+                                                            >
+                                                                {selectedFont === 'serif' && (
+                                                                    <motion.div
+                                                                        layoutId="font-selector-bg"
+                                                                        className="absolute inset-0 bg-gradient-to-b from-[rgb(50,110,160)] to-[rgb(36,89,133)] rounded-lg shadow-[0_2px_4px_rgba(36,89,133,0.3)]"
+                                                                        transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                                                                    />
+                                                                )}
+                                                                <span className="relative z-10 text-[13px] italic -mt-[3px]">T</span>
+                                                                <span className="relative z-10">Serif</span>
+                                                            </button>
+                                                        </div>
+                                                    </div>
                                                 </div>
 
                                                 {/* Footer */}

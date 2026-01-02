@@ -207,8 +207,7 @@ export const CustomInstructionsModal: React.FC<CustomInstructionsModalProps> = (
                                         >
                                             <div className="p-[2px] rounded-xl bg-gradient-to-b from-white to-slate-300 shadow-[0_2px_6px_rgba(0,0,0,0.1)]">
                                                 <div className="p-[1px] rounded-[10px] bg-slate-200/80 shadow-[inset_0_1px_2px_rgba(0,0,0,0.08)]">
-                                                    <div className="relative px-4 py-2 rounded-lg bg-gradient-to-b from-white to-slate-50 text-slate-600 hover:text-slate-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.25)]">
-                                                        <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/90 to-transparent" />
+                                                    <div className="relative px-4 py-2 rounded-lg bg-gradient-to-b from-white to-slate-50 text-slate-600 hover:text-slate-700">
                                                         <span className="relative z-10 text-[13px] font-semibold flex items-center justify-center">Cancel</span>
                                                     </div>
                                                 </div>
@@ -222,8 +221,7 @@ export const CustomInstructionsModal: React.FC<CustomInstructionsModalProps> = (
                                         >
                                             <div className="p-[2px] rounded-xl bg-gradient-to-b from-[rgb(70,130,180)] to-[rgb(30,75,115)] shadow-[0_2px_6px_rgba(36,89,133,0.25)]">
                                                 <div className="p-[1px] rounded-[10px] bg-[rgb(36,89,133)]/50 shadow-[inset_0_1px_2px_rgba(0,0,0,0.08)]">
-                                                    <div className="relative px-4 py-2 rounded-lg bg-gradient-to-b from-[rgb(50,110,160)] to-[rgb(36,89,133)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.25)]">
-                                                        <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/40 to-transparent" />
+                                                    <div className="relative px-4 py-2 rounded-lg bg-gradient-to-b from-[rgb(50,110,160)] to-[rgb(36,89,133)] text-white">
                                                         <span className="relative z-10 text-[13px] font-semibold flex items-center justify-center">
                                                             {isSaving ? (
                                                                 <>

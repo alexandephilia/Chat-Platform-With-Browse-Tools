@@ -1,5 +1,5 @@
 import { AnimatePresence, motion, Variants } from "framer-motion";
-import { ChevronDown, LogOut, MoreHorizontal, Search, Trash2, TrendingUp, X } from "lucide-react";
+import { ChevronDown, MoreHorizontal, Search, Trash2, TrendingUp, X } from "lucide-react";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactDOM from "react-dom";
 import { useAuth } from "../../contexts/AuthContext";
@@ -28,15 +28,6 @@ const UfoIcon: React.FC<{ size?: number; className?: string }> = ({ size = 18, c
             <circle cx="12" cy="13" r="1" fill="currentColor" />
             <circle cx="7" cy="12" r="1" fill="currentColor" />
             <circle cx="17" cy="12" r="1" fill="currentColor" />
-        </g>
-    </svg>
-);
-
-const Logout2Linear: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" {...props}>
-        <g fill="none" stroke="#000000" strokeLinecap="round" strokeWidth="1.5">
-            <path d="M9.002 7c.012-2.175.109-3.353.877-4.121C10.758 2 12.172 2 15 2h1c2.829 0 4.243 0 5.122.879C22 3.757 22 5.172 22 8v8c0 2.828 0 4.243-.878 5.121C20.242 22 18.829 22 16 22h-1c-2.828 0-4.242 0-5.121-.879c-.768-.768-.865-1.946-.877-4.121"></path>
-            <path strokeLinejoin="round" d="M15 12H2m0 0l3.5-3M2 12l3.5 3"></path>
         </g>
     </svg>
 );
@@ -532,7 +523,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     onOpenProfile,
     onOpenHelp
 }) => {
-    const { isAuthenticated, user, logout, openLoginModal, openSignupModal } = useAuth();
+    const { isAuthenticated, user, openLoginModal } = useAuth();
     const navRef = useRef<HTMLDivElement>(null);
     const mobileNavRef = useRef<HTMLDivElement>(null);
     const [canScrollUp, setCanScrollUp] = useState(false);
@@ -728,16 +719,6 @@ const Sidebar: React.FC<SidebarProps> = ({
                         <div className="px-4 pb-2 flex justify-center">
                             <ClayPill size="sm" onClick={() => { onOpenHelp?.(); onClose?.(); }}>Need Help?</ClayPill>
                         </div>
-                        {!isAuthenticated && (
-                            <div className="border-t border-slate-100 px-4 py-3 flex justify-center">
-                                <button
-                                    onClick={openSignupModal}
-                                    className="px-10 py-1.5 text-[13px] font-medium text-white bg-gradient-to-b from-slate-700 to-slate-900 rounded-xl shadow-md border border-slate-600/50 active:scale-[0.98] transition-transform duration-150"
-                                >
-                                    Sign up
-                                </button>
-                            </div>
-                        )}
                     </motion.div>
                 )}
             </AnimatePresence>
@@ -946,90 +927,6 @@ const Sidebar: React.FC<SidebarProps> = ({
                     animate="visible"
                 >
                     <ClayPromoCard isMinimized={isMinimized} animateOnMount={shouldShowPageLoadAnimation} title="Zeta Trial" icon={<UfoIcon size={18} />} description={<span>There are <span className="text-slate-800 font-bold">12 days left</span> for you to enjoy the various features.</span>} action={<div className="w-full p-[1.5px] rounded-[10px] bg-gradient-to-b from-slate-400/60 via-slate-600/40 to-slate-800/60"><button className="relative w-full text-[10px] font-bold text-white py-2 px-3 rounded-[8.5px] overflow-hidden shadow-[0_4px_12px_rgba(59,130,246,0.35),0_2px_4px_rgba(0,0,0,0.2),inset_0_-2px_6px_rgba(0,0,0,0.3)] hover:shadow-[0_6px_20px_rgba(59,130,246,0.45),0_3px_6px_rgba(0,0,0,0.25),inset_0_-2px_6px_rgba(0,0,0,0.25)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] active:shadow-[inset_0_2px_8px_rgba(0,0,0,0.4),inset_0_1px_2px_rgba(0,0,0,0.3)] transition-all duration-200 flex items-center justify-center gap-1.5" style={{ background: 'linear-gradient(180deg, #475569 0%, #1e293b 25%, #0f172a 100%)' }}><div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/50 to-transparent pointer-events-none" /><span className="relative z-10 bg-gradient-to-r from-white via-slate-400 to-white bg-[length:400%_100%] bg-clip-text text-transparent animate-shimmer-pro drop-shadow-[0_0_12px_rgba(255,255,255,0.6)]">Upgrade to Pro</span><TrendingUp size={10} className="relative z-10 text-cyan-200 animate-icon-glow-pro" /></button></div>} />
-                </motion.div>
-                <motion.div
-                    className={`pb-4 flex justify-center ${isMinimized ? "px-3" : "px-4"}`}
-                    variants={containerVariants}
-                    initial={false}
-                    animate={isMinimized ? "minimized" : "expanded"}
-                    custom={4}
-                >
-                    <motion.div
-                        variants={pageLoadVariants}
-                        initial={shouldShowPageLoadAnimation ? "hidden" : false}
-                        animate="visible"
-                        custom={4}
-                        className="w-full h-full flex justify-center"
-                    >
-                        <AnimatePresence mode="wait">
-                            {!isAuthenticated ? (
-                                <motion.button
-                                    key="signup-button"
-                                    onClick={openSignupModal}
-                                    layoutId="signup-button"
-                                    title={isMinimized ? "Sign up" : undefined}
-                                    initial={{ opacity: 0, scale: 0.95 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    exit={{ opacity: 0, scale: 0.95 }}
-                                    className={`flex items-center justify-center text-white bg-gradient-to-b from-slate-700 to-slate-900 rounded-xl text-sm font-medium shadow-[inset_0_1px_0_rgba(255,255,255,0.15),inset_0_-1px_3px_rgba(0,0,0,0.2),0_2px_4px_rgba(0,0,0,0.1)] border border-slate-600/50 hover:from-slate-600 hover:to-slate-800 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_4px_8px_rgba(0,0,0,0.15)] active:scale-[0.98] transition-all duration-200 ${isMinimized ? "p-2.5" : "px-8 py-2 w-full"}`}
-                                >
-                                    {!isMinimized ? (
-                                        <motion.span
-                                            key="signup-text"
-                                            layout="position"
-                                            variants={textVariants}
-                                            initial="minimized"
-                                            animate="expanded"
-                                            exit="minimized"
-                                            className="whitespace-nowrap"
-                                        >
-                                            Sign up
-                                        </motion.span>
-                                    ) : (
-                                        <motion.span
-                                            key="signup-icon"
-                                            layout="position"
-                                            variants={iconVariants}
-                                            initial="expanded"
-                                            animate="minimized"
-                                            exit="expanded"
-                                            className="text-xs font-bold"
-                                        >
-                                            +
-                                        </motion.span>
-                                    )}
-                                </motion.button>
-                            ) : (
-                                <AnimatePresence mode="wait" initial={false}>
-                                    {isMinimized ? (
-                                        <motion.button
-                                            key="logout-min"
-                                            onClick={logout}
-                                            title="Sign Out"
-                                            initial={{ opacity: 0, scale: 0.8 }}
-                                            animate={{ opacity: 1, scale: 1 }}
-                                            exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.1 } }}
-                                            className="flex items-center justify-center rounded-xl text-sm font-medium transition-all bg-gradient-to-b from-red-50 to-red-100/80 border border-red-200/60 shadow-[0_2px_4px_rgba(239,68,68,0.15),0_1px_2px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.8)] text-red-600 hover:text-red-700 hover:shadow-[0_3px_6px_rgba(239,68,68,0.2),0_1px_2px_rgba(0,0,0,0.06)] p-2.5"
-                                        >
-                                            <LogOut size={14} className="text-red-500" />
-                                        </motion.button>
-                                    ) : (
-                                        <motion.button
-                                            key="logout-max"
-                                            onClick={logout}
-                                            initial={{ opacity: 0, scale: 0.95 }}
-                                            animate={{ opacity: 1, scale: 1 }}
-                                            exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.1 } }}
-                                            className="w-full flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all bg-gradient-to-b from-red-50 to-red-100/80 border border-red-200/60 shadow-[0_2px_4px_rgba(239,68,68,0.15),0_1px_2px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,0.8)] text-red-600 hover:text-red-700 hover:shadow-[0_3px_6px_rgba(239,68,68,0.2),0_1px_2px_rgba(0,0,0,0.06)]"
-                                        >
-                                            <LogOut size={14} className="text-red-500" />
-                                            <span className="whitespace-nowrap">Sign Out</span>
-                                        </motion.button>
-                                    )}
-                                </AnimatePresence>
-                            )}
-                        </AnimatePresence>
-                    </motion.div>
                 </motion.div>
             </motion.div>
         </>

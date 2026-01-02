@@ -5,13 +5,48 @@
 import { AnimatedMarkdown } from 'flowtoken';
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { V3_EXPRESSION_REGEX, initAudioForMobile, isAudioPlaying, isElevenLabsConfigured, playAudio, stopAudio, textToSpeech } from '../../services/elevenLabsService';
-import { ModelIcon } from '../../services/modelIcons';
 import { Message } from '../../types';
 import { ExpressionPill } from '../atoms/ExpressionPill';
 import { CopyLinear, MoreDotsLinear, RefreshSquareLinear, StopCircleLinear, VolumeHighLinear } from '../atoms/Icons';
 import { SearchTimeline } from '../atoms/SearchTimeline';
 import { ThinkingBlock } from '../atoms/ThinkingBlock';
 import { AVAILABLE_MODELS } from '../molecules/ModelPicker';
+
+// Custom matte syntax highlighting theme (no reds)
+const matteCodeStyle: { [key: string]: React.CSSProperties } = {
+    'code[class*="language-"]': { color: '#37474f', background: 'transparent' },
+    'pre[class*="language-"]': { color: '#37474f', background: 'transparent' },
+    'comment': { color: '#78909c', fontStyle: 'italic' },
+    'prolog': { color: '#78909c' },
+    'doctype': { color: '#78909c' },
+    'cdata': { color: '#78909c' },
+    'punctuation': { color: '#607d8b' },
+    'property': { color: '#455a64' },
+    'tag': { color: '#5c6bc0' },
+    'boolean': { color: '#8d6e63' },
+    'number': { color: '#8d6e63' },
+    'constant': { color: '#5c6bc0' },
+    'symbol': { color: '#8d6e63' },
+    'selector': { color: '#5c6bc0' },
+    'attr-name': { color: '#7e57c2' },
+    'string': { color: '#26a69a' },
+    'char': { color: '#26a69a' },
+    'builtin': { color: '#00897b' },
+    'inserted': { color: '#26a69a' },
+    'operator': { color: '#546e7a' },
+    'entity': { color: '#7e57c2' },
+    'url': { color: '#26a69a' },
+    'variable': { color: '#37474f' },
+    'atrule': { color: '#5c6bc0' },
+    'attr-value': { color: '#26a69a' },
+    'keyword': { color: '#5c6bc0' },
+    'function': { color: '#5c6bc0' },
+    'class-name': { color: '#00897b' },
+    'regex': { color: '#8d6e63' },
+    'important': { color: '#7e57c2', fontWeight: 'bold' },
+    'deleted': { color: '#78909c' },
+    'namespace': { color: '#00897b' },
+};
 
 interface AIMessageBubbleProps {
     message: Message;
@@ -211,6 +246,7 @@ const StableAnimatedContent = memo(({
             animationDuration="1.8s"
             animationTimingFunction="ease-in-out"
             customComponents={customComponents}
+            codeStyle={matteCodeStyle}
         />
     );
 }, (prevProps, nextProps) => {

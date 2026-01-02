@@ -34,6 +34,12 @@ function AppContent() {
         }
     }, []);
 
+    // Initialize chat font preference from localStorage
+    useEffect(() => {
+        const savedFont = localStorage.getItem('chatFont') || 'nunito';
+        document.documentElement.classList.add(`chat-font-${savedFont}`);
+    }, []);
+
     const toggleTheme = useCallback(() => {
         setIsDarkMode(prev => {
             const next = !prev;
