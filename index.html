@@ -1056,6 +1056,7 @@
         .chat-message-ai div.relative:has(> pre):has(> button[aria-label="Copy code"]),
         .chat-message-ai div.relative:has(> pre):has(> button[aria-label="Copied!"]),
         .chat-message-ai .table-wrapper {
+            max-width: fit-content !important;
             margin-top: 1.5rem !important;
             margin-bottom: 1.5rem !important;
             background: linear-gradient(180deg,
@@ -1281,12 +1282,12 @@
             display: block !important;
             counter-reset: line-number 0 !important;
             min-width: 100% !important;
+            font-weight: 700 !important;
         }
 
         /* Target flowtoken's line containers (divs) or spans */
         .chat-message-ai pre code > div,
         .chat-message-ai pre code > span {
-            display: flex !important;
             position: relative !important;
             padding-left: 3.5rem !important;
             min-height: 1.6em !important;
@@ -1318,9 +1319,39 @@
         .chat-message-ai pre span,
         .chat-message-ai code span {
             font-size: 11px !important;
-            font-family: "JetBrains Mono", "Menlo", "Consolas", "Monaco", monospace !important;
+            font-family: "TX-02 Berkeley", "JetBrains Mono", "Menlo", "Consolas", "Monaco", monospace !important;
             line-height: 1.6 !important;
         }
+
+        /* ===== SYNTAX HIGHLIGHTING COLORS (INDUSTRIAL INK - DARKER) ===== */
+        .chat-message-ai pre code span.keyword,
+        .chat-message-ai pre code span.token.keyword { color: #cf222e !important; } /* Red-ish */
+        
+        .chat-message-ai pre code span.string,
+        .chat-message-ai pre code span.token.string { color: #0a3069 !important; } /* Deep Navy/Blue for strings */
+        
+        .chat-message-ai pre code span.function,
+        .chat-message-ai pre code span.token.function { color: #6f42c1 !important; } /* Deep Purple */
+        
+        .chat-message-ai pre code span.number,
+        .chat-message-ai pre code span.boolean,
+        .chat-message-ai pre code span.token.number,
+        .chat-message-ai pre code span.token.boolean { color: #0550ae !important; } /* Strong Blue */
+        
+        .chat-message-ai pre code span.comment,
+        .chat-message-ai pre code span.token.comment { color: #6e7781 !important; font-style: italic !important; } /* Muted Slate */
+        
+        .chat-message-ai pre code span.operator,
+        .chat-message-ai pre code span.token.operator { color: #24292f !important; } /* Near Black */
+        
+        .chat-message-ai pre code span.class-name,
+        .chat-message-ai pre code span.token.class-name { color: #953800 !important; } /* Rust/Orange */
+        
+        .chat-message-ai pre code span.property,
+        .chat-message-ai pre code span.token.property { color: #0550ae !important; }
+        
+        /* Ensure normal text is DARK/INK - High Contrast */
+        .chat-message-ai pre code { color: #24292f !important; }
 
         /* ===== FLOWTOKEN CODE BLOCK FIXES ===== */
         /* Prevent markdown parsing inside code blocks - show raw content */
