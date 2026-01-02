@@ -299,7 +299,7 @@ const ChatHistoryItemComponent: React.FC<{
                 onTouchStart={handleTouchStart}
                 onTouchEnd={handleTouchEnd}
                 title={isMinimized ? chat.title : undefined}
-                className={`relative w-full flex items-center rounded-[8px] text-sm transition-all duration-150 overflow-hidden border border-transparent ${isMinimized ? "justify-center px-1 py-1.5" : "justify-start px-2 py-1"} ${isActive ? "bg-gradient-to-b from-white to-slate-50 text-slate-800 shadow-[0_2px_3px_rgba(0,0,0,0.12),0_1px_1px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.9)] !border-slate-200/60" : isNew ? "text-blue-600 hover:bg-gradient-to-b hover:from-white hover:to-slate-50 hover:shadow-[0_2px_4px_rgba(0,0,0,0.12),0_1px_2px_rgba(0,0,0,0.08)]" : "text-slate-600 hover:bg-gradient-to-b hover:from-white hover:to-slate-50 hover:shadow-[0_2px_4px_rgba(0,0,0,0.12),0_1px_2px_rgba(0,0,0,0.08)] hover:text-slate-700"}`}
+                className={`relative w-full flex items-center rounded-[8px] text-sm transition-all duration-150 overflow-hidden  ${isMinimized ? "justify-center px-1 py-1.5" : "justify-start px-2 py-1"} ${isActive ? "bg-gradient-to-b from-white to-slate-50 text-slate-800 shadow-[0_2px_3px_rgba(0,0,0,0.12),0_1px_1px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.95),inset_1px_1px_2px_rgba(255,255,255,0.3),inset_-1px_1px_2px_rgba(255,255,255,0.3)] !border-slate-200/60" : isNew ? "text-blue-600 hover:bg-gradient-to-b hover:from-white hover:to-[#d5d5d536] hover:shadow-[0_2px_4px_rgba(0,0,0,0.12),0_1px_2px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.95)]" : "text-slate-600 hover:bg-gradient-to-b hover:from-white hover:to-[#d5d5d536] hover:shadow-[0_2px_4px_rgba(0,0,0,0.12),0_1px_2px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.95)] hover:text-slate-700"}`}
                 style={{ transform: 'translateZ(0)' }}
             >
                 {isMinimized ? (
@@ -340,7 +340,7 @@ const ChatHistoryItemComponent: React.FC<{
                     <button
                         ref={menuButtonRef}
                         onClick={handleMenuClick}
-                        className="p-1 rounded-lg bg-white/70 backdrop-blur-sm shadow-[0_2px_8px_rgba(0,0,0,0.08)] border border-slate-200/40 text-slate-400 hover:text-slate-600 hover:bg-white/90 transition-all duration-150"
+                        className="p-1 rounded-lg bg-white/70 backdrop-blur-sm shadow-[0_2px_8px_rgba(0,0,0,0.08)] text-slate-400 hover:text-slate-600 hover:bg-white/90 transition-all duration-150"
                     >
                         <MoreHorizontal size={12} />
                     </button>
@@ -362,7 +362,7 @@ const ChatHistoryItemComponent: React.FC<{
                             zIndex: 99999,
                             transform: 'translateZ(0)'
                         }}
-                        className="bg-white rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.15),0_2px_4px_rgba(0,0,0,0.08)] border border-slate-200/40 overflow-hidden"
+                        className="bg-white rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.15),0_2px_4px_rgba(0,0,0,0.08)] overflow-hidden"
                     >
                         <button
                             onClick={handleDeleteClick}
@@ -453,7 +453,7 @@ const MobileChatHistoryItemComponent: React.FC<{
                 onClick={onSelect}
                 onTouchStart={handleTouchStart}
                 onTouchEnd={handleTouchEnd}
-                className={`relative w-full flex items-center gap-2 px-2 py-1 rounded-[8px] text-[13px] transition-colors duration-150 overflow-hidden border border-transparent ${isActive ? "bg-gradient-to-b from-white to-slate-50 text-slate-800 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_2px_rgba(0,0,0,0.06)] !border-slate-200/60" : isNew ? "text-blue-600 active:bg-slate-50" : "text-slate-600 active:bg-slate-50"}`}
+                className={`relative w-full flex items-center gap-2 px-2 py-1 rounded-[8px] text-[13px] transition-colors duration-150 overflow-hidden border border-transparent ${isActive ? "bg-gradient-to-b from-white to-[#d5d5d536] text-slate-800 shadow-[0_2px_4px_rgba(0,0,0,0.1),0_1px_2px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.95),inset_1px_1px_2px_rgba(255,255,255,0.3),inset_-1px_1px_2px_rgba(255,255,255,0.3)] !border-slate-200/60" : isNew ? "text-blue-600 active:bg-[#d5d5d536]" : "text-slate-600 active:bg-[#d5d5d536]"}`}
                 style={{ transform: 'translateZ(0)', contain: 'layout style' }}
             >
                 <div className="relative flex-shrink-0">
@@ -494,7 +494,7 @@ const MobileChatHistoryItemComponent: React.FC<{
                             zIndex: 9999,
                             transform: 'translateZ(0)'
                         }}
-                        className="bg-white rounded-xl shadow-lg border border-slate-200/40 overflow-hidden"
+                        className="bg-white rounded-xl shadow-lg overflow-hidden"
                     >
                         <button
                             onClick={handleDeleteClick}
@@ -663,7 +663,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                         </div>
                         <div className="px-4 pb-2">
                             <div className="p-[3px] rounded-[14px] bg-gradient-to-b from-white via-slate-50/50 to-slate-100/80 shadow-[inset_0_1px_2px_rgba(0,0,0,0.02),0_1px_0_rgba(255,255,255,0.8)]">
-                                <button onClick={handleNewChat} className={`relative w-full flex items-center gap-2 px-2.5 py-2 rounded-xl text-[13px] font-medium transition-shadow duration-150 overflow-hidden bg-gradient-to-b from-white to-slate-100 border border-slate-200/40 ${isChatButtonPressed ? 'shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]' : 'shadow-[0_4px_12px_rgba(0,0,0,0.08),0_2px_4px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,1)]'} active:scale-[0.98]`}>
+                                <button onClick={handleNewChat} className={`relative w-full flex items-center gap-2 px-2.5 py-2 rounded-xl text-[13px] font-medium transition-shadow duration-150 overflow-hidden bg-gradient-to-b from-white to-slate-100 ${isChatButtonPressed ? 'shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]' : 'shadow-[0_4px_12px_rgba(0,0,0,0.08),0_2px_4px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,1)]'} active:scale-[0.98]`}>
                                     <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-white to-transparent pointer-events-none" />
                                     <UfoIcon size={16} className="text-slate-700" />
                                     <span className="text-slate-700">New Chat</span>
@@ -824,7 +824,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                                     <motion.button
                                         layoutId="new-chat-button"
                                         onClick={handleNewChat}
-                                        className={`relative w-full flex items-center rounded-xl text-sm font-medium transition-all duration-300 justify-start px-3 py-2 gap-2.5 overflow-hidden bg-gradient-to-b from-white to-slate-100 border border-slate-200/40 ${isChatButtonPressed ? 'shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]' : 'shadow-[0_4px_12px_rgba(0,0,0,0.08),0_2px_4px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,1)]'} hover:shadow-[0_8px_24px_rgba(0,0,0,0.12),0_4px_8px_rgba(0,0,0,0.06)] hover:border-slate-300/60 active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]`}
+                                        className={`relative w-full flex items-center rounded-xl text-sm font-medium transition-all duration-300 justify-start px-3 py-2 gap-2.5 overflow-hidden bg-gradient-to-b from-white to-slate-100 ${isChatButtonPressed ? 'shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]' : 'shadow-[0_4px_12px_rgba(0,0,0,0.08),0_2px_4px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,1)]'} hover:shadow-[0_8px_24px_rgba(0,0,0,0.12),0_4px_8px_rgba(0,0,0,0.06)] hover:border-slate-300/60 active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]`}
                                         whileTap={{ scale: 0.98 }}
                                         transition={{
                                             layout: { duration: ANIMATION_CONFIG.duration.medium, ease: ANIMATION_CONFIG.easing.smooth },
@@ -868,7 +868,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                                         layoutId="new-chat-button"
                                         onClick={handleNewChat}
                                         title="New Chat"
-                                        className={`relative w-full flex items-center justify-center rounded-xl text-sm font-medium transition-all duration-300 p-2 overflow-hidden bg-gradient-to-b from-white to-slate-100 border border-slate-200/40 ${isChatButtonPressed ? 'shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]' : 'shadow-[0_4px_12px_rgba(0,0,0,0.08),0_2px_4px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,1)]'} hover:shadow-[0_8px_24px_rgba(0,0,0,0.12),0_4px_8px_rgba(0,0,0,0.06)] hover:border-slate-300/60 active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]`}
+                                        className={`relative w-full flex items-center justify-center rounded-xl text-sm font-medium transition-all duration-300 p-2 overflow-hidden bg-gradient-to-b from-white to-slate-100 ${isChatButtonPressed ? 'shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]' : 'shadow-[0_4px_12px_rgba(0,0,0,0.08),0_2px_4px_rgba(0,0,0,0.04),inset_0_1px_0_rgba(255,255,255,1)]'} hover:shadow-[0_8px_24px_rgba(0,0,0,0.12),0_4px_8px_rgba(0,0,0,0.06)] hover:border-slate-300/60 active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]`}
                                         transition={{ duration: ANIMATION_CONFIG.duration.fast, ease: ANIMATION_CONFIG.easing.smooth }}
                                         whileTap={{ scale: 0.98 }}
                                     >

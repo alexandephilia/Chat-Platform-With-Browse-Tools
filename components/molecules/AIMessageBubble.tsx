@@ -34,20 +34,12 @@ const ModelIndicator = memo(({ modelId }: { modelId: string }) => {
 
     return (
         <div
-            className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-gradient-to-b from-white to-slate-100/50 border border-slate-300/50"
+            className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-gradient-to-b from-white to-slate-200/80 border border-slate-300/50"
             style={{
                 boxShadow: 'inset 0 0.5px 1.5px rgba(0,0,0,0.08), inset 0 0.5px 0.5px rgba(0,0,0,0.05), 0 1px 0 rgba(255,255,255,0.7)'
             }}
         >
-            <div
-                className="w-4 h-4 rounded-md flex items-center justify-center overflow-hidden bg-gradient-to-b from-white to-slate-50 border border-white/80"
-                style={{
-                    boxShadow: '0 1px 1px rgba(0,0,0,0.12), 0 0.5px 0.5px rgba(0,0,0,0.08)'
-                }}
-            >
-                <ModelIcon iconKey={model.icon} size={14} />
-            </div>
-            <span className="text-[8px] text-slate-500 font-medium tracking-tight drop-shadow-[0_1px_0_rgba(255,255,255,0.5)]">
+            <span className="text-[8px] text-slate-500 font-bold tracking-tight drop-shadow-[0_1px_0_rgba(255,255,255,0.5)]">
                 {model.name}
             </span>
         </div>
