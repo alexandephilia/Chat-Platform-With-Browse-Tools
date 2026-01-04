@@ -87,14 +87,14 @@ export const CustomInstructionsModal: React.FC<CustomInstructionsModalProps> = (
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.15 }}
-                    className={`fixed inset-0 z-[10002] flex ${isMobile ? 'items-end' : 'items-center'} justify-center`}
+                    className={`fixed inset-0 z-[10002] flex ${isMobile ? 'items-end' : 'items-center'} justify-center pointer-events-none`}
                 >
                     {/* Backdrop - no click to dismiss */}
                     <motion.div
-                        key="modal-backdrop"
+                        key="instructions-modal-backdrop"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        exit={{ opacity: 0, pointerEvents: 'none' }}
+                        exit={{ opacity: 0 }}
                         transition={{ duration: 0.2 }}
                         style={isMobile ? { opacity: backdropOpacity } : undefined}
                         className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm pointer-events-auto"
@@ -114,7 +114,7 @@ export const CustomInstructionsModal: React.FC<CustomInstructionsModalProps> = (
                         onDragEnd={handleDragEnd}
                         onClick={handleModalClick}
                         onTouchEnd={handleModalClick}
-                        className="relative w-full sm:max-w-[440px] touch-none sm:touch-auto"
+                        className="relative w-full sm:max-w-[440px] touch-none sm:touch-auto pointer-events-auto"
                     >
                         {/* Outer rim - gradient border */}
                         <div className="p-1 bg-gradient-to-b from-white to-slate-300 rounded-t-[24px] sm:rounded-[24px] shadow-sm">

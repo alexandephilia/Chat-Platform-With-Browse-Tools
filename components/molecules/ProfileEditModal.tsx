@@ -343,10 +343,10 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onCl
                 >
                     {/* Backdrop - no click to dismiss, explicit pointer-events handling */}
                     <motion.div
-                        key="modal-backdrop"
+                        key="profile-edit-modal-backdrop"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        exit={{ opacity: 0, pointerEvents: 'none' }} // FORCE pointer-events none on exit
+                        exit={{ opacity: 0 }}
                         transition={{ duration: 0.2 }}
                         style={isMobile ? { opacity: backdropOpacity } : undefined}
                         className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm pointer-events-auto"

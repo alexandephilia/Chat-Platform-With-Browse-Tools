@@ -49,7 +49,14 @@ export const ProfilePortal: React.FC<ProfilePortalProps> = ({
     const portalContent = (
         <AnimatePresence>
             {isOpen && (
-                <div className="fixed inset-0 z-[10000]">
+                <motion.div
+                    key="profile-portal-wrapper"
+                    className="fixed inset-0 z-[10000] pointer-events-none"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                >
                     {/* Backdrop - captures clicks to close */}
                     <motion.div
                         initial={{ opacity: 0 }}
@@ -57,18 +64,17 @@ export const ProfilePortal: React.FC<ProfilePortalProps> = ({
                         exit={{ opacity: 0 }}
                         onClick={onClose}
                         onTouchEnd={onClose}
-                        className="fixed inset-0 bg-black/10"
+                        className="fixed inset-0 bg-black/10 pointer-events-auto"
                     />
 
                     {/* Compact Portal Content */}
                     <motion.div
-
                         initial="hidden"
                         animate="visible"
                         exit="exit"
                         onClick={handleMenuClick}
                         onTouchEnd={handleMenuClick}
-                        className="fixed z-[10001] backdrop-blur-xl rounded-xl border border-slate-200/60 shadow-[0_8px_32px_rgba(0,0,0,0.12),0_4px_8px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] overflow-hidden w-52 left-4 top-14 sm:top-16"
+                        className="fixed z-[10001] backdrop-blur-xl rounded-xl border border-slate-200/60 shadow-[0_8px_32px_rgba(0,0,0,0.12),0_4px_8px_rgba(0,0,0,0.06),inset_0_1px_0_rgba(255,255,255,0.9)] overflow-hidden w-52 left-4 top-14 sm:top-16 pointer-events-auto"
                         style={{
                             background: 'linear-gradient(135deg, #ffffff 0%, #fafafa 50%, #f1f5f9 100%)',
                         }}
@@ -188,7 +194,7 @@ export const ProfilePortal: React.FC<ProfilePortalProps> = ({
                             </motion.button>
                         </motion.div>
                     </motion.div>
-                </div>
+                </motion.div>
             )}
         </AnimatePresence>
     );
