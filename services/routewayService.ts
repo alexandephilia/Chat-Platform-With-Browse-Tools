@@ -65,6 +65,7 @@ export type RoutewayStreamEvent =
 
 // Tool execution timeout in milliseconds
 const TOOL_TIMEOUT_MS = 15000;
+const MAX_ITERATIONS = 10; // Safety limit for multi-turn tool calling
 
 /**
  * Wrap a promise with a timeout
@@ -270,8 +271,10 @@ export async function* sendMessageToRoutewayStreamWithTools(
     let retryCount = 0;
     const MAX_RETRIES = 2;
 
-    while (continueLoop) {
+    let iterationCount = 0;
+    while (continueLoop && iterationCount < MAX_ITERATIONS) {
         continueLoop = false;
+        iterationCount++;
 
         try {
             const requestBody: any = {
@@ -570,6 +573,10 @@ export async function* sendMessageToRoutewayStreamWithTools(
 
             throw error;
         }
+    }
+
+    if (iterationCount >= MAX_ITERATIONS) {
+        console.warn(`[Routeway] Reached maximum iterations (${MAX_ITERATIONS}). Stopping to prevent infinite loop.`);
     }
 
     yield { type: 'done' };

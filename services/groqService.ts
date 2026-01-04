@@ -41,6 +41,7 @@ function getNextApiKey(): string {
 }
 
 const MAX_RETRIES = Math.max(GROQ_API_KEYS.length, 1);
+const MAX_ITERATIONS = 10; // Safety limit for multi-turn tool calling
 
 /**
  * Check if model is a Groq Compound model (has built-in tools)
@@ -645,7 +646,9 @@ export async function* sendMessageToGroqStreamWithTools(
     let retryCount = 0;
     let continueLoop = true;
 
-    while (continueLoop) {
+    let iterationCount = 0;
+    while (continueLoop && iterationCount < MAX_ITERATIONS) {
+        iterationCount++;
         // Reset continueLoop to false at the start of each iteration
         // We only set it back to true if we need to continue for model response or retry
         continueLoop = false;
@@ -959,6 +962,10 @@ Provide only a tiny one-sentence confirmation or sign-off, or simply end your re
             console.error('[Groq] API Error:', error);
             throw error;
         }
+    }
+
+    if (iterationCount >= MAX_ITERATIONS) {
+        console.warn(`[Groq] Reached maximum iterations (${MAX_ITERATIONS}). Stopping to prevent infinite loop.`);
     }
 
     console.log('[Groq/Kimi] Stream complete');

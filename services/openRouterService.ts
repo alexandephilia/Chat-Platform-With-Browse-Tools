@@ -143,9 +143,9 @@ export type OpenRouterStreamEvent =
 
 // Tool execution timeout in milliseconds
 const TOOL_TIMEOUT_MS = 15000;
+const MAX_ITERATIONS = 10; // Safety limit for multi-turn tool calling
 
-// Global abort controller for cancelling requests
-let globalAbortController: AbortController | null = null;
+// Global abort controller not needed here - handled by useChatMessages
 
 /**
  * Wrap a promise with a timeout and abort controller
@@ -372,8 +372,10 @@ export async function* sendMessageToOpenRouterStreamWithTools(
     let retryCount = 0;
     const MAX_RETRIES = 2;
 
-    while (continueLoop) {
+    let iterationCount = 0;
+    while (continueLoop && iterationCount < MAX_ITERATIONS) {
         continueLoop = false;
+        iterationCount++;
 
         try {
             const requestBody: any = {
@@ -706,6 +708,10 @@ export async function* sendMessageToOpenRouterStreamWithTools(
 
             throw error;
         }
+    }
+
+    if (iterationCount >= MAX_ITERATIONS) {
+        console.warn(`[OpenRouter] Reached maximum iterations (${MAX_ITERATIONS}). Stopping to prevent infinite loop.`);
     }
 
     yield { type: 'done' };

@@ -24,6 +24,7 @@ function createAIClient(): GoogleGenAI {
 }
 
 const MAX_RETRIES = API_KEYS.length;
+const MAX_ITERATIONS = 10; // Safety limit for multi-turn tool calling
 
 interface ChatMessage {
     role: 'user' | 'model';
@@ -234,8 +235,10 @@ export async function* sendMessageToGeminiStreamWithTools(
 
             let continueLoop = true;
 
-            while (continueLoop) {
+            let iterationCount = 0;
+            while (continueLoop && iterationCount < MAX_ITERATIONS) {
                 continueLoop = false;
+                iterationCount++;
 
                 const response = await model.generateContentStream({
                     model: modelId,
@@ -400,6 +403,10 @@ export async function* sendMessageToGeminiStreamWithTools(
                     // Continue the loop to get the model's response to the function results
                     continueLoop = true;
                 }
+            }
+
+            if (iterationCount >= MAX_ITERATIONS) {
+                console.warn(`[Gemini] Reached maximum iterations (${MAX_ITERATIONS}). Stopping to prevent infinite loop.`);
             }
 
             yield { type: 'done' };
