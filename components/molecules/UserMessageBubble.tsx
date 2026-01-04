@@ -186,7 +186,7 @@ export const UserMessageBubble: React.FC<UserMessageBubbleProps> = memo(
                 </motion.div>
 
                 {/* Edit Actions & Edit Button - Fixed height container to prevent layout shift */}
-                <div className="h-8 flex items-center justify-end mt-1">
+                <div className="h-8 flex items-center justify-end mt-3">
                     <AnimatePresence mode="wait" initial={false}>
                         {isEditing ? (
                             <motion.div

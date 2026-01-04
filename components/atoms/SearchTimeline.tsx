@@ -517,12 +517,6 @@ export const SearchTimeline: React.FC<SearchTimelineProps> = ({ toolCalls, isStr
         [toolCalls, isStreaming]
     );
 
-    // Tools finished (for showing images) - separate from full completion
-    const toolsFinished = useMemo(() =>
-        toolCalls.every(tc => tc.status === 'completed'),
-        [toolCalls]
-    );
-
     // Track elapsed time while searching
     useEffect(() => {
         let interval: NodeJS.Timeout;
@@ -757,8 +751,8 @@ export const SearchTimeline: React.FC<SearchTimelineProps> = ({ toolCalls, isStr
                 )}
             </AnimatePresence>
 
-            {/* Image gallery - show as soon as tools finish, not waiting for response */}
-            {toolsFinished && uniqueImages.length > 0 && (
+            {/* Image gallery - only show when fully completed (all tools done AND streaming finished) */}
+            {isCompleted && uniqueImages.length > 0 && (
                 <TimelineImageGallery images={uniqueImages} />
             )}
         </div>

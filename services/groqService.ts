@@ -10,8 +10,15 @@
 import { Attachment, ToolCall, ToolCallStatus } from '../types';
 import { getUserEnvironmentContext } from '../utils/context';
 import { ExaCategory, exaAnswer, exaGetContents, exaSearch } from './exaService';
-import { getDefaultPrompt, getReasoningPrompt, getSearchPrompt, getTTSInstructions } from './prompts';
-import { OPENAI_TOOLS } from './tools';
+import { 
+    getCreativeWritingPrompt, 
+    getDefaultPrompt, 
+    getSearchPrompt, 
+    getSearchWithReasoningPrompt,
+    getReasoningPrompt,
+    getTTSInstructions
+} from './prompts';
+import { OPENAI_CREATIVE_ONLY_TOOLS, OPENAI_TOOLS } from './tools';
 
 const GROQ_API_KEYS = [
     import.meta.env.VITE_GROQ_API_KEY_1,
@@ -128,6 +135,15 @@ async function executeToolCall(name: string, args: Record<string, any>): Promise
 
     const executeWithTimeout = async () => {
         switch (name) {
+            case 'creative_writing': {
+                // Creative writing tool - returns the content directly for special UI rendering
+                return {
+                    type: 'creative_writing',
+                    title: args.title || 'Manuscript',
+                    content: args.content || '',
+                };
+            }
+
             case 'web_search': {
                 const searchResult = await exaSearch({
                     query: args.query,
@@ -563,12 +579,21 @@ export async function* sendMessageToGroqStreamWithTools(
     modelId: string = 'moonshotai/kimi-k2-instruct-0905',
     enableTools: boolean = false,
     _searchType: ExaSearchType = 'auto', // Ignored - always uses 'fast' for Groq
-    reasoningEnabled: boolean = false
+    reasoningEnabled: boolean = false,
+    creativeWritingOnly: boolean = false
 ): AsyncGenerator<GroqStreamEvent, void, unknown> {
     // Route to Compound model handler if applicable
+    // Note: Compound models use built-in tools, not custom tools like creative_writing
     if (isCompoundModel(modelId)) {
         yield* streamCompoundModel(prompt, history, modelId, enableTools);
         return;
+    }
+
+    // Select appropriate tool set based on whether it's creative-writing-only or full tools
+    const toolsToUse = creativeWritingOnly ? OPENAI_CREATIVE_ONLY_TOOLS : OPENAI_TOOLS;
+
+    if (creativeWritingOnly) {
+        console.log('[Groq/Kimi K2] Using creative_writing tool only (browse tools disabled)');
     }
 
     // Convert history to Groq's expected format
@@ -598,7 +623,10 @@ export async function* sendMessageToGroqStreamWithTools(
     // Note: Groq always uses 'fast' search due to 10K TPM rate limit
     let systemPrompt: string;
 
-    if (enableTools) {
+    if (creativeWritingOnly) {
+        // Use creative writing prompt when only creative_writing tool is enabled
+        systemPrompt = getCreativeWritingPrompt();
+    } else if (enableTools) {
         systemPrompt = getSearchPrompt('fast');
     } else if (reasoningEnabled) {
         systemPrompt = getReasoningPrompt();
@@ -612,14 +640,14 @@ export async function* sendMessageToGroqStreamWithTools(
         { role: 'user', content: prompt }
     ];
 
-    let continueLoop = true;
     let isFirstIteration = true;
-
     let lastError: Error | null = null;
     let retryCount = 0;
+    let continueLoop = true;
 
-    while (continueLoop || retryCount === 0) {
-        if (!continueLoop && retryCount > 0) break; // Exit if not continuing and already tried
+    while (continueLoop) {
+        // Reset continueLoop to false at the start of each iteration
+        // We only set it back to true if we need to continue for model response or retry
         continueLoop = false;
 
         try {
@@ -632,11 +660,10 @@ export async function* sendMessageToGroqStreamWithTools(
             };
 
             if (enableTools) {
-                requestBody.tools = OPENAI_TOOLS;
-                // On first iteration, use 'required' to force tool use
-                // On subsequent iterations (after tool results), use 'auto' to let model respond
-                requestBody.tool_choice = isFirstIteration ? 'required' : 'auto';
-                console.log(`[Groq/Kimi K2] Tools enabled with tool_choice: ${requestBody.tool_choice} (iteration: ${isFirstIteration ? 'first' : 'subsequent'})`);
+                requestBody.tools = toolsToUse;
+                // Use 'auto' to let the model decide when to use tools, especially in multi-turn conversations
+                requestBody.tool_choice = 'auto';
+                console.log(`[Groq/Kimi K2] Tools enabled with tool_choice: auto (iteration: ${isFirstIteration ? 'first' : 'subsequent'})`);
             }
 
             isFirstIteration = false;
@@ -654,8 +681,14 @@ export async function* sendMessageToGroqStreamWithTools(
                 const error = await response.text();
                 console.error('[Groq/Kimi] API error:', response.status, error);
 
-                // Check if rate limited - throw specific error for retry handling
+                // Check if rate limited - try next key
                 if (response.status === 429 || error.includes('rate') || error.includes('quota')) {
+                    retryCount++;
+                    if (retryCount < MAX_RETRIES) {
+                        console.log(`[Groq/Kimi] Rate limited on attempt ${retryCount}/${MAX_RETRIES}, trying next key...`);
+                        continueLoop = true;
+                        continue;
+                    }
                     throw new Error(`RATE_LIMITED: ${response.status} - ${error}`);
                 }
                 throw new Error(`Groq API error: ${response.status} - ${error}`);
@@ -674,7 +707,6 @@ export async function* sendMessageToGroqStreamWithTools(
 
             // For reasoning mode - track thinking state
             let isInThinkingBlock = false;
-            let hasEmittedThinkingDone = false;
             // Buffer for accumulating content to handle split tags
             let pendingContent = '';
 
@@ -703,8 +735,7 @@ export async function* sendMessageToGroqStreamWithTools(
                         continue;
                     }
 
-                    // Log raw data for debugging
-                    console.log('[Groq/Kimi] Raw chunk:', data.slice(0, 200)); try {
+                    try {
                         const parsed = JSON.parse(data);
                         const delta = parsed.choices?.[0]?.delta;
 
@@ -752,7 +783,6 @@ export async function* sendMessageToGroqStreamWithTools(
                                             const thinkingContent = pendingContent.slice(0, closeIdx);
                                             if (thinkingContent) yield { type: 'thinking', content: thinkingContent };
                                             yield { type: 'thinking_done' };
-                                            hasEmittedThinkingDone = true;
                                             pendingContent = pendingContent.slice(closeIdx + 11);
                                             isInThinkingBlock = false;
                                         }
@@ -806,15 +836,6 @@ export async function* sendMessageToGroqStreamWithTools(
                 }
             }
 
-            // Debug: Log what we got from the stream
-            console.log('[Groq/Kimi] Stream iteration complete:', {
-                hasSeenToolCall,
-                toolCallsCount: toolCalls.length,
-                toolCalls: toolCalls.map(tc => ({ name: tc.name, id: tc.id, argsLength: tc.arguments?.length })),
-                fullContentLength: fullContent.length,
-                preToolTextBufferLength: preToolTextBuffer.length,
-            });
-
             // If tools were enabled but no tool calls happened, emit the buffered text
             if (enableTools && !hasSeenToolCall && preToolTextBuffer) {
                 console.log('[Groq/Kimi] No tool calls detected, emitting buffered text');
@@ -840,7 +861,7 @@ export async function* sendMessageToGroqStreamWithTools(
                     })),
                 });
 
-                // Emit tool call starts
+                // Execute tool calls and handle results
                 const pendingToolCalls: Array<{ tc: typeof validToolCalls[0]; toolCall: ToolCall }> = [];
 
                 for (const tc of validToolCalls) {
@@ -894,13 +915,23 @@ export async function* sendMessageToGroqStreamWithTools(
                         });
                     } else {
                         yield { type: 'tool_call_update', id: tc.id, status: 'completed', result };
-                        // Use compact format for Groq to save tokens
-                        const formattedResult = formatExaResultsCompact(result.results);
+                        
+                        let toolContent: string;
+                        if (tc.name === 'creative_writing') {
+                            // For creative writing, explicitly tell the AI it has finished the task
+                            toolContent = `SUCCESS: The manuscript "${result.title}" has been successfully delivered to the user through the special writing canvas tool. 
+Do NOT repeat the content here. The user can already see it.
+Provide only a tiny one-sentence confirmation or sign-off, or simply end your response.`;
+                        } else {
+                            // For search tools, use compact results
+                            toolContent = formatExaResultsCompact(result.results);
+                        }
+
                         messages.push({
                             role: 'tool',
                             tool_call_id: tc.id,
                             name: tc.name,
-                            content: formattedResult,
+                            content: toolContent,
                         });
                     }
                 }
@@ -910,26 +941,21 @@ export async function* sendMessageToGroqStreamWithTools(
                     yield { type: 'text', content: '\n\n' };
                 }
 
-                // Continue the loop to get the model's response
+                // Set continueLoop to true to get the model's final response
                 continueLoop = true;
-                console.log('[Groq/Kimi] Tool calls processed, continuing loop for model response. Messages:', messages.length);
+                console.log('[Groq/Kimi] Tool calls processed, continuing loop for model response.');
+            } else {
+                // No tool calls, we are done
+                console.log('[Groq/Kimi] No tool calls, response complete.');
+                continueLoop = false;
             }
+
         } catch (error) {
             lastError = error as Error;
             const errorMessage = String(error);
 
-            // Check if rate limited - try next key
-            if (errorMessage.includes('RATE_LIMITED') || errorMessage.includes('429') || errorMessage.includes('rate') || errorMessage.includes('quota')) {
-                retryCount++;
-                if (retryCount < MAX_RETRIES) {
-                    console.log(`[Groq/Kimi] Rate limited on attempt ${retryCount}/${MAX_RETRIES}, trying next key...`);
-                    continueLoop = true; // Force another iteration
-                    continue;
-                }
-                console.error('[Groq/Kimi] All API keys exhausted');
-                throw lastError;
-            }
-
+            // Rate limiting is already handled above in the response.ok check for immediate retries
+            // This catch handles unexpected exceptions
             console.error('[Groq] API Error:', error);
             throw error;
         }
@@ -953,3 +979,5 @@ export async function* sendMessageToGroqStream(
         }
     }
 }
+// getCreativeWritingPrompt is now imported from prompts.ts
+

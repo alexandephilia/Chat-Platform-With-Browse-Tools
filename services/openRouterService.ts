@@ -179,6 +179,16 @@ async function executeToolCall(name: string, args: Record<string, any>): Promise
 
     const executeWithTimeout = async () => {
         switch (name) {
+            case 'creative_writing': {
+                // Creative writing tool - returns the content directly for special UI rendering
+                // The content is already in args, we just pass it through with metadata
+                return {
+                    type: 'creative_writing',
+                    title: args.title || 'Manuscript',
+                    content: args.content || '',
+                };
+            }
+
             case 'web_search': {
                 const searchResult = await exaSearch({
                     query: args.query,

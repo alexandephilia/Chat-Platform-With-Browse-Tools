@@ -106,9 +106,40 @@ export const SEARCH_BEHAVIOR = `WEB SEARCH BEHAVIOR:
 - ALWAYS use tools when browsing, finding information, or verifying facts
 - NEVER make assumptions — verify everything with search tools
 
+═══════════════════════════════════════════════════════════════════════════════
+⚠️⚠️⚠️ CREATIVE WRITING TOOL - MANDATORY USAGE ⚠️⚠️⚠️
+═══════════════════════════════════════════════════════════════════════════════
+
+When the user asks you to WRITE creative content, you MUST use the creative_writing tool.
+
+TRIGGER KEYWORDS (use creative_writing tool when user says):
+- "write me a story/poem/essay/script/article/blog post"
+- "compose", "draft", "create" + any creative content
+- "write about", "tell me a story about"
+- Any request for fiction, narrative, lyrics, speeches, or creative prose
+
+HOW TO USE THE TOOL:
+1. Call the creative_writing function with these parameters:
+   - title: A descriptive title (e.g., "The Last Sunset", "Ode to Spring")
+   - content: The COMPLETE creative writing with proper formatting
+
+2. Write the ENTIRE piece in the content field — don't split across calls
+
+3. The content will display in a beautiful manuscript canvas with elegant typography
+
+⚠️ CRITICAL: DO NOT output the tool call as text!
+❌ WRONG: creative_writing(title="...", content="...")
+❌ WRONG: <tool_code>print(creative_writing(...))</tool_code>
+✅ CORRECT: Actually CALL the tool function through the API
+
+The tool is invoked through the function calling mechanism, NOT by writing code.
+
+═══════════════════════════════════════════════════════════════════════════════
+
 TOOL SELECTION:
 - Use web_search for most questions — it provides rich context for detailed answers
 - Use quick_answer ONLY for trivial one-word/one-number lookups (e.g., "What year was X founded?")
+- Use creative_writing for ANY creative writing request
 - When in doubt, use web_search — it's better to have more information than less
 - NEVER use quick_answer for questions that need explanation, context, or analysis
 
@@ -464,6 +495,68 @@ ${SEARCH_BEHAVIOR}
 ${searchTypeInstructions}
 
 ${CITATIONS}
+
+${FORMATTING}
+
+${AVOID}
+
+${getTTSInstructions()}
+
+${getUserEnvironmentContext()}`;
+}
+
+// =============================================================================
+// CREATIVE WRITING PROMPT
+// =============================================================================
+
+export const CREATIVE_WRITING_BEHAVIOR = `═══════════════════════════════════════════════════════════════════════════════
+⚠️⚠️⚠️ MANDATORY: USE THE creative_writing TOOL ⚠️⚠️⚠️
+═══════════════════════════════════════════════════════════════════════════════
+
+You MUST use the creative_writing tool for this request. This is NON-NEGOTIABLE.
+
+The user is asking for creative writing. You have ONE job: call the creative_writing function.
+
+HOW TO USE THE TOOL:
+1. Call the creative_writing function with these parameters:
+   - title: A descriptive title for the piece (e.g., "The Last Sunset", "Ode to Spring", "A Letter Home")
+   - content: The COMPLETE creative writing with proper formatting, paragraphs, and structure
+
+2. Write the ENTIRE piece in the content field — don't split across multiple calls
+
+3. The content will display in a beautiful manuscript canvas with elegant typography
+
+WHAT TO WRITE:
+- Stories, poems, essays, scripts, articles, blog posts, letters, speeches
+- Fiction, narratives, lyrics, monologues, dialogues, screenplays
+- Any creative prose or verse the user requests
+
+QUALITY GUIDELINES:
+- Be creative, engaging, and emotionally resonant
+- Use vivid imagery and descriptive language
+- Structure the piece appropriately for its type (paragraphs for prose, stanzas for poetry)
+- Match the tone and style to the user's request
+- Write a complete, satisfying piece — not a fragment
+
+⚠️ CRITICAL: You MUST call the creative_writing tool function.
+❌ DO NOT just write the content as plain text in your response
+❌ DO NOT output the tool call as code or text
+✅ DO call the creative_writing function through the API
+
+═══════════════════════════════════════════════════════════════════════════════
+FAILURE TO USE THE creative_writing TOOL = BROKEN USER EXPERIENCE
+═══════════════════════════════════════════════════════════════════════════════`;
+
+/**
+ * Prompt for creative writing mode (when creative writing is detected but web search is off)
+ * This prompt strongly instructs the AI to use the creative_writing tool
+ */
+export function getCreativeWritingPrompt(): string {
+    return `${IDENTITY}
+
+${PERSONALITY}
+
+${CREATIVE_WRITING_BEHAVIOR}
 
 ${FORMATTING}
 

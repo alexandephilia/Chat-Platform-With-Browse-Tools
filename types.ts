@@ -14,6 +14,13 @@ export interface ToolCall {
     completedAt?: Date;
 }
 
+// Special result type for creative writing tool
+export interface WritingToolResult {
+    type: 'creative_writing';
+    title: string;
+    content: string;
+}
+
 export interface Message {
     id: string;
     role: 'user' | 'model';

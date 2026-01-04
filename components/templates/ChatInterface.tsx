@@ -226,6 +226,39 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         setHasAttachments(hasAttachments);
     };
 
+    // Handler for sending edited writing content from WritingCanvas
+    const handleSendEditedWriting = (editedContent: string) => {
+        if (editedContent.trim()) {
+            // Send the edited content as a new user message with context
+            sendMessage(`Here's my edited version of the writing:\n\n${editedContent}\n\nPlease review and provide feedback and use Writing Tools to continue.`);
+        }
+    };
+
+    // Handler for saving writing locally (updates the message content without sending to AI)
+    const handleSaveWriting = (messageId: string, editedContent: string) => {
+        if (editedContent.trim()) {
+            // Update the message's creative_writing tool call result with the new content
+            setMessages(prev => prev.map(msg => {
+                if (msg.id === messageId && msg.toolCalls) {
+                    const updatedToolCalls = msg.toolCalls.map(tc => {
+                        if (tc.name === 'creative_writing' && tc.result) {
+                            return {
+                                ...tc,
+                                result: {
+                                    ...tc.result,
+                                    content: editedContent
+                                }
+                            };
+                        }
+                        return tc;
+                    });
+                    return { ...msg, toolCalls: updatedToolCalls };
+                }
+                return msg;
+            }));
+        }
+    };
+
     return (
         <div className="flex flex-col h-full relative overflow-hidden bg-white/60 md:rounded-[32px] shadow-[0_-4px_10px_0px_rgba(0,0,0,0.08),0_10px_10px_1px_rgba(0,0,0,0.2),inset_0_1px_0_0_rgba(255,255,255,1),inset_0_100px_80px_-20px_rgba(255,255,255,0.9)] ring-1 ring-slate-100/50">
             {/* Background Layer */}
@@ -341,6 +374,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                                 onCopy={handleCopy}
                                 onRetry={retryMessage}
                                 onDelete={handleDelete}
+                                onSaveWriting={handleSaveWriting}
+                                onSendEditedWriting={handleSendEditedWriting}
                                 copiedId={copiedId}
                                 openMenuId={openMenuId}
                                 setOpenMenuId={setOpenMenuId}

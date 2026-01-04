@@ -4,6 +4,7 @@
  */
 
 import { useCallback, useRef, useState } from 'react';
+import { authService } from '../services/authService';
 import { exaGetContents, extractUrlsFromText, formatUrlContentForContext } from '../services/exaService';
 import { sendMessageToGeminiStreamWithTools } from '../services/geminiService';
 import { sendMessageToGroqStreamWithTools } from '../services/groqService';
@@ -13,10 +14,40 @@ import {
 } from '../services/openRouterService';
 import { sendMessageToRoutewayStreamWithTools } from '../services/routewayService';
 import { usageService } from '../services/usageService';
-import { authService } from '../services/authService';
 import { Attachment, Message, ToolCall } from '../types';
 
 export type SearchType = 'auto' | 'fast' | 'deep';
+
+/**
+ * Detect if the user's message is requesting creative writing
+ * This triggers the creative_writing tool automatically
+ */
+function isCreativeWritingRequest(text: string): boolean {
+    const lowerText = text.toLowerCase();
+
+    // Patterns that indicate creative writing requests
+    const writingPatterns = [
+        // Direct writing requests
+        /\b(write|draft|compose|create|craft|pen)\s+(me\s+)?(a|an|the|some)?\s*(short\s+)?(story|poem|essay|article|script|narrative|tale|fiction|novel|chapter|verse|haiku|sonnet|limerick|ballad|ode|prose|blog\s*post|speech|monologue|dialogue|screenplay|lyrics|song)/i,
+        // "Write about" patterns
+        /\b(write|draft|compose)\s+(about|on|regarding)/i,
+        // "Can you write" patterns
+        /\b(can|could|would|will)\s+you\s+(please\s+)?(write|draft|compose|create)/i,
+        // Creative content types
+        /\b(creative\s+writing|fiction|poetry|prose|narrative|storytelling)/i,
+        // Specific formats
+        /\b(write|create|make)\s+(me\s+)?(a|an)?\s*(love\s+letter|fairy\s+tale|horror\s+story|sci-?fi|fantasy|mystery|thriller|romance|adventure)/i,
+        // "Tell me a story" patterns
+        /\b(tell|narrate)\s+(me\s+)?(a|an|the)?\s*(story|tale|narrative)/i,
+        // Continuation patterns
+        /\b(continue|keep\s+going|more|next\s+chapter|next\s+part|further|elaborate\s+on\s+this|expand\s+on\s+this)\b/i,
+        // Indonesian patterns
+        /\b(tulis|buat|karang|ciptakan|lanjutkan|teruskan|lagi|tambah|tambahkan|buatkan)\s*(kan)?\s*(saya\s+)?(sebuah\s+)?(cerita|puisi|esai|artikel|naskah|fiksi|novel|bab|syair|kisah)/i,
+        /\b(ceritakan|kisahkan)\s*(saya\s+)?(sebuah\s+)?(cerita|kisah)/i,
+    ];
+
+    return writingPatterns.some(pattern => pattern.test(lowerText));
+}
 
 interface UseChatMessagesOptions {
     selectedModel: AIModel;
@@ -46,9 +77,6 @@ export function useChatMessages(options: UseChatMessagesOptions) {
     webSearchEnabledRef.current = webSearchEnabled;
     searchTypeRef.current = searchType;
     reasoningEnabledRef.current = reasoningEnabled;
-
-    // Use ref to track streaming message to avoid re-renders for unchanged messages
-    const streamingMessageRef = useRef<{ id: string; content: string; thinking: string } | null>(null);
 
     // Batch streaming updates to prevent "Maximum update depth exceeded"
     const pendingUpdatesRef = useRef<Map<string, Partial<Message>>>(new Map());
@@ -240,10 +268,11 @@ export function useChatMessages(options: UseChatMessagesOptions) {
         effectiveWebSearch: boolean,
         modelId: string,
         useReasoning: boolean,
-        signal?: AbortSignal
+        signal?: AbortSignal,
+        creativeWritingOnly: boolean = false
     ) => {
         const stream = sendMessageToGroqStreamWithTools(
-            prompt, history, modelId, effectiveWebSearch, effectiveSearchType, useReasoning
+            prompt, history, modelId, effectiveWebSearch, effectiveSearchType, useReasoning, creativeWritingOnly
         );
         let fullContent = '';
         let thinkingText = '';
@@ -305,10 +334,11 @@ export function useChatMessages(options: UseChatMessagesOptions) {
         effectiveWebSearch: boolean,
         modelId: string,
         useReasoning: boolean,
-        signal?: AbortSignal
+        signal?: AbortSignal,
+        creativeWritingOnly: boolean = false
     ) => {
         const stream = sendMessageToGeminiStreamWithTools(
-            prompt, history, modelId, effectiveWebSearch, effectiveSearchType, useReasoning
+            prompt, history, modelId, effectiveWebSearch, effectiveSearchType, useReasoning, creativeWritingOnly
         );
         let fullContent = '';
         let fullThinking = '';
@@ -474,8 +504,21 @@ export function useChatMessages(options: UseChatMessagesOptions) {
 
         // Get effective settings based on model capabilities
         const requestedWebSearch = msgWebSearchEnabled !== undefined ? msgWebSearchEnabled : currentWebSearch;
+
+        // Auto-enable tools for creative writing requests (but only creative_writing tool, not browse tools)
+        const isWritingRequest = isCreativeWritingRequest(text);
+        // Only enable full tools if web search is explicitly enabled
+        // Creative writing requests will use creative-only tools when web search is off
+        const shouldEnableTools = requestedWebSearch || isWritingRequest;
+        // Track if this is creative-writing-only (no browse tools)
+        const creativeWritingOnly = isWritingRequest && !requestedWebSearch;
+
+        if (creativeWritingOnly) {
+            console.log('[Chat] Enabling creative_writing tool only (browse tools disabled)');
+        }
+
         const effective = getEffectiveSettings(currentModel.id, {
-            webSearchEnabled: requestedWebSearch,
+            webSearchEnabled: shouldEnableTools,
             reasoningEnabled: currentReasoning,
             hasImageAttachments,
             hasDocumentAttachments,
@@ -485,7 +528,7 @@ export function useChatMessages(options: UseChatMessagesOptions) {
         const urls = extractUrlsFromText(text);
 
         // Log if settings were adjusted
-        if (requestedWebSearch !== effective.webSearchEnabled) {
+        if (requestedWebSearch !== effective.webSearchEnabled && !isWritingRequest) {
             console.log(`[Chat] Web search disabled for ${currentModel.name} due to model limitations`);
         }
         if (currentReasoning !== effective.reasoningEnabled) {
@@ -553,11 +596,13 @@ export function useChatMessages(options: UseChatMessagesOptions) {
                     await processOpenRouterSimple(enrichedPrompt, history, newAiMessageId, currentModel.id, effective.reasoningEnabled, signal);
                 }
             } else if (currentModel.provider === 'groq') {
-                await processGroqStream(enrichedPrompt, history, newAiMessageId, effectiveSearchType, effective.webSearchEnabled, currentModel.id, effective.reasoningEnabled, signal);
+                // For Groq, pass creativeWritingOnly for Kimi K2 (exa tools), not for Compound (built-in tools)
+                await processGroqStream(enrichedPrompt, history, newAiMessageId, effectiveSearchType, effective.webSearchEnabled, currentModel.id, effective.reasoningEnabled, signal, creativeWritingOnly);
             } else if (currentModel.provider === 'routeway') {
                 await processRoutewayStream(enrichedPrompt, history, newAiMessageId, effectiveSearchType, effective.webSearchEnabled, currentModel.id, effective.reasoningEnabled, signal);
             } else {
-                await processGeminiStream(enrichedPrompt, history, newAiMessageId, effectiveSearchType, effective.webSearchEnabled, currentModel.id, effective.reasoningEnabled, signal);
+                // For Gemini, pass creativeWritingOnly flag to use appropriate tool set
+                await processGeminiStream(enrichedPrompt, history, newAiMessageId, effectiveSearchType, effective.webSearchEnabled, currentModel.id, effective.reasoningEnabled, signal, creativeWritingOnly);
             }
 
             // Increment usage for guests after successful start
@@ -605,9 +650,14 @@ export function useChatMessages(options: UseChatMessagesOptions) {
         const hasImageAttachments = userMessage.attachments?.some(a => a.type === 'image') || false;
         const hasDocumentAttachments = userMessage.attachments?.some(a => a.type === 'file') || false;
 
+        // Auto-enable tools for creative writing requests (but only creative_writing tool, not browse tools)
+        const isWritingRequest = isCreativeWritingRequest(userMessage.content);
+        const shouldEnableTools = currentWebSearch || isWritingRequest;
+        const creativeWritingOnly = isWritingRequest && !currentWebSearch;
+
         // Get effective settings based on model capabilities
         const effective = getEffectiveSettings(currentModel.id, {
-            webSearchEnabled: currentWebSearch,
+            webSearchEnabled: shouldEnableTools,
             reasoningEnabled: currentReasoning,
             hasImageAttachments,
             hasDocumentAttachments,
@@ -670,7 +720,7 @@ export function useChatMessages(options: UseChatMessagesOptions) {
             } else if (currentModel.provider === 'routeway') {
                 await processRoutewayStream(promptContent, historyForApi, newAiMessageId, currentSearchType, effective.webSearchEnabled, currentModel.id, effective.reasoningEnabled, signal);
             } else {
-                await processGeminiStream(promptContent, historyForApi, newAiMessageId, currentSearchType, effective.webSearchEnabled, currentModel.id, effective.reasoningEnabled, signal);
+                await processGeminiStream(promptContent, historyForApi, newAiMessageId, currentSearchType, effective.webSearchEnabled, currentModel.id, effective.reasoningEnabled, signal, creativeWritingOnly);
             }
 
             // Increment usage for guests after successful start
@@ -756,16 +806,21 @@ export function useChatMessages(options: UseChatMessagesOptions) {
         const hasImageAttachments = originalMessage.attachments?.some(a => a.type === 'image') || false;
         const hasDocumentAttachments = originalMessage.attachments?.some(a => a.type === 'file') || false;
 
+        // Auto-enable tools for creative writing requests (but only creative_writing tool, not browse tools)
+        const isWritingRequest = isCreativeWritingRequest(newContent);
+        const shouldEnableTools = currentWebSearch || isWritingRequest;
+        const creativeWritingOnly = isWritingRequest && !currentWebSearch;
+
         // Get effective settings based on model capabilities
         const effective = getEffectiveSettings(currentModel.id, {
-            webSearchEnabled: currentWebSearch,
+            webSearchEnabled: shouldEnableTools,
             reasoningEnabled: currentReasoning,
             hasImageAttachments,
             hasDocumentAttachments,
         });
 
         // Log if settings were adjusted
-        if (currentWebSearch !== effective.webSearchEnabled) {
+        if (currentWebSearch !== effective.webSearchEnabled && !isWritingRequest) {
             console.log(`[Chat] Web search disabled for ${currentModel.name} due to model limitations`);
         }
         if (currentReasoning !== effective.reasoningEnabled) {
@@ -822,11 +877,12 @@ export function useChatMessages(options: UseChatMessagesOptions) {
                     await processOpenRouterSimple(enrichedPrompt, historyForApi, newAiMessageId, currentModel.id, effective.reasoningEnabled, signal);
                 }
             } else if (currentModel.provider === 'groq') {
-                await processGroqStream(enrichedPrompt, historyForApi, newAiMessageId, currentSearchType, effective.webSearchEnabled, currentModel.id, effective.reasoningEnabled, signal);
+                // For Groq, pass creativeWritingOnly for Kimi K2 (exa tools), not for Compound (built-in tools)
+                await processGroqStream(enrichedPrompt, historyForApi, newAiMessageId, currentSearchType, effective.webSearchEnabled, currentModel.id, effective.reasoningEnabled, signal, creativeWritingOnly);
             } else if (currentModel.provider === 'routeway') {
                 await processRoutewayStream(enrichedPrompt, historyForApi, newAiMessageId, currentSearchType, effective.webSearchEnabled, currentModel.id, effective.reasoningEnabled, signal);
             } else {
-                await processGeminiStream(enrichedPrompt, historyForApi, newAiMessageId, currentSearchType, effective.webSearchEnabled, currentModel.id, effective.reasoningEnabled, signal);
+                await processGeminiStream(enrichedPrompt, historyForApi, newAiMessageId, currentSearchType, effective.webSearchEnabled, currentModel.id, effective.reasoningEnabled, signal, creativeWritingOnly);
             }
         } catch (error) {
             // Check if this was an abort

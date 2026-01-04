@@ -17,6 +17,8 @@ interface MessageListProps {
     onCopy: (id: string) => void;
     onRetry: (id: string) => void;
     onDelete: (id: string) => void;
+    onSaveWriting?: (messageId: string, content: string) => void;
+    onSendEditedWriting?: (content: string) => void;
     copiedId: string | null;
     openMenuId: string | null;
     setOpenMenuId: (id: string | null) => void;
@@ -39,6 +41,8 @@ const MessageItem = memo(({
     onCopy,
     onRetry,
     onDelete,
+    onSaveWriting,
+    onSendEditedWriting,
     copiedId,
     openMenuId,
     setOpenMenuId,
@@ -58,6 +62,8 @@ const MessageItem = memo(({
     onCopy: (id: string) => void;
     onRetry: (id: string) => void;
     onDelete: (id: string) => void;
+    onSaveWriting?: (messageId: string, content: string) => void;
+    onSendEditedWriting?: (content: string) => void;
     copiedId: string | null;
     openMenuId: string | null;
     setOpenMenuId: (id: string | null) => void;
@@ -124,6 +130,8 @@ const MessageItem = memo(({
                         onCopy={onCopy}
                         onRetry={onRetry}
                         onDelete={onDelete}
+                        onSaveWriting={onSaveWriting}
+                        onSendEditedWriting={onSendEditedWriting}
                         isCopied={isCopied}
                         isMenuOpen={isMenuOpen}
                         setOpenMenuId={setOpenMenuId}
@@ -166,6 +174,8 @@ export const MessageList: React.FC<MessageListProps> = ({
     onCopy,
     onRetry,
     onDelete,
+    onSaveWriting,
+    onSendEditedWriting,
     copiedId,
     openMenuId,
     setOpenMenuId,
@@ -211,7 +221,7 @@ export const MessageList: React.FC<MessageListProps> = ({
     useEffect(() => {
         if (messages.length > 0) {
             const lastMessage = messages[messages.length - 1];
-            
+
             // If we are editing, don't trigger auto-scroll to bottom on content changes
             if (editingMessageId) return;
 
@@ -266,14 +276,14 @@ export const MessageList: React.FC<MessageListProps> = ({
             }}
             initial={{ opacity: 0, y: 60, filter: 'blur(20px)' }}
             animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-            exit={{ 
-                opacity: 0, 
-                y: 80, 
+            exit={{
+                opacity: 0,
+                y: 80,
                 filter: 'blur(20px)',
-                transition: { 
-                    duration: 0.6, 
+                transition: {
+                    duration: 0.6,
                     ease: [0.32, 0, 0.67, 0] // Ease in for exit
-                } 
+                }
             }}
             transition={{
                 duration: 0.8,
@@ -307,6 +317,8 @@ export const MessageList: React.FC<MessageListProps> = ({
                                     onCopy={onCopy}
                                     onRetry={onRetry}
                                     onDelete={onDelete}
+                                    onSaveWriting={onSaveWriting}
+                                    onSendEditedWriting={onSendEditedWriting}
                                     copiedId={copiedId}
                                     openMenuId={openMenuId}
                                     setOpenMenuId={setOpenMenuId}

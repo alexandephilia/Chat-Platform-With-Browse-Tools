@@ -1,8 +1,8 @@
 import { FunctionCallingConfigMode, GoogleGenAI } from '@google/genai';
 import { Attachment, ToolCall, ToolCallStatus } from '../types';
 import { ExaCategory, exaAnswer, exaGetContents, exaSearch, formatExaResultsForContext } from './exaService';
-import { getDefaultPrompt, getSearchPrompt } from './prompts';
-import { GEMINI_TOOLS } from './tools';
+import { getCreativeWritingPrompt, getDefaultPrompt, getSearchPrompt } from './prompts';
+import { GEMINI_CREATIVE_ONLY_TOOLS, GEMINI_TOOLS } from './tools';
 
 // API keys for rotation - loaded from environment variables
 const API_KEYS = [
@@ -53,6 +53,15 @@ async function executeToolCall(name: string, args: Record<string, any>): Promise
     const numResults = args.numResults || 5;
 
     switch (name) {
+        case 'creative_writing':
+            // Creative writing tool - returns the content directly for special UI rendering
+            // The content is already in args, we just pass it through with metadata
+            return {
+                type: 'creative_writing',
+                title: args.title || 'Manuscript',
+                content: args.content || '',
+            };
+
         case 'web_search':
             return await exaSearch({
                 query: args.query,
@@ -171,10 +180,18 @@ export async function* sendMessageToGeminiStreamWithTools(
     modelId: string = 'gemini-3-flash-preview',
     enableTools: boolean = false,
     searchType: ExaSearchType = 'auto',
-    reasoningEnabled: boolean = false
+    reasoningEnabled: boolean = false,
+    creativeWritingOnly: boolean = false
 ): AsyncGenerator<StreamEvent, void, unknown> {
     // Set the search type for tool calls
     currentSearchType = searchType;
+
+    // Select appropriate tool set based on whether it's creative-writing-only or full tools
+    const toolsToUse = creativeWritingOnly ? GEMINI_CREATIVE_ONLY_TOOLS : GEMINI_TOOLS;
+
+    if (creativeWritingOnly) {
+        console.log('[Gemini] Using creative_writing tool only (browse tools disabled)');
+    }
 
     const formattedHistory = await Promise.all(history.map(async msg => {
         const parts: any[] = [{ text: msg.content }];
@@ -232,9 +249,12 @@ export async function* sendMessageToGeminiStreamWithTools(
                                 includeThoughts: true,
                             },
                         }),
-                        systemInstruction: enableTools ? getSearchPrompt(searchType) : getDefaultPrompt(),
+                        // Use creative writing prompt when creativeWritingOnly, search prompt when tools enabled, default otherwise
+                        systemInstruction: creativeWritingOnly
+                            ? getCreativeWritingPrompt()
+                            : (enableTools ? getSearchPrompt(searchType) : getDefaultPrompt()),
                         ...(enableTools && {
-                            tools: GEMINI_TOOLS,
+                            tools: toolsToUse,
                             toolConfig: {
                                 functionCallingConfig: {
                                     mode: FunctionCallingConfigMode.AUTO,

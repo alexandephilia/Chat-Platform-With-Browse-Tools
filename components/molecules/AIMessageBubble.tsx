@@ -10,6 +10,7 @@ import { ExpressionPill } from '../atoms/ExpressionPill';
 import { CopyLinear, MoreDotsLinear, RefreshSquareLinear, StopCircleLinear, VolumeHighLinear } from '../atoms/Icons';
 import { SearchTimeline } from '../atoms/SearchTimeline';
 import { ThinkingBlock } from '../atoms/ThinkingBlock';
+import WritingCanvas from '../atoms/WritingCanvas';
 import { AVAILABLE_MODELS } from '../molecules/ModelPicker';
 
 // Custom matte syntax highlighting theme (no reds)
@@ -55,6 +56,8 @@ interface AIMessageBubbleProps {
     onCopy: (id: string) => void;
     onRetry: (id: string) => void;
     onDelete: (id: string) => void;
+    onSaveWriting?: (messageId: string, content: string) => void; // Save locally without sending
+    onSendEditedWriting?: (content: string) => void; // Save and send to AI
     isCopied: boolean;
     isMenuOpen: boolean;
     setOpenMenuId: (id: string | null) => void;
@@ -234,7 +237,7 @@ const StableAnimatedContent = memo(({
             content={content}
             sep="diff"
             animation={animationEnabled ? "blurAndSharpen" : null}
-            animationDuration="1.2s" // Snappier but still smooth
+            animationDuration="1s" // Snappier but still smooth
             animationTimingFunction="cubic-bezier(0.22, 1, 0.36, 1)" // More premium feel
             customComponents={customComponents}
             codeStyle={matteCodeStyle}
@@ -257,6 +260,8 @@ export const AIMessageBubble: React.FC<AIMessageBubbleProps> = memo(({
     onCopy,
     onRetry,
     onDelete,
+    onSaveWriting,
+    onSendEditedWriting,
     isCopied,
     isMenuOpen,
     setOpenMenuId,
@@ -266,6 +271,95 @@ export const AIMessageBubble: React.FC<AIMessageBubbleProps> = memo(({
     const hasThinking = message.thinking || message.isThinking;
     const hasToolCalls = message.toolCalls && message.toolCalls.length > 0;
     const hasRunningTools = message.toolCalls?.some(tc => tc.status === 'pending' || tc.status === 'running');
+
+    // Check for creative writing tool call
+    const writingToolCall = useMemo(() => {
+        return message.toolCalls?.find(tc => tc.name === 'creative_writing');
+    }, [message.toolCalls]);
+
+    // Fallback: Parse content for tool call text pattern when AI outputs it as plain text
+    const parsedWritingFromContent = useMemo(() => {
+        if (writingToolCall) return null; // Already have a proper tool call
+        if (!message.content) return null;
+
+        // Clean the content - remove <tool_code> wrappers and print() wrappers
+        let cleanContent = message.content;
+
+        // Check if content contains creative_writing pattern at all
+        if (!cleanContent.includes('creative_writing')) return null;
+
+        // Extract from <tool_code>...</tool_code> wrapper if present
+        const toolCodeMatch = cleanContent.match(/<tool_code>([\s\S]*?)<\/tool_code>/);
+        if (toolCodeMatch) {
+            cleanContent = toolCodeMatch[1];
+        }
+
+        // Remove print() wrapper if present
+        cleanContent = cleanContent.replace(/^\s*print\s*\(\s*/, '').replace(/\s*\)\s*$/, '');
+
+        // Match patterns for creative_writing(title="...", content="""...""")
+        // Pattern 1: title first, then content with triple quotes
+        const pattern1 = /creative_writing\s*\(\s*title\s*=\s*["']([^"']+)["']\s*,\s*content\s*=\s*"""([\s\S]*?)"""\s*\)/;
+        // Pattern 2: title first, then content with single/double quotes
+        const pattern2 = /creative_writing\s*\(\s*title\s*=\s*["']([^"']+)["']\s*,\s*content\s*=\s*["']([\s\S]*?)["']\s*\)/;
+        // Pattern 3: content first with triple quotes, then optional title
+        const pattern3 = /creative_writing\s*\(\s*content\s*=\s*"""([\s\S]*?)"""\s*(?:,\s*title\s*=\s*["']([^"']+)["'])?\s*\)/;
+        // Pattern 4: Just extract anything between creative_writing( and the closing )
+        // This is a more lenient fallback
+        const pattern4 = /creative_writing\s*\(\s*(?:title\s*=\s*["']([^"']+)["']\s*,\s*)?content\s*=\s*(?:"""|"|')([\s\S]*?)(?:"""|"|')\s*\)/;
+
+        let match = cleanContent.match(pattern1);
+        if (match) {
+            return { title: match[1], content: match[2].trim() };
+        }
+
+        match = cleanContent.match(pattern2);
+        if (match) {
+            return { title: match[1], content: match[2].trim() };
+        }
+
+        match = cleanContent.match(pattern3);
+        if (match) {
+            return { title: match[2] || 'Manuscript', content: match[1].trim() };
+        }
+
+        match = cleanContent.match(pattern4);
+        if (match) {
+            return { title: match[1] || 'Manuscript', content: match[2].trim() };
+        }
+
+        return null;
+    }, [message.content, writingToolCall]);
+
+    const hasWritingTool = !!writingToolCall || !!parsedWritingFromContent;
+    const isWriting = writingToolCall?.status === 'running' || writingToolCall?.status === 'pending';
+    const writingContent = writingToolCall?.result?.content || writingToolCall?.args?.content || parsedWritingFromContent?.content || '';
+    const writingTitle = writingToolCall?.result?.title || writingToolCall?.args?.title || parsedWritingFromContent?.title || 'Manuscript';
+
+    // If we parsed writing from content, we should hide the raw tool call text
+    const displayContent = useMemo(() => {
+        if (parsedWritingFromContent && message.content) {
+            // Remove the tool call pattern from displayed content
+            let cleaned = message.content
+                // Remove <tool_code>...</tool_code> blocks entirely
+                .replace(/<tool_code>[\s\S]*?<\/tool_code>/g, '')
+                // Remove standalone creative_writing(...) calls
+                .replace(/print\s*\(\s*creative_writing\s*\([\s\S]*?\)\s*\)/g, '')
+                .replace(/creative_writing\s*\([\s\S]*?\)\s*\)?/g, '')
+                .trim();
+
+            // If nothing left after cleaning, return empty string
+            return cleaned || '';
+        }
+        return message.content;
+    }, [message.content, parsedWritingFromContent]);
+
+    // Filter out creative_writing from tool calls shown in SearchTimeline
+    const searchToolCalls = useMemo(() => {
+        return message.toolCalls?.filter(tc => tc.name !== 'creative_writing') || [];
+    }, [message.toolCalls]);
+
+    const hasSearchToolCalls = searchToolCalls.length > 0;
 
     // TTS state
     const [isSpeaking, setIsSpeaking] = useState(false);
@@ -376,13 +470,24 @@ export const AIMessageBubble: React.FC<AIMessageBubbleProps> = memo(({
                 />
             )}
 
-            {/* Tool Calls Display */}
-            {hasToolCalls && (
+            {/* Tool Calls Display (excluding creative_writing) */}
+            {hasSearchToolCalls && (
                 <SearchTimeline
-                    toolCalls={message.toolCalls!}
+                    toolCalls={searchToolCalls}
                     isStreaming={isStreaming}
                     planningText={message.planningText}
                     hasResponseContent={!!message.content}
+                />
+            )}
+
+            {/* Writing Canvas for creative_writing tool */}
+            {hasWritingTool && (
+                <WritingCanvas
+                    content={writingContent}
+                    isWriting={isWriting || isStreaming}
+                    title={writingTitle}
+                    onSave={onSaveWriting ? (content) => onSaveWriting(message.id, content) : undefined}
+                    onSendEdit={onSendEditedWriting}
                 />
             )}
 
@@ -394,13 +499,13 @@ export const AIMessageBubble: React.FC<AIMessageBubbleProps> = memo(({
                             {message.content}
                         </span>
                     </div>
-                ) : (
+                ) : displayContent ? (
                     <StableAnimatedContent
-                        content={message.content}
+                        content={displayContent}
                         messageId={message.id}
                         isStreaming={isStreaming}
                     />
-                )}
+                ) : null}
             </div>
 
             {/* Interrupted indicator */}
