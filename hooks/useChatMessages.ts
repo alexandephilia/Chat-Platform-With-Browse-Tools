@@ -618,12 +618,22 @@ export function useChatMessages(options: UseChatMessagesOptions) {
             console.error(error);
             setMessages(prev => prev.map(msg =>
                 msg.id === newAiMessageId
-                    ? { ...msg, content: "I'm having trouble connecting right now. Please try again later.", isError: true }
+                    ? { ...msg, content: (function() {
+                        const errorMessage = error instanceof Error ? error.message : String(error);
+                        if (errorMessage.includes('RATE_LIMITED') || errorMessage.includes('rate limit') || errorMessage.includes('429')) {
+                            return "I've hit a rate limit with the AI provider. Please wait a moment before trying again or try a different model.";
+                        } else if (errorMessage.includes('quota') || errorMessage.includes('credit')) {
+                            return "The AI provider's quota has been exceeded. Please try a different model.";
+                        }
+                        return "I'm having trouble connecting right now. Please try again later.";
+                    })(), isError: true }
                     : msg
             ));
         } finally {
-            // Clear abort controller
-            abortControllerRef.current = null;
+            // Clear abort controller only if it's the current one
+            if (abortControllerRef.current?.signal === signal) {
+                abortControllerRef.current = null;
+            }
             // Flush any pending streaming updates before marking as done
             flushPendingUpdates();
             setIsLoading(false);
@@ -736,12 +746,22 @@ export function useChatMessages(options: UseChatMessagesOptions) {
             console.error(error);
             setMessages(prev => prev.map(msg =>
                 msg.id === newAiMessageId
-                    ? { ...msg, content: "I'm having trouble connecting right now. Please try again later.", isError: true }
+                    ? { ...msg, content: (function() {
+                        const errorMessage = error instanceof Error ? error.message : String(error);
+                        if (errorMessage.includes('RATE_LIMITED') || errorMessage.includes('rate limit') || errorMessage.includes('429')) {
+                            return "I've hit a rate limit with the AI provider. Please wait a moment before trying again or try a different model.";
+                        } else if (errorMessage.includes('quota') || errorMessage.includes('credit')) {
+                            return "The AI provider's quota has been exceeded. Please try a different model.";
+                        }
+                        return "I'm having trouble connecting right now. Please try again later.";
+                    })(), isError: true }
                     : msg
             ));
         } finally {
-            // Clear abort controller
-            abortControllerRef.current = null;
+            // Clear abort controller only if it's the current one
+            if (abortControllerRef.current?.signal === signal) {
+                abortControllerRef.current = null;
+            }
             // Flush any pending streaming updates before marking as done
             flushPendingUpdates();
             setIsLoading(false);
@@ -893,12 +913,22 @@ export function useChatMessages(options: UseChatMessagesOptions) {
             console.error(error);
             setMessages(prev => prev.map(msg =>
                 msg.id === newAiMessageId
-                    ? { ...msg, content: "I'm having trouble connecting right now. Please try again later.", isError: true }
+                    ? { ...msg, content: (function() {
+                        const errorMessage = error instanceof Error ? error.message : String(error);
+                        if (errorMessage.includes('RATE_LIMITED') || errorMessage.includes('rate limit') || errorMessage.includes('429')) {
+                            return "I've hit a rate limit with the AI provider. Please wait a moment before trying again or try a different model.";
+                        } else if (errorMessage.includes('quota') || errorMessage.includes('credit')) {
+                            return "The AI provider's quota has been exceeded. Please try a different model.";
+                        }
+                        return "I'm having trouble connecting right now. Please try again later.";
+                    })(), isError: true }
                     : msg
             ));
         } finally {
-            // Clear abort controller
-            abortControllerRef.current = null;
+            // Clear abort controller only if it's the current one
+            if (abortControllerRef.current?.signal === signal) {
+                abortControllerRef.current = null;
+            }
             // Flush any pending streaming updates before marking as done
             flushPendingUpdates();
             setIsLoading(false);
