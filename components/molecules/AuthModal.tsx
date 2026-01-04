@@ -93,7 +93,7 @@ export const AuthModal: React.FC = () => {
     };
 
     return (
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="sync">
             {authModalType && (
                 <motion.div
                     key="auth-modal"
@@ -106,7 +106,7 @@ export const AuthModal: React.FC = () => {
                         willChange: 'transform, opacity'
                     }}
                 >
-                    {/* Backdrop - use opacity instead of blur for mobile performance */}
+                    {/* Backdrop */}
                     <motion.div
                         className="absolute inset-0 bg-black/50"
                         variants={backdropVariants}

@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowRight, MessageSquare, Mic, Search, Sparkles, X } from 'lucide-react';
+import { ArrowRight, MessageSquare, Mic, Search, Sparkles } from 'lucide-react';
 import React, { useCallback, useEffect, useState } from 'react';
 
 const ONBOARDING_STORAGE_KEY = 'zeta_onboarding_completed';
@@ -135,7 +135,7 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ isOpen, onClose 
     const isLastStep = currentStep === steps.length - 1;
 
     return (
-        <AnimatePresence>
+        <AnimatePresence mode="sync">
             {isOpen && (
                 <motion.div
                     initial={{ opacity: 0 }}
@@ -148,8 +148,9 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ isOpen, onClose 
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        exit={{ opacity: 0, pointerEvents: 'none' }}
+                        exit={{ opacity: 0 }}
                         className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+                        onClick={handleSkip}
                     />
 
                     {/* Modal */}
@@ -197,18 +198,18 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ isOpen, onClose 
                                                 transition={{ duration: 0.4, ease: "easeInOut" }}
                                                 className="absolute inset-0 z-0 pointer-events-none"
                                             >
-                                                <img 
-                                                    src={step.backgroundImage} 
-                                                    alt="" 
+                                                <img
+                                                    src={step.backgroundImage}
+                                                    alt=""
                                                     className="w-full h-full object-cover opacity-100"
                                                     style={{ filter: 'blur(1.6px) brightness(1.1) saturate(1)' }}
                                                 />
                                                 {/* Gradient fade from middle to bottom */}
-                                                <div 
-                                                    className="absolute inset-0" 
-                                                    style={{ 
-                                                        background: 'linear-gradient(to bottom, transparent 0%, transparent 35%, rgba(255, 255, 255, 0.42) 55%, rgba(255, 255, 255, 1) 100%)' 
-                                                    }} 
+                                                <div
+                                                    className="absolute inset-0"
+                                                    style={{
+                                                        background: 'linear-gradient(to bottom, transparent 0%, transparent 35%, rgba(255, 255, 255, 0.42) 55%, rgba(255, 255, 255, 1) 100%)'
+                                                    }}
                                                 />
                                             </motion.div>
                                         )}
@@ -216,26 +217,26 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ isOpen, onClose 
 
                                     <div className="relative z-10">
                                         <AnimatePresence mode="popLayout" initial={false}>
-                                        <motion.div
-                                            key={step.id}
-                                            initial={{ opacity: 0, x: 20, filter: 'blur(8px)' }}
-                                            animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
-                                            exit={{ opacity: 0, x: -20, filter: 'blur(8px)' }}
-                                            transition={{
-                                                duration: 0.20,
-                                                ease: "easeOut"
-                                            }}
-                                        >
-                                            {/* Spacer (keeps top spacing) */}
-                                            <div className="w-20 h-20 mx-auto mb-6" />
+                                            <motion.div
+                                                key={step.id}
+                                                initial={{ opacity: 0, x: 20, filter: 'blur(8px)' }}
+                                                animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
+                                                exit={{ opacity: 0, x: -20, filter: 'blur(8px)' }}
+                                                transition={{
+                                                    duration: 0.20,
+                                                    ease: "easeOut"
+                                                }}
+                                            >
+                                                {/* Spacer (keeps top spacing) */}
+                                                <div className="w-20 h-20 mx-auto mb-6" />
 
-                                            {/* Content */}
-                                            <div className="text-center mb-6">
-                                                <h2 className="text-5xl font-medium text-slate-800 mb-2" style={{ fontFamily: '"Instrument Serif", serif' }}>{step.title}</h2>
-                                                <p className="text-sm text-slate-500 leading-relaxed px-2 text-balance">{step.description}</p>
-                                            </div>
-                                        </motion.div>
-                                    </AnimatePresence>
+                                                {/* Content */}
+                                                <div className="text-center mb-6">
+                                                    <h2 className="text-5xl font-medium text-slate-800 mb-2" style={{ fontFamily: '"Instrument Serif", serif' }}>{step.title}</h2>
+                                                    <p className="text-sm text-slate-500 leading-relaxed px-2 text-balance">{step.description}</p>
+                                                </div>
+                                            </motion.div>
+                                        </AnimatePresence>
                                     </div>
 
                                     {/* Progress dots */}
