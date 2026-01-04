@@ -122,7 +122,7 @@ export const AuthModal: React.FC = () => {
                         style={{ transform: 'translateZ(0)', willChange: 'transform, opacity' }}
                     >
                         {/* Outer rim */}
-                        <div className="p-1 auth-modal-outer rounded-[24px]">
+                        <div className="p-1 bg-gradient-to-b from-white to-slate-300 rounded-[24px] shadow-2xl">
                             {/* Middle rim */}
                             <div className="p-1 bg-slate-100 rounded-[22px] shadow-[inset_0_2px_4px_rgba(0,0,0,0.06)]">
                                 {/* Inner card */}
@@ -218,7 +218,7 @@ export const AuthModal: React.FC = () => {
                                                     value={formData.firstName}
                                                     onChange={handleInputChange}
                                                     placeholder="Your first name"
-                                                    className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-200/80 bg-slate-50/80 auth-modal-input placeholder:text-slate-400 text-slate-700"
+                                                    className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-200/80 bg-slate-50/80 outline-none transition-all placeholder:text-slate-400 text-slate-700 shadow-[inset_0_2px_4px_rgba(0,0,0,0.06),inset_0_1px_2px_rgba(0,0,0,0.04)] focus:shadow-[inset_0_2px_4px_rgba(0,0,0,0.08)] focus:border-slate-300 focus:bg-white focus:ring-0 focus:outline-none"
                                                     required={!isLoginMode}
                                                     tabIndex={isLoginMode ? -1 : 0}
                                                     pattern="[A-Za-z]+"
@@ -245,7 +245,7 @@ export const AuthModal: React.FC = () => {
                                                     value={formData.email}
                                                     onChange={handleInputChange}
                                                     placeholder="you@example.com"
-                                                    className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-200/80 bg-slate-50/80 auth-modal-input placeholder:text-slate-400 text-slate-700"
+                                                    className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-200/80 bg-slate-50/80 outline-none transition-all placeholder:text-slate-400 text-slate-700 shadow-[inset_0_2px_4px_rgba(0,0,0,0.06),inset_0_1px_2px_rgba(0,0,0,0.04)] focus:shadow-[inset_0_2px_4px_rgba(0,0,0,0.08)] focus:border-slate-300 focus:bg-white focus:ring-0 focus:outline-none"
                                                     required
                                                 />
                                             </div>
@@ -270,7 +270,7 @@ export const AuthModal: React.FC = () => {
                                                         value={formData.password}
                                                         onChange={handleInputChange}
                                                         placeholder="••••••••"
-                                                        className="w-full px-3.5 py-2.5 pr-10 text-sm rounded-xl border border-slate-200/80 bg-slate-50/80 auth-modal-input placeholder:text-slate-400 text-slate-700"
+                                                        className="w-full px-3.5 py-2.5 pr-10 text-sm rounded-xl border border-slate-200/80 bg-slate-50/80 outline-none transition-all placeholder:text-slate-400 text-slate-700 shadow-[inset_0_2px_4px_rgba(0,0,0,0.06),inset_0_1px_2px_rgba(0,0,0,0.04)] focus:shadow-[inset_0_2px_4px_rgba(0,0,0,0.08)] focus:border-slate-300 focus:bg-white focus:ring-0 focus:outline-none"
                                                         required
                                                         minLength={6}
                                                     />

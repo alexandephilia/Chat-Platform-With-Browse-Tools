@@ -227,7 +227,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     };
 
     return (
-        <div className="flex flex-col h-full relative overflow-hidden bg-white/60 lg:rounded-[32px] shadow-[0_-4px_10px_0px_rgba(0,0,0,0.08),0_10px_10px_1px_rgba(0,0,0,0.2),inset_0_1px_0_0_rgba(255,255,255,1),inset_0_100px_80px_-20px_rgba(255,255,255,0.9)] ring-1 ring-slate-100/50">
+        <div className="flex flex-col h-full relative overflow-hidden bg-white/60 md:rounded-[32px] shadow-[0_-4px_10px_0px_rgba(0,0,0,0.08),0_10px_10px_1px_rgba(0,0,0,0.2),inset_0_1px_0_0_rgba(255,255,255,1),inset_0_100px_80px_-20px_rgba(255,255,255,0.9)] ring-1 ring-slate-100/50">
             {/* Background Layer */}
             <AnimatePresence mode="wait">
                 {isWelcomeMode ? (
