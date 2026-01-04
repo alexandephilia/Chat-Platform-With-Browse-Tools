@@ -704,12 +704,24 @@ export function useChatMessages(options: UseChatMessagesOptions) {
     const deleteMessage = useCallback((messageId: string) => {
         if (isLoading) return;
 
-        const msgIndex = messages.findIndex(m => m.id === messageId);
-        if (msgIndex <= 0) return;
+        setMessages(prev => {
+            const msgIndex = prev.findIndex(m => m.id === messageId);
+            if (msgIndex < 0) return prev;
 
-        const userMessageId = messages[msgIndex - 1]?.id;
-        setMessages(prev => prev.filter(m => m.id !== messageId && m.id !== userMessageId));
-    }, [messages, isLoading]);
+            const msg = prev[msgIndex];
+
+            // If it's a rate limit message, just delete it (it's standalone)
+            if (msg.isRateLimit) {
+                return prev.filter(m => m.id !== messageId);
+            }
+
+            // Ensure we have a previous message for pair deletion
+            if (msgIndex === 0) return prev;
+
+            const userMessageId = prev[msgIndex - 1]?.id;
+            return prev.filter(m => m.id !== messageId && m.id !== userMessageId);
+        });
+    }, [isLoading]);
 
     /**
      * Edit and resend a message
@@ -758,6 +770,18 @@ export function useChatMessages(options: UseChatMessagesOptions) {
         }
         if (currentReasoning !== effective.reasoningEnabled) {
             console.log(`[Chat] Reasoning disabled for ${currentModel.name} due to model limitations`);
+        }
+
+        if (!authService.isAuthenticated() && usageService.isLimitReached()) {
+            setMessages(prev => [...prev, {
+                id: Date.now().toString(),
+                role: 'model',
+                content: "You've reached the limit for guest users. Please sign up to continue chatting with our models!",
+                timestamp: new Date(),
+                isError: true,
+                isRateLimit: true
+            }]);
+            return;
         }
 
         setMessages([...messagesUpToEdit, updatedUserMessage]);

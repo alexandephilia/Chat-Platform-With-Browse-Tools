@@ -84,8 +84,13 @@ function AppContent() {
 
     // Handle messages update from ChatInterface
     const handleMessagesChange = useCallback((messages: Message[], isStreamingComplete?: boolean) => {
+        // If the chat becomes empty (all messages deleted), remove it from history
+        if (messages.length === 0 && activeChatId) {
+            deleteChat(activeChatId);
+            return;
+        }
         updateMessages(messages, isStreamingComplete);
-    }, [updateMessages]);
+    }, [updateMessages, activeChatId, deleteChat]);
 
     // Close sidebar (for mobile)
     const handleCloseSidebar = () => {

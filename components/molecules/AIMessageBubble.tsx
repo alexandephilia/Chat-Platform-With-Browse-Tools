@@ -397,9 +397,8 @@ export const AIMessageBubble: React.FC<AIMessageBubbleProps> = memo(({
             {/* Message Content - Only animate if streaming */}
             <div className={`chat-message-ai text-slate-700 ${message.isRateLimit ? 'flex justify-start' : ''}`} data-message-id={message.id}>
                 {message.isRateLimit ? (
-                    <div className="inline-flex items-start gap-2 px-4 py-2 rounded-full bg-amber-50/40 backdrop-blur-sm border border-amber-200/30 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05),inset_0_1px_0_0_rgba(255,255,255,0.4)]">
-                        <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-amber-400/60 animate-pulse mt-[7px]" />
-                        <span className="text-[13px] font-medium text-amber-900/70 leading-tight">
+                    <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-gradient-to-b from-amber-50/80 to-amber-50/40 border border-amber-100/60 shadow-[0_2px_8px_-2px_rgba(245,158,11,0.12),inset_0_1px_0_rgba(255,255,255,0.8)]">
+                        <span className="text-[12px] font-medium text-amber-800/75 leading-tight tracking-tight">
                             {message.content}
                         </span>
                     </div>

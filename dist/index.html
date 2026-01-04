@@ -21,7 +21,7 @@
         };
     </script>
     <link
-        href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,500;0,8..60,600;0,8..60,700;1,8..60,400;1,8..60,500&display=swap"
         rel="stylesheet" />
     <!-- KaTeX for math rendering -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
@@ -44,6 +44,9 @@
             /* Fonts */
             --font-base: "Nunito", sans-serif;
             --font-display: "Instrument Serif", serif;
+            --font-chat: "Nunito", sans-serif;
+            /* Default chat font - can be changed to Source Serif 4 */
+            --font-serif: "Source Serif 4", Georgia, serif;
 
             /* Primary Colors */
             --color-primary-50: #eff6ff;
@@ -91,19 +94,23 @@
 
         body {
             font-family: "Nunito", sans-serif !important;
-            overflow: hidden;
-            position: fixed;
+            overflow-x: hidden;
+            overflow-y: auto;
+            position: relative;
             width: 100%;
             height: 100%;
+            margin: 0;
+            padding: 0;
             overscroll-behavior: none;
             -webkit-overflow-scrolling: touch;
         }
 
         html {
-            overflow: hidden;
-            position: fixed;
+            overflow-x: hidden;
             width: 100%;
             height: 100%;
+            margin: 0;
+            padding: 0;
             overscroll-behavior: none;
         }
 
@@ -153,7 +160,7 @@
 
         /* ===== BASE CONTAINER ===== */
         .chat-message-ai {
-            font-family: var(--font-base) !important;
+            font-family: var(--font-chat) !important;
             font-size: var(--text-chat) !important;
             line-height: var(--text-chat-line-height) !important;
             color: var(--color-text-primary) !important;
@@ -170,6 +177,20 @@
         .chat-message-ai-container {
             max-width: 100% !important;
             overflow: hidden !important;
+        }
+
+        /* Chat font classes for dynamic switching */
+        .chat-font-nunito {
+            --font-chat: "Nunito", sans-serif;
+        }
+
+        .chat-font-serif {
+            --font-chat: "Source Serif 4", Georgia, serif;
+        }
+
+        /* User message font styling */
+        .chat-message-user {
+            font-family: var(--font-chat) !important;
         }
 
         /* Reset all elements to inherit base */
@@ -209,7 +230,7 @@
         .chat-message-ai h4,
         .chat-message-ai h5,
         .chat-message-ai h6 {
-            font-family: var(--font-base) !important;
+            font-family: var(--font-chat) !important;
             font-weight: 700 !important;
             color: var(--color-text-primary) !important;
             margin-top: 1.25rem !important;
@@ -820,6 +841,40 @@
             }
         }
 
+        @keyframes shimmer {
+            0% {
+                background-position: 200% 0;
+            }
+
+            100% {
+                background-position: -200% 0;
+            }
+        }
+
+        @keyframes icon-glow {
+
+            0%,
+            100% {
+                filter: drop-shadow(0 0 2px rgba(147, 197, 253, 0.3));
+            }
+
+            50% {
+                filter: drop-shadow(0 0 5px rgba(147, 197, 253, 0.5));
+            }
+        }
+
+        @keyframes container-glow {
+
+            0%,
+            100% {
+                box-shadow: 0 0 8px rgba(34, 211, 238, 0.3), 0 0 3px rgba(34, 211, 238, 0.2), 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+
+            50% {
+                box-shadow: 0 0 16px rgba(34, 211, 238, 0.5), 0 0 6px rgba(34, 211, 238, 0.4), 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+        }
+
         :root {
             --ft-marker-animation: none;
         }
@@ -870,12 +925,15 @@
         /* Table body/head inside scrollable table */
         .chat-message-ai>table>tbody,
         .chat-message-ai>table>thead,
+        /* Table with rounded corners support */
         .chat-message-ai .table-wrapper table {
             display: table !important;
             width: 100% !important;
             min-width: auto !important;
             border-collapse: separate !important;
             border-spacing: 0 !important;
+            border-radius: 0.75rem !important;
+            overflow: hidden !important;
         }
 
         /* Ensure thead and tbody stay as table elements */
@@ -891,14 +949,14 @@
             display: table-row !important;
         }
 
-        /* Table header cells */
+        /* Table header cells with corner rounding */
         .chat-message-ai th {
             display: table-cell !important;
             font-weight: 700 !important;
             text-align: left !important;
             padding: 10px 14px !important;
             background: rgba(248, 250, 252, 0.5) !important;
-            border: 1px solid rgba(226, 232, 240, 0.8) !important;
+            border: 1px dashed rgba(226, 232, 240, 0.8) !important;
             color: var(--color-text-secondary) !important;
             font-size: 11px !important;
             letter-spacing: 0.05em !important;
@@ -909,10 +967,18 @@
             width: auto !important;
         }
 
-        /* Table data cells */
+        .chat-message-ai table thead th:first-child {
+            border-top-left-radius: 0.75rem !important;
+        }
+
+        .chat-message-ai table thead th:last-child {
+            border-top-right-radius: 0.75rem !important;
+        }
+
+        /* Table data cells - matching premium aesthetic */
         .chat-message-ai td {
-            padding: 8px 4px !important;
-            border: 1px solid rgba(226, 232, 240, 0.6) !important;
+            padding: 8px 12px !important;
+            border: 1px dashed rgba(226, 232, 240, 0.4) !important;
             color: var(--color-text-primary) !important;
             font-size: 13px !important;
             vertical-align: top !important;
@@ -921,11 +987,22 @@
             word-break: break-word !important;
             min-width: 120px !important;
             max-width: 400px !important;
+            /* Transparent cells to see the container gradient */
+            background: rgba(255, 255, 255, 0.2) !important;
+            backdrop-filter: blur(4px) !important;
+        }
+
+        .chat-message-ai table tr:last-child td:first-child {
+            border-bottom-left-radius: 0.75rem !important;
+        }
+
+        .chat-message-ai table tr:last-child td:last-child {
+            border-bottom-right-radius: 0.75rem !important;
         }
 
         /* Hover effect for rows */
         .chat-message-ai tr:hover td {
-            background: rgba(241, 245, 249, 0.3) !important;
+            background: rgba(241, 245, 249, 0.5) !important;
         }
 
         /* ===== TABLE STREAMING FIXES ===== */
@@ -991,10 +1068,12 @@
             transform: translateY(-2px) !important;
         }
 
-        /* Coding blocks (Claymorphism + Shine) - Flowtoken Overrides */
-        /* Wrapper Container - Match BOTH aria-label states to prevent style loss on copy click */
-        .chat-message-ai div.relative:has(> button[aria-label="Copy code"]),
-        .chat-message-ai div.relative:has(> button[aria-label="Copied!"]) {
+        /* Coding blocks & Tables (Shared Premium Aesthetic) */
+        /* Common container styles for unified branding */
+        .chat-message-ai div.relative:has(> pre):has(> button[aria-label="Copy code"]),
+        .chat-message-ai div.relative:has(> pre):has(> button[aria-label="Copied!"]),
+        .chat-message-ai .table-wrapper {
+            max-width: fit-content !important;
             margin-top: 1.5rem !important;
             margin-bottom: 1.5rem !important;
             background: linear-gradient(180deg,
@@ -1008,13 +1087,26 @@
                 inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
             border: 1px solid rgba(255, 255, 255, 0.7) !important;
             overflow: hidden !important;
+            position: relative !important;
+        }
+
+        /* Specific Code Block adjustment: space for header */
+        .chat-message-ai div.relative:has(> pre):has(> button[aria-label$="code"]),
+        .chat-message-ai div.relative:has(> pre):has(> button[aria-label$="!"]) {
             padding-top: 44px !important;
-            /* Space for header */
+        }
+
+        /* Table wrapper padding - no header needed */
+        .chat-message-ai .table-wrapper {
+            padding: 0.25rem !important;
+            overflow-x: auto !important;
+            width: 100% !important;
+            -webkit-overflow-scrolling: touch !important;
         }
 
         /* Merged Header Background & Shine Effect (::after) */
-        .chat-message-ai div.relative:has(> button[aria-label="Copy code"])::after,
-        .chat-message-ai div.relative:has(> button[aria-label="Copied!"])::after {
+        .chat-message-ai div.relative:has(> pre):has(> button[aria-label="Copy code"])::after,
+        .chat-message-ai div.relative:has(> pre):has(> button[aria-label="Copied!"])::after {
             content: "" !important;
             position: absolute !important;
             top: 0 !important;
@@ -1035,8 +1127,8 @@
         }
 
         /* Language Label using ::before on Wrapper (Sticky Header Text) */
-        .chat-message-ai div.relative:has(> button[aria-label="Copy code"])::before,
-        .chat-message-ai div.relative:has(> button[aria-label="Copied!"])::before {
+        .chat-message-ai div.relative:has(> pre):has(> button[aria-label="Copy code"])::before,
+        .chat-message-ai div.relative:has(> pre):has(> button[aria-label="Copied!"])::before {
             content: "CODE" !important;
             /* Default */
             position: absolute !important;
@@ -1186,24 +1278,56 @@
             box-shadow: none !important;
             border: none !important;
             overflow: auto !important;
-            /* Explicitly reduce font-size to counter 1em inline style */
             font-size: 11px !important;
             line-height: 1.6 !important;
+            display: flex !important;
+            flex-direction: column !important;
         }
 
         .chat-message-ai pre::before {
             display: none !important;
         }
 
-        /* Inner Code consistency */
+        /* Inner Code consistency & Line Numbering */
         .chat-message-ai pre code {
             /* Inherit the reduction */
             font-size: inherit !important;
             font-family: "JetBrains Mono", "Menlo", "Consolas", "Monaco", monospace !important;
             background: transparent !important;
             text-shadow: none !important;
-            /* Cleanup messy shadows if any */
             padding: 0 !important;
+            display: block !important;
+            counter-reset: line-number 0 !important;
+            min-width: 100% !important;
+            font-weight: 700 !important;
+        }
+
+        /* Target flowtoken's line containers (divs) or spans */
+        .chat-message-ai pre code>div,
+        .chat-message-ai pre code>span {
+            position: relative !important;
+            padding-left: 3.5rem !important;
+            min-height: 1.6em !important;
+        }
+
+        .chat-message-ai pre code>div::before,
+        .chat-message-ai pre code>span::before {
+            counter-increment: line-number !important;
+            content: counter(line-number) !important;
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            bottom: 0 !important;
+            width: 2.5rem !important;
+            padding-right: 0.75rem !important;
+            text-align: right !important;
+            color: rgba(148, 163, 184, 0.5) !important;
+            font-size: 10px !important;
+            font-variant-numeric: tabular-nums !important;
+            border-right: 1px solid rgba(226, 232, 240, 0.5) !important;
+            background: rgba(248, 250, 252, 0.3) !important;
+            user-select: none !important;
+            pointer-events: none !important;
         }
 
         /* Flowtoken span overrides inside code blocks - CRITICAL for streaming */
@@ -1212,8 +1336,202 @@
         .chat-message-ai pre span,
         .chat-message-ai code span {
             font-size: 11px !important;
-            font-family: "JetBrains Mono", "Menlo", "Consolas", "Monaco", monospace !important;
+            font-family: "TX-02 Berkeley", "JetBrains Mono", "Menlo", "Consolas", "Monaco", monospace !important;
             line-height: 1.6 !important;
+        }
+
+        /* ===== SYNTAX HIGHLIGHTING - MATTE DARK PALETTE (NO REDS) ===== */
+        /* Keywords: if, else, return, const, let, var, function, class, import, export, etc. */
+        .chat-message-ai pre code span.keyword,
+        .chat-message-ai pre code span.token.keyword,
+        .chat-message-ai pre code .token.keyword {
+            color: #5c6bc0 !important;
+        }
+
+        /* Matte Indigo */
+
+        /* Control flow keywords */
+        .chat-message-ai pre code span.token.control-flow,
+        .chat-message-ai pre code .token.control-flow {
+            color: #7e57c2 !important;
+        }
+
+        /* Matte Purple */
+
+        /* Strings */
+        .chat-message-ai pre code span.string,
+        .chat-message-ai pre code span.token.string,
+        .chat-message-ai pre code .token.string {
+            color: #26a69a !important;
+        }
+
+        /* Matte Teal */
+
+        /* Template literals */
+        .chat-message-ai pre code span.token.template-string,
+        .chat-message-ai pre code .token.template-string {
+            color: #26a69a !important;
+        }
+
+        /* Functions */
+        .chat-message-ai pre code span.function,
+        .chat-message-ai pre code span.token.function,
+        .chat-message-ai pre code .token.function {
+            color: #5c6bc0 !important;
+        }
+
+        /* Matte Indigo */
+
+        /* Function calls */
+        .chat-message-ai pre code span.token.function-variable,
+        .chat-message-ai pre code .token.function-variable {
+            color: #5c6bc0 !important;
+        }
+
+        /* Numbers & Booleans */
+        .chat-message-ai pre code span.number,
+        .chat-message-ai pre code span.boolean,
+        .chat-message-ai pre code span.token.number,
+        .chat-message-ai pre code span.token.boolean,
+        .chat-message-ai pre code .token.number,
+        .chat-message-ai pre code .token.boolean {
+            color: #8d6e63 !important;
+        }
+
+        /* Matte Brown */
+
+        /* Comments */
+        .chat-message-ai pre code span.comment,
+        .chat-message-ai pre code span.token.comment,
+        .chat-message-ai pre code .token.comment {
+            color: #78909c !important;
+            font-style: italic !important;
+        }
+
+        /* Matte Blue-Grey */
+
+        /* Operators: =, +, -, *, /, etc. */
+        .chat-message-ai pre code span.operator,
+        .chat-message-ai pre code span.token.operator,
+        .chat-message-ai pre code .token.operator {
+            color: #546e7a !important;
+        }
+
+        /* Class names & Types */
+        .chat-message-ai pre code span.class-name,
+        .chat-message-ai pre code span.token.class-name,
+        .chat-message-ai pre code .token.class-name {
+            color: #00897b !important;
+        }
+
+        /* Matte Teal Dark */
+
+        /* Type annotations (TypeScript) */
+        .chat-message-ai pre code span.token.builtin,
+        .chat-message-ai pre code .token.builtin {
+            color: #00897b !important;
+        }
+
+        /* Properties & Object keys */
+        .chat-message-ai pre code span.property,
+        .chat-message-ai pre code span.token.property,
+        .chat-message-ai pre code .token.property {
+            color: #455a64 !important;
+        }
+
+        /* Matte Slate */
+
+        /* Variables */
+        .chat-message-ai pre code span.token.variable,
+        .chat-message-ai pre code .token.variable {
+            color: #37474f !important;
+        }
+
+        /* Parameters */
+        .chat-message-ai pre code span.token.parameter,
+        .chat-message-ai pre code .token.parameter {
+            color: #546e7a !important;
+        }
+
+        /* Punctuation: brackets, commas, semicolons */
+        .chat-message-ai pre code span.token.punctuation,
+        .chat-message-ai pre code .token.punctuation {
+            color: #607d8b !important;
+        }
+
+        /* HTML/JSX Tags */
+        .chat-message-ai pre code span.token.tag,
+        .chat-message-ai pre code .token.tag {
+            color: #5c6bc0 !important;
+        }
+
+        /* Matte Indigo */
+
+        /* HTML/JSX Attributes */
+        .chat-message-ai pre code span.token.attr-name,
+        .chat-message-ai pre code .token.attr-name {
+            color: #7e57c2 !important;
+        }
+
+        /* Matte Purple */
+
+        /* HTML/JSX Attribute Values */
+        .chat-message-ai pre code span.token.attr-value,
+        .chat-message-ai pre code .token.attr-value {
+            color: #26a69a !important;
+        }
+
+        /* Regex */
+        .chat-message-ai pre code span.token.regex,
+        .chat-message-ai pre code .token.regex {
+            color: #8d6e63 !important;
+        }
+
+        /* Matte Brown */
+
+        /* Constants */
+        .chat-message-ai pre code span.token.constant,
+        .chat-message-ai pre code .token.constant {
+            color: #5c6bc0 !important;
+        }
+
+        /* Matte Indigo */
+
+        /* Decorators (@) */
+        .chat-message-ai pre code span.token.decorator,
+        .chat-message-ai pre code .token.decorator {
+            color: #7e57c2 !important;
+        }
+
+        /* Namespace/Module */
+        .chat-message-ai pre code span.token.namespace,
+        .chat-message-ai pre code .token.namespace {
+            color: #00897b !important;
+        }
+
+        /* CSS Selectors */
+        .chat-message-ai pre code span.token.selector,
+        .chat-message-ai pre code .token.selector {
+            color: #5c6bc0 !important;
+        }
+
+        /* CSS Property names */
+        .chat-message-ai pre code span.token.property-access,
+        .chat-message-ai pre code .token.property-access {
+            color: #455a64 !important;
+        }
+
+        /* Important (CSS !important) */
+        .chat-message-ai pre code span.token.important,
+        .chat-message-ai pre code .token.important {
+            color: #7e57c2 !important;
+            font-weight: 600 !important;
+        }
+
+        /* Ensure normal text is DARK/INK - High Contrast */
+        .chat-message-ai pre code {
+            color: #37474f !important;
+            background: transparent !important;
         }
 
         /* ===== FLOWTOKEN CODE BLOCK FIXES ===== */
@@ -1250,7 +1568,7 @@
 
         /* Handle nested pre tags from flowtoken */
         .chat-message-ai pre pre {
-            margin: 0 !important;
+            margin: 1rem !important;
             padding: 0 !important;
             background: transparent !important;
             border: none !important;
@@ -1273,11 +1591,11 @@
         /* Inline Code Styling - Paragraphs */
         .chat-message-ai p code,
         .chat-message-ai li code {
-            font-size: 11px !important;
+            font-size: 10px !important;
             font-family: "JetBrains Mono", "Menlo", "Consolas", "Monaco", monospace !important;
             background: rgba(241, 245, 249, 0.8) !important;
             border: 1px solid rgba(226, 232, 240, 1) !important;
-            padding: 0.15em 0.4em !important;
+            padding: 0.1em 0.4em !important;
             border-radius: 6px !important;
             color: #0f172a !important;
             font-weight: 500 !important;
@@ -1492,7 +1810,7 @@
         }
 
         /* Sonner Toast Customizations */
-        .sonner-toast-right-close [data-close-button="true"] {
+        .sonner-toast-mobile-center [data-close-button="true"] {
             left: auto !important;
             right: -6px !important;
             top: -6px !important;
@@ -1503,8 +1821,43 @@
             opacity: 1 !important;
         }
 
-        .sonner-toast-right-close [data-close-button="true"]:hover {
+        .sonner-toast-mobile-center [data-close-button="true"]:hover {
             background: #f8fafc !important;
+        }
+
+        /* Mobile: top-center, compact */
+        @media (max-width: 640px) {
+            [data-sonner-toaster] {
+                right: -5rem !important;
+                left: auto !important;
+                bottom: 16px !important;
+                top: auto !important;
+            }
+
+            [data-sonner-toaster] [data-sonner-toast] {
+                width: auto !important;
+                padding: 10px 11px !important;
+                font-size: 11px !important;
+            }
+
+            [data-sonner-toaster] [data-sonner-toast] [data-content] {
+                gap: 6px !important;
+            }
+
+            [data-sonner-toaster] [data-sonner-toast] [data-icon] {
+                width: 14px !important;
+                height: 14px !important;
+            }
+        }
+
+        /* Desktop: bottom-right */
+        @media (min-width: 641px) {
+            [data-sonner-toaster] {
+                right: -15rem !important;
+                left: auto !important;
+                bottom: 16px !important;
+                top: auto !important;
+            }
         }
     </style>
 
@@ -1643,8 +1996,8 @@
         }
       }
     </script>
-  <script type="module" crossorigin src="/assets/index-C0oKgcF_.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-CChzf3nS.css">
+  <script type="module" crossorigin src="/assets/index-diM9_Dhg.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-BJtGK3qj.css">
 </head>
 
 <body class="bg-[#F8F9FB] text-slate-800">
