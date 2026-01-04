@@ -330,7 +330,7 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onCl
     };
 
     return createPortal(
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="sync">
             {isOpen && (
                 <motion.div
                     key="profile-modal-wrapper"
@@ -338,10 +338,16 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onCl
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.15 }}
-                    className={`fixed inset-0 z-[10003] flex ${isMobile ? 'items-end' : 'items-center'} justify-center pointer-events-none`}
+                    className={`fixed inset-0 z-[10003] flex ${isMobile ? 'items-end' : 'items-center'} justify-center`}
                     style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+                    onAnimationComplete={(definition) => {
+                        // Force cleanup when exit animation completes
+                        if (definition === 'exit') {
+                            document.body.style.pointerEvents = '';
+                        }
+                    }}
                 >
-                    {/* Backdrop - no click to dismiss, explicit pointer-events handling */}
+                    {/* Backdrop - click to dismiss on desktop */}
                     <motion.div
                         key="profile-edit-modal-backdrop"
                         initial={{ opacity: 0 }}
@@ -349,7 +355,8 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onCl
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.2 }}
                         style={isMobile ? { opacity: backdropOpacity } : undefined}
-                        className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm pointer-events-auto"
+                        className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+                        onClick={!isMobile ? onClose : undefined}
                     />
 
                     {/* Modal Content with Multi-rim depth effect */}
@@ -366,7 +373,7 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onCl
                         onDragEnd={handleDragEnd}
                         onClick={handleModalClick}
                         onTouchEnd={handleModalClick}
-                        className="relative w-full sm:max-w-[420px] touch-none sm:touch-auto pointer-events-auto"
+                        className="relative w-full sm:max-w-[420px] touch-none sm:touch-auto"
                     >
                         {/* Outer rim - gradient border */}
                         <div className="p-1 bg-gradient-to-b from-white to-slate-300 rounded-t-[24px] sm:rounded-[24px] shadow-sm">
@@ -654,19 +661,12 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onCl
                                                                     document.documentElement.classList.add('chat-font-nunito');
                                                                 }}
                                                                 title="Default (Nunito)"
-                                                                className={`relative px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-colors duration-200 flex items-center gap-1 ${selectedFont === 'nunito'
-                                                                    ? 'text-white'
+                                                                className={`relative px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all duration-200 flex items-center gap-1 ${selectedFont === 'nunito'
+                                                                    ? 'text-white bg-gradient-to-b from-[rgb(50,110,160)] to-[rgb(36,89,133)] shadow-[0_2px_4px_rgba(36,89,133,0.3)]'
                                                                     : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
                                                                     }`}
                                                                 style={{ fontFamily: 'Nunito, sans-serif' }}
                                                             >
-                                                                {selectedFont === 'nunito' && (
-                                                                    <motion.div
-                                                                        layoutId="font-selector-bg"
-                                                                        className="absolute inset-0 bg-gradient-to-b from-[rgb(50,110,160)] to-[rgb(36,89,133)] rounded-lg shadow-[0_2px_4px_rgba(36,89,133,0.3)]"
-                                                                        transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                                                                    />
-                                                                )}
                                                                 <span className="relative z-10 text-[13px] font-bold">T</span>
                                                                 <span className="relative z-10">Default</span>
                                                             </button>
@@ -678,19 +678,12 @@ export const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onCl
                                                                     document.documentElement.classList.add('chat-font-serif');
                                                                 }}
                                                                 title="Serif (Source Serif 4)"
-                                                                className={`relative px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-colors duration-200 flex items-center gap-1 ${selectedFont === 'serif'
-                                                                    ? 'text-white'
+                                                                className={`relative px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all duration-200 flex items-center gap-1 ${selectedFont === 'serif'
+                                                                    ? 'text-white bg-gradient-to-b from-[rgb(50,110,160)] to-[rgb(36,89,133)] shadow-[0_2px_4px_rgba(36,89,133,0.3)]'
                                                                     : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
                                                                     }`}
                                                                 style={{ fontFamily: '"Source Serif 4", Georgia, serif' }}
                                                             >
-                                                                {selectedFont === 'serif' && (
-                                                                    <motion.div
-                                                                        layoutId="font-selector-bg"
-                                                                        className="absolute inset-0 bg-gradient-to-b from-[rgb(50,110,160)] to-[rgb(36,89,133)] rounded-lg shadow-[0_2px_4px_rgba(36,89,133,0.3)]"
-                                                                        transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                                                                    />
-                                                                )}
                                                                 <span className="relative z-10 text-[13px] italic -mt-[3px]">T</span>
                                                                 <span className="relative z-10">Serif</span>
                                                             </button>

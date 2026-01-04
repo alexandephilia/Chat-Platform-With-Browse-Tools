@@ -79,7 +79,7 @@ export const CustomInstructionsModal: React.FC<CustomInstructionsModalProps> = (
     };
 
     return (
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="sync">
             {isOpen && (
                 <motion.div
                     key="instructions-modal-wrapper"
@@ -87,9 +87,15 @@ export const CustomInstructionsModal: React.FC<CustomInstructionsModalProps> = (
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.15 }}
-                    className={`fixed inset-0 z-[10002] flex ${isMobile ? 'items-end' : 'items-center'} justify-center pointer-events-none`}
+                    className={`fixed inset-0 z-[10002] flex ${isMobile ? 'items-end' : 'items-center'} justify-center`}
+                    onAnimationComplete={(definition) => {
+                        // Force cleanup when exit animation completes
+                        if (definition === 'exit') {
+                            document.body.style.pointerEvents = '';
+                        }
+                    }}
                 >
-                    {/* Backdrop - no click to dismiss */}
+                    {/* Backdrop - click to dismiss on desktop */}
                     <motion.div
                         key="instructions-modal-backdrop"
                         initial={{ opacity: 0 }}
@@ -97,7 +103,8 @@ export const CustomInstructionsModal: React.FC<CustomInstructionsModalProps> = (
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.2 }}
                         style={isMobile ? { opacity: backdropOpacity } : undefined}
-                        className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm pointer-events-auto"
+                        className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+                        onClick={!isMobile ? onClose : undefined}
                     />
 
                     {/* Modal Content with Multi-rim depth effect */}
@@ -114,7 +121,7 @@ export const CustomInstructionsModal: React.FC<CustomInstructionsModalProps> = (
                         onDragEnd={handleDragEnd}
                         onClick={handleModalClick}
                         onTouchEnd={handleModalClick}
-                        className="relative w-full sm:max-w-[440px] touch-none sm:touch-auto pointer-events-auto"
+                        className="relative w-full sm:max-w-[440px] touch-none sm:touch-auto"
                     >
                         {/* Outer rim - gradient border */}
                         <div className="p-1 bg-gradient-to-b from-white to-slate-300 rounded-t-[24px] sm:rounded-[24px] shadow-sm">
