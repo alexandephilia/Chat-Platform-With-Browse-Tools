@@ -12,6 +12,8 @@ import {
     sendMessageToOpenRouterStreamWithTools
 } from '../services/openRouterService';
 import { sendMessageToRoutewayStreamWithTools } from '../services/routewayService';
+import { usageService } from '../services/usageService';
+import { authService } from '../services/authService';
 import { Attachment, Message, ToolCall } from '../types';
 
 export type SearchType = 'auto' | 'fast' | 'deep';
@@ -500,6 +502,18 @@ export function useChatMessages(options: UseChatMessagesOptions) {
             urlsFetching: urls.length > 0
         };
 
+        if (!authService.isAuthenticated() && usageService.isLimitReached()) {
+            setMessages(prev => [...prev, {
+                id: Date.now().toString(),
+                role: 'model',
+                content: "You've reached the limit for guest users. Please sign up to continue chatting with our models!",
+                timestamp: new Date(),
+                isError: true,
+                isRateLimit: true
+            }]);
+            return;
+        }
+
         setMessages(prev => [...prev, newUserMessage]);
         setIsLoading(true);
         setHasConversationStarted(true);
@@ -544,6 +558,11 @@ export function useChatMessages(options: UseChatMessagesOptions) {
                 await processRoutewayStream(enrichedPrompt, history, newAiMessageId, effectiveSearchType, effective.webSearchEnabled, currentModel.id, effective.reasoningEnabled, signal);
             } else {
                 await processGeminiStream(enrichedPrompt, history, newAiMessageId, effectiveSearchType, effective.webSearchEnabled, currentModel.id, effective.reasoningEnabled, signal);
+            }
+
+            // Increment usage for guests after successful start
+            if (!authService.isAuthenticated()) {
+                usageService.incrementUsageCount();
             }
         } catch (error) {
             // Check if this was an abort
@@ -594,6 +613,18 @@ export function useChatMessages(options: UseChatMessagesOptions) {
             hasDocumentAttachments,
         });
 
+        if (!authService.isAuthenticated() && usageService.isLimitReached()) {
+            setMessages(prev => [...prev, {
+                id: Date.now().toString(),
+                role: 'model',
+                content: "You've reached the limit for guest users. Please sign up to continue chatting with our models!",
+                timestamp: new Date(),
+                isError: true,
+                isRateLimit: true
+            }]);
+            return;
+        }
+
         const messagesUpToRetry = messages.slice(0, msgIndex);
         setMessages(messagesUpToRetry);
         setIsLoading(true);
@@ -640,6 +671,11 @@ export function useChatMessages(options: UseChatMessagesOptions) {
                 await processRoutewayStream(promptContent, historyForApi, newAiMessageId, currentSearchType, effective.webSearchEnabled, currentModel.id, effective.reasoningEnabled, signal);
             } else {
                 await processGeminiStream(promptContent, historyForApi, newAiMessageId, currentSearchType, effective.webSearchEnabled, currentModel.id, effective.reasoningEnabled, signal);
+            }
+
+            // Increment usage for guests after successful start
+            if (!authService.isAuthenticated()) {
+                usageService.incrementUsageCount();
             }
         } catch (error) {
             // Check if this was an abort

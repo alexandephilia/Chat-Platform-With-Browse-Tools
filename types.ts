@@ -29,6 +29,7 @@ export interface Message {
     urlsFetching?: boolean; // Whether URL content is being fetched
     isError?: boolean; // Whether this message is an error response
     isInterrupted?: boolean; // Whether this response was interrupted by user
+    isRateLimit?: boolean; // Whether this is a guest rate limit message
 }
 
 export interface Attachment {

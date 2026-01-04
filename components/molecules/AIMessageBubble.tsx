@@ -395,12 +395,21 @@ export const AIMessageBubble: React.FC<AIMessageBubbleProps> = memo(({
             )}
 
             {/* Message Content - Only animate if streaming */}
-            <div className="chat-message-ai text-slate-700" data-message-id={message.id}>
-                <StableAnimatedContent
-                    content={message.content}
-                    messageId={message.id}
-                    isStreaming={isStreaming}
-                />
+            <div className={`chat-message-ai text-slate-700 ${message.isRateLimit ? 'flex justify-start' : ''}`} data-message-id={message.id}>
+                {message.isRateLimit ? (
+                    <div className="inline-flex items-start gap-2 px-4 py-2 rounded-full bg-amber-50/40 backdrop-blur-sm border border-amber-200/30 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05),inset_0_1px_0_0_rgba(255,255,255,0.4)]">
+                        <span className="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-amber-400/60 animate-pulse mt-[7px]" />
+                        <span className="text-[13px] font-medium text-amber-900/70 leading-tight">
+                            {message.content}
+                        </span>
+                    </div>
+                ) : (
+                    <StableAnimatedContent
+                        content={message.content}
+                        messageId={message.id}
+                        isStreaming={isStreaming}
+                    />
+                )}
             </div>
 
             {/* Interrupted indicator */}
@@ -456,13 +465,15 @@ export const AIMessageBubble: React.FC<AIMessageBubbleProps> = memo(({
                                 )}
                             </button>
                         )}
-                        <button
-                            {...createTapHandler(() => onRetry(message.id))}
-                            className={`p-1.5 rounded-md transition-colors touch-manipulation ${message.isError ? 'text-blue-500 hover:text-blue-600 hover:bg-blue-50' : 'text-slate-400 hover:text-blue-500 hover:bg-blue-50'}`}
-                            title="Retry response"
-                        >
-                            <RefreshSquareLinear className="w-4 h-4" />
-                        </button>
+                        {!message.isRateLimit && (
+                            <button
+                                {...createTapHandler(() => onRetry(message.id))}
+                                className={`p-1.5 rounded-md transition-colors touch-manipulation ${message.isError ? 'text-blue-500 hover:text-blue-600 hover:bg-blue-50' : 'text-slate-400 hover:text-blue-500 hover:bg-blue-50'}`}
+                                title="Retry response"
+                            >
+                                <RefreshSquareLinear className="w-4 h-4" />
+                            </button>
+                        )}
                     </div>
 
                     {/* Right side: Model indicator + More menu */}

@@ -1,4 +1,5 @@
 import { LoginCredentials, SignupCredentials, User } from '../types/auth';
+import { usageService } from './usageService';
 
 const AUTH_STORAGE_KEY = 'zeta_auth_user';
 
