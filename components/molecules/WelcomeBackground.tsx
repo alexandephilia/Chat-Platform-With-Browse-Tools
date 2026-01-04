@@ -17,7 +17,7 @@ export const WelcomeBackground: React.FC = () => {
                     backgroundImage: `url("/images/background.jpg")`,
                     backgroundRepeat: 'no-repeat',
                     backgroundPosition: 'center center',
-                    backgroundSize: '1920px auto',
+                    backgroundSize: 'cover',
                     minWidth: '100%',
                     minHeight: '100%',
                 }}

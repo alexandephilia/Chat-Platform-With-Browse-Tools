@@ -169,11 +169,12 @@ const StableAnimatedContent = memo(({
         // Standard text containers - process content for pills
         p: ({ children, animateText, ...props }: any) => {
             const content = processContentWithPills(children);
-            return <p {...props}>{animateText ? animateText(content) : content}</p>;
+            // Stable container for text animation
+            return <p {...props} className="mb-3 last:mb-0">{animateText ? animateText(content) : content}</p>;
         },
         li: ({ children, animateText, ...props }: any) => {
             const content = processContentWithPills(children);
-            return <li {...props}>{animateText ? animateText(content) : content}</li>;
+            return <li {...props} className="mb-2 last:mb-0">{animateText ? animateText(content) : content}</li>;
         },
         blockquote: ({ children, animateText, ...props }: any) => {
             const content = processContentWithPills(children);
@@ -207,54 +208,45 @@ const StableAnimatedContent = memo(({
 
         // Table wrapper for horizontal scrolling - fit content, don't stretch
         table: ({ children, animateText, ...props }: any) => (
-            <div className="table-wrapper" style={{
-                overflowX: 'auto',
-                maxWidth: '100%',
-                WebkitOverflowScrolling: 'touch'
-            }}>
-                <table {...props}>{children}</table>
+            <div className="table-wrapper my-4 overflow-x-auto max-w-full" style={{ WebkitOverflowScrolling: 'touch' }}>
+                <table {...props} className="min-w-full border-collapse">{children}</table>
             </div>
         ),
         // Table structure elements - ensure proper rendering during streaming
-        thead: ({ children, animateText, ...props }: any) => (
-            <thead {...props}>{children}</thead>
-        ),
-        tbody: ({ children, animateText, ...props }: any) => (
-            <tbody {...props}>{children}</tbody>
-        ),
-        tr: ({ children, animateText, ...props }: any) => (
-            <tr {...props}>{children}</tr>
-        ),
+        thead: ({ children }: any) => <thead>{children}</thead>,
+        tbody: ({ children }: any) => <tbody>{children}</tbody>,
+        tr: ({ children }: any) => <tr>{children}</tr>,
         // Table cells - ensure content is animated
         td: ({ children, animateText, ...props }: any) => (
-            <td {...props}>
+            <td {...props} className="p-2 border border-slate-200">
                 {animateText ? animateText(children) : children}
             </td>
         ),
         th: ({ children, animateText, ...props }: any) => (
-            <th {...props}>
+            <th {...props} className="p-2 border border-slate-200 bg-slate-50 font-bold">
                 {animateText ? animateText(children) : children}
             </th>
         ),
-    }), []);
+    }), [processContentWithPills]);
 
     return (
         <AnimatedMarkdown
             content={content}
             sep="diff"
             animation={animationEnabled ? "blurAndSharpen" : null}
-            animationDuration="1.8s"
-            animationTimingFunction="ease-in-out"
+            animationDuration="1.2s" // Snappier but still smooth
+            animationTimingFunction="cubic-bezier(0.22, 1, 0.36, 1)" // More premium feel
             customComponents={customComponents}
             codeStyle={matteCodeStyle}
         />
     );
 }, (prevProps, nextProps) => {
     // Only re-render when content changes or streaming state changes
+    // CRITICAL: Ensure we don't block the transition from isStreaming=true to false
     return (
         prevProps.content === nextProps.content &&
-        prevProps.messageId === nextProps.messageId &&
-        prevProps.isStreaming === nextProps.isStreaming
+        prevProps.isStreaming === nextProps.isStreaming &&
+        prevProps.messageId === nextProps.messageId
     );
 });
 
